@@ -1,4 +1,4 @@
-import { pool } from '../db';
+import { pool } from '../config/database';
 
 interface BudgetTemplate {
   id: number;
@@ -41,7 +41,7 @@ export class TemplateService {
       );
 
       return result.rows;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting templates:', error);
       throw error;
     }

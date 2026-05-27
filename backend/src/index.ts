@@ -63,6 +63,7 @@ app.get('/health', async (req, res) => {
 console.log('Setting up routes...');
 console.log('Auth routes:', typeof authRoutes);
 console.log('Budget routes:', typeof budgetRoutes);
+console.log('Alert routes type:', typeof alertRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/budgets', budgetRoutes);
 app.use('/api/categories', categoryRoutes);
@@ -82,10 +83,16 @@ app.use('/api/user/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/smart-rules', smartRulesRoutes);
+console.log('Mounting alerts routes to /api/alerts...');
 app.use('/api/alerts', alertRoutes);
+console.log('✓ Alerts routes mounted');
 app.use('/api/email-reports', emailReportsRoutes);
+console.log('Mounting search routes to /api/search...');
+console.log('Search routes type:', typeof searchRoutes);
 app.use('/api/search', searchRoutes);
+console.log('✓ Search routes mounted');
 console.log('Routes configured');
+console.log('Total middleware/routes in app stack:', app._router.stack.length);
 
 // 404 handler
 app.use((req, res) => {

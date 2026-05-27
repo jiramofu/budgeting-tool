@@ -1,4 +1,4 @@
-import pool from '../config/database';
+import { pool } from '../config/database';
 
 interface BudgetSummary {
   categoryName: string;
@@ -26,7 +26,7 @@ export const generateWeeklySummary = async (userId: number): Promise<string> => 
   try {
     const reportContent = await getWeeklyReportContent(userId);
     return formatReportAsHtml(reportContent, 'weekly');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating weekly summary:', error);
     throw error;
   }
@@ -39,7 +39,7 @@ export const generateMonthlySummary = async (userId: number): Promise<string> =>
   try {
     const reportContent = await getMonthlyReportContent(userId);
     return formatReportAsHtml(reportContent, 'monthly');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating monthly summary:', error);
     throw error;
   }
@@ -52,7 +52,7 @@ export const generateSpendingAnalysis = async (userId: number): Promise<string> 
   try {
     const reportContent = await getSpendingAnalysisContent(userId);
     return formatReportAsHtml(reportContent, 'analysis');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating spending analysis:', error);
     throw error;
   }

@@ -1,19 +1,21 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import { searchService } from '../services/searchService';
 
 const router = Router();
 
 // Middleware
-router.use(authMiddleware);
+router.use(authenticate);
 
 /**
  * POST /api/search
  * Advanced transaction search with filters
  */
-router.post('/api/search', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
+  console.log('[Search] POST /search called');
   try {
     const userId = (req as any).userId;
+    console.log('[Search] userId:', userId);
     const { filters, limit = 50, offset = 0 } = req.body;
 
     if (!filters || typeof filters !== 'object') {
@@ -40,7 +42,7 @@ router.post('/api/search', async (req: Request, res: Response) => {
  * GET /api/search/suggestions
  * Get autocomplete suggestions for search
  */
-router.get('/api/search/suggestions', async (req: Request, res: Response) => {
+router.get('/suggestions', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const { term, limit = 10 } = req.query;
@@ -69,7 +71,7 @@ router.get('/api/search/suggestions', async (req: Request, res: Response) => {
  * POST /api/search/saved
  * Save a search query
  */
-router.post('/api/search/saved', async (req: Request, res: Response) => {
+router.post('/saved', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const { name, filters, description } = req.body;
@@ -94,7 +96,7 @@ router.post('/api/search/saved', async (req: Request, res: Response) => {
  * GET /api/search/saved
  * Get user's saved searches
  */
-router.get('/api/search/saved', async (req: Request, res: Response) => {
+router.get('/saved', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
 
@@ -114,7 +116,7 @@ router.get('/api/search/saved', async (req: Request, res: Response) => {
  * DELETE /api/search/saved/:searchId
  * Delete a saved search
  */
-router.delete('/api/search/saved/:searchId', async (req: Request, res: Response) => {
+router.delete('/saved/:searchId', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const { searchId } = req.params;
@@ -139,7 +141,7 @@ router.delete('/api/search/saved/:searchId', async (req: Request, res: Response)
  * PUT /api/search/saved/:searchId/favorite
  * Toggle search as favorite
  */
-router.put('/api/search/saved/:searchId/favorite', async (req: Request, res: Response) => {
+router.put('/saved/:searchId/favorite', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId;
     const { searchId } = req.params;
@@ -164,7 +166,7 @@ router.put('/api/search/saved/:searchId/favorite', async (req: Request, res: Res
  * GET /api/search/popular
  * Get popular search terms (anonymous)
  */
-router.get('/api/search/popular', async (req: Request, res: Response) => {
+router.get('/popular', async (req: Request, res: Response) => {
   try {
     const { limit = 10 } = req.query;
 

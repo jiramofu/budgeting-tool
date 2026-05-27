@@ -1,4 +1,4 @@
-import { pool } from '../db';
+import { pool } from '../config/database';
 
 interface SearchFilter {
   minAmount?: number;
@@ -117,7 +117,7 @@ export class SearchService {
         results: result.rows,
         total,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching transactions:', error);
       throw error;
     }
@@ -147,7 +147,7 @@ export class SearchService {
       );
 
       return result.rows.map(r => r.suggestion);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting search suggestions:', error);
       throw error;
     }
@@ -203,7 +203,7 @@ export class SearchService {
         ...row,
         filters: row.filters,
       }));
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting saved searches:', error);
       throw error;
     }
@@ -219,8 +219,8 @@ export class SearchService {
         [searchId, userId]
       );
 
-      return result.rowCount > 0;
-    } catch (error) {
+      return (result.rowCount ?? 0) > 0;
+    } catch (error: any) {
       console.error('Error deleting search:', error);
       throw error;
     }
@@ -241,8 +241,8 @@ export class SearchService {
         [searchId, userId]
       );
 
-      return result.rowCount > 0;
-    } catch (error) {
+      return (result.rowCount ?? 0) > 0;
+    } catch (error: any) {
       console.error('Error toggling search favorite:', error);
       throw error;
     }
@@ -264,7 +264,7 @@ export class SearchService {
         `,
         [userId, filters.description || null, JSON.stringify(filters), resultsCount]
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error recording search analytics:', error);
       // Don't throw - analytics failure shouldn't break search
     }
@@ -290,7 +290,7 @@ export class SearchService {
       );
 
       return result.rows;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error getting popular search terms:', error);
       throw error;
     }

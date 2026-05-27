@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import authMiddleware from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
 import {
   checkSpendingAlerts,
   getActiveAlerts,
@@ -12,7 +12,7 @@ import {
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
 /**
  * Check for spending alerts in a specific budget

@@ -1,4 +1,4 @@
-import pool from '../config/database';
+import { pool } from '../config/database';
 import {
   generateWeeklySummary,
   generateMonthlySummary,
@@ -24,7 +24,7 @@ export async function runReportAndAlertScheduler() {
     await processReports();
 
     console.log('[Scheduler] Completed report and alert scheduler');
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Scheduler] Error in report and alert scheduler:', error);
   }
 }
@@ -94,11 +94,11 @@ async function processAlerts() {
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`[Scheduler] Error processing alerts for user ${userId}:`, error);
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Scheduler] Error processing alerts:', error);
   }
 }
@@ -180,17 +180,17 @@ async function processReports() {
           );
           await markReportAsSent(report.id, false, emailResult.error);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(
           `[Scheduler] Error processing report ${report.id}:`,
           error
         );
         await markReportAsSent(report.id, false, String(error)).catch(
-          (e) => console.error('Error marking report as failed:', e)
+          (e: any) => console.error('Error marking report as failed:', e)
         );
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Scheduler] Error processing reports:', error);
   }
 }
