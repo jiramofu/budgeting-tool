@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { exportSpendingReportToExcel } from '../services/excelExport';
 
 interface ReportMetadata {
   currentMonth: number;
@@ -136,6 +137,43 @@ const ReportsPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to download spending trends:', error);
       setDownloadMessage('Failed to download spending trends. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportToExcel = async () => {
+    try {
+      setLoading(true);
+      setDownloadMessage('');
+
+      // Fetch report data for Excel export
+      const response = await apiClient.get('/reports/data', {
+        params: { months: selectedTrendMonths },
+      });
+
+      if (response.data && Array.isArray(response.data)) {
+        const reportData = response.data.map((item: any) => ({
+          month: item.month || item.name,
+          income: item.income || 0,
+          expenses: item.expenses || 0,
+          netCashFlow: (item.income || 0) - (item.expenses || 0),
+          savingsRate: item.savingsRate || 0,
+          topCategories: item.topCategories || [],
+        }));
+
+        exportSpendingReportToExcel(
+          reportData,
+          `spending-report-${new Date().toISOString().split('T')[0]}.xlsx`
+        );
+
+        setDownloadMessage('Excel file downloaded successfully!');
+      } else {
+        setDownloadMessage('No report data available to export.');
+      }
+    } catch (error) {
+      console.error('Failed to export Excel:', error);
+      setDownloadMessage('Failed to export to Excel. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -280,6 +318,41 @@ const ReportsPage: React.FC = () => {
           >
             {loading ? 'Downloading...' : 'Download Spending Trends (CSV)'}
           </button>
+        </div>
+
+        {/* Excel Export Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">📊 Export to Excel</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Export your spending data to Excel for detailed analysis and record-keeping. Perfect for use in spreadsheets or data analysis tools.
+          </p>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
+            <select
+              value={selectedTrendMonths}
+              onChange={(e) => setSelectedTrendMonths(parseInt(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {metadata?.trendMonths.map((months) => (
+                <option key={months} value={months}>
+                  Last {months} months
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={handleExportToExcel}
+            disabled={loading}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium"
+          >
+            {loading ? 'Exporting...' : '📥 Export to Excel (.xlsx)'}
+          </button>
+
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            Excel files include multiple sheets for different report views (Summary, Category Details, etc.)
+          </p>
         </div>
 
         {/* Information Section */}

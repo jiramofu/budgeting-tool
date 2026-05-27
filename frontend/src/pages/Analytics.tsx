@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { exportSpendingReportToExcel } from '../services/excelExport';
 import {
   LineChart,
   Line,
@@ -113,6 +114,27 @@ const Analytics: React.FC = () => {
     setSelectedDate(newDate);
   };
 
+  const handleExportToExcel = () => {
+    if (!analysis) return;
+
+    const reportData = [
+      {
+        month: analysis.period,
+        income: analysis.totalIncome,
+        expenses: analysis.totalExpenses,
+        netCashFlow: analysis.netCashFlow,
+        savingsRate: analysis.savingsRate,
+        topCategories: analysis.topCategories.map((cat) => ({
+          category: cat.categoryName,
+          amount: cat.amount,
+        })),
+      },
+    ];
+
+    const fileName = `analytics-${analysis.period.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.xlsx`;
+    exportSpendingReportToExcel(reportData, fileName);
+  };
+
   if (isLoading) {
     return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading analytics...</div>;
   }
@@ -165,6 +187,12 @@ const Analytics: React.FC = () => {
               }`}
             >
               Yearly
+            </button>
+            <button
+              onClick={handleExportToExcel}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition"
+            >
+              📥 Export to Excel
             </button>
           </div>
         </div>

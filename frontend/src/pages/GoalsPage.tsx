@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { exportGoalsToExcel } from '../services/excelExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface Goal {
@@ -182,6 +183,24 @@ const GoalsPage: React.FC = () => {
     setShowForm(false);
   };
 
+  const handleExportToExcel = () => {
+    if (!goals || goals.length === 0) {
+      alert('No goals to export');
+      return;
+    }
+
+    const goalsForExport = goals.map((goal) => ({
+      id: goal.id,
+      name: goal.name,
+      targetAmount: goal.target_amount,
+      currentAmount: goal.current_amount,
+      targetDate: goal.target_date || '',
+      progress: Math.round(goal.progress_percentage),
+    }));
+
+    exportGoalsToExcel(goalsForExport, `financial-goals-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   if (isLoading) {
     return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading goals...</div>;
   }
@@ -190,12 +209,20 @@ const GoalsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Goals</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : 'New Goal'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExportToExcel}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          >
+            📥 Export to Excel
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            {showForm ? 'Cancel' : 'New Goal'}
+          </button>
+        </div>
       </div>
 
       {error && <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">{error}</div>}
