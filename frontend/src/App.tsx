@@ -25,6 +25,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
 import SmartRulesPage from './pages/SmartRulesPage';
 import AlertsPage from './pages/AlertsPage';
+import EmailPreferencesPage from './pages/EmailPreferencesPage';
 import AdvancedSearchPage from './pages/AdvancedSearchPage';
 import Layout from './components/Layout';
 
@@ -221,6 +222,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <AlertsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/email-preferences"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <EmailPreferencesPage />
             </Layout>
           </ProtectedRoute>
         }

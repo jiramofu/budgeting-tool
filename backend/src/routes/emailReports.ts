@@ -7,6 +7,7 @@ import {
   createEmailReport,
   updateEmailReport,
   deleteEmailReport,
+  sendTestEmail,
 } from '../services/emailReportService';
 
 const router = express.Router();
@@ -55,6 +56,36 @@ router.put('/preferences', async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: 'Failed to update email preferences',
+    });
+  }
+});
+
+/**
+ * Send a test email to verify email service is working
+ * POST /api/email-reports/test
+ */
+router.post('/test', async (req: Request, res: Response) => {
+  try {
+    const { recipientEmail } = req.body;
+
+    if (!recipientEmail) {
+      return res.status(400).json({
+        success: false,
+        error: 'recipientEmail is required',
+      });
+    }
+
+    const result = await sendTestEmail(recipientEmail);
+
+    res.json({
+      success: result.success,
+      message: result.message,
+    });
+  } catch (error) {
+    console.error('Error sending test email:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send test email',
     });
   }
 });

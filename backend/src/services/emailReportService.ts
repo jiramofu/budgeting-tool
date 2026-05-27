@@ -517,3 +517,99 @@ function calculateNextSendTime(
 
   return nextDate;
 }
+
+/**
+ * Send a test email to verify email service is working
+ */
+export async function sendTestEmail(recipientEmail: string): Promise<{ success: boolean; message: string }> {
+  try {
+    // Import email service
+    const { sendEmail } = await import('./emailService');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              background-color: #f9fafb;
+              color: #1f2937;
+            }
+            .container {
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+              background-color: #ffffff;
+              border-radius: 8px;
+              border: 1px solid #e5e7eb;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+            }
+            .content {
+              font-size: 14px;
+              line-height: 1.6;
+            }
+            .success-badge {
+              background-color: #dcfce7;
+              color: #166534;
+              padding: 12px;
+              border-radius: 4px;
+              margin: 20px 0;
+              text-align: center;
+              font-weight: 600;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>💰 Budget Tool - Test Email</h1>
+            </div>
+            <div class="content">
+              <div class="success-badge">✓ Email Service is Working!</div>
+              <p>This is a test email from your Budget Tool application.</p>
+              <p>If you received this email, it means your email service is properly configured and ready to send:</p>
+              <ul>
+                <li>Spending alerts when you exceed budget thresholds</li>
+                <li>Weekly and monthly spending reports</li>
+                <li>Budget notifications and reminders</li>
+              </ul>
+              <p>You can now close this email or adjust your <strong>Email Preferences</strong> to customize what emails you receive.</p>
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                Sent at ${new Date().toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await sendEmail({
+      to: recipientEmail,
+      subject: '💰 Test Email from Budget Tool',
+      html: html,
+      text: 'This is a test email from your Budget Tool application. If you received this, your email service is working correctly!',
+    });
+
+    if (result.success) {
+      return {
+        success: true,
+        message: 'Test email sent successfully! Check your inbox.',
+      };
+    } else {
+      return {
+        success: false,
+        message: `Failed to send test email: ${result.error}`,
+      };
+    }
+  } catch (error: any) {
+    console.error('Error sending test email:', error);
+    return {
+      success: false,
+      message: `Error sending test email: ${error.message}`,
+    };
+  }
+}
