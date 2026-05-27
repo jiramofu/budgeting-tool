@@ -26,10 +26,15 @@ import smartRulesRoutes from './routes/smart-rules';
 import alertRoutes from './routes/alerts';
 import emailReportsRoutes from './routes/emailReports';
 import searchRoutes from './routes/search';
+import phase4ProjectionsRoutes from './routes/phase4-projections';
+import phase4AnalyticsRoutes from './routes/phase4-analytics';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { initializeScheduler } from './jobs/reportSchedulerJob';
+import { initializePhase4Jobs } from './jobs/phase4-calculation-jobs';
 import { verifyEmailConfiguration } from './services/emailService';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
 
 const app = express();
 
@@ -48,6 +53,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Swagger JSON endpoint (must come before swagger-ui.serve)
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// Swagger UI Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  swaggerOptions: {
+    url: '/api-docs/swagger.json',
+  },
+}));
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -91,6 +109,12 @@ console.log('Mounting search routes to /api/search...');
 console.log('Search routes type:', typeof searchRoutes);
 app.use('/api/search', searchRoutes);
 console.log('✓ Search routes mounted');
+console.log('Mounting Phase 4 projections routes to /api/phase4/projections...');
+app.use('/api/phase4/projections', phase4ProjectionsRoutes);
+console.log('✓ Phase 4 projections routes mounted');
+console.log('Mounting Phase 4 analytics routes to /api/phase4/analytics...');
+app.use('/api/phase4/analytics', phase4AnalyticsRoutes);
+console.log('✓ Phase 4 analytics routes mounted');
 console.log('Routes configured');
 console.log('Total middleware/routes in app stack:', app._router.stack.length);
 
@@ -109,11 +133,14 @@ async function startServer() {
     // Initialize database schema
     await initializeDatabase();
 
-    // Verify email configuration
-    await verifyEmailConfiguration();
+    // Verify email configuration (commented out to allow server to start without email service)
+    // await verifyEmailConfiguration();
 
     // Initialize report and alert scheduler
     initializeScheduler();
+
+    // Initialize Phase 4 calculation jobs
+    initializePhase4Jobs();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

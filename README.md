@@ -1,287 +1,194 @@
-﻿# Budgeting Tool
+# Budgeting Tool - Advanced Personal Finance Platform
 
-A modern personal finance budgeting application combining the best practices from market-leading solutions like Monarch Money, YNAB, and Quicken Simplifi. Features real-time budget tracking, transaction management, AI-powered categorization, and advanced analytics.
+A modern, full-featured personal finance budgeting application combining the best practices from leading solutions like Monarch Money, YNAB, and Quicken Simplifi. Built with React, TypeScript, Node.js, and PostgreSQL.
 
-## Features
+## 🎯 Features
 
-### Core Features
-- **User Authentication** - Secure signup, login, and session management
-- **Budget Management** - Create and manage budgets with flexible categorization
-- **Transaction Tracking** - Add, categorize, and manage transactions
-- **Real-time Dashboard** - High-level overview of budget health and spending
-- **Analytics & Reports** - Spending trends, category breakdowns, and insights
+### Core Budgeting
+- **Flexible Budget Categories** - Three-tier categorization system (fixed, recurring, flexible expenses)
+- **Budget Targets & Tracking** - Set spending limits and track actual vs. budgeted spending
+- **Transaction Management** - Add, edit, categorize, and filter transactions
+- **Multi-view Dashboard** - High-level overview with customizable widgets
+
+### Advanced Analytics (Phase 4)
+- **90-Day Cash Flow Projection** - Forecast cash position with daily granularity
+- **Risk Assessment** - Automatic categorization of days as critical, warning, or safe
+- **Spending Analytics** - Monthly breakdowns, trend analysis, and budget compliance rates
+- **Seasonal Insights** - Detect spending patterns across seasons and plan accordingly
+
+### Data Import & Integration
 - **CSV Import** - Import transactions from bank exports
-- **Pull-to-Refresh** - Keep data synchronized with pull-to-refresh on all screens
+- **Bank API Integration** - Connect to real bank accounts via Plaid
+- **Auto-Categorization** - ML-powered category suggestions based on transaction descriptions
+- **Duplicate Detection** - Prevent importing the same transaction twice
 
-### Advanced Features
-- **AI-Powered Categorization** - Automatic category suggestions based on transaction descriptions
-- **Financial Wellness Metrics** - Net worth tracking, debt payoff projections, savings rate analysis
-- **Spending Anomaly Detection** - Identify unusual spending patterns
-- **Bill Tracking** - Track upcoming bills and recurring payments
-- **Investment Portfolio** - Track stocks, bonds, crypto, and other investments
-- **Budget Rules & Alerts** - Set custom alerts when budgets are exceeded
-- **Multi-Device Sync** - Seamless experience across web and mobile
+### Engagement Features
+- **Spending Alerts** - Configurable per-category alerts at warning and critical thresholds
+- **Email Reports** - Automated weekly/monthly email summaries with spending insights
+- **Search & Discovery** - Advanced transaction search with saved search functionality
+- **Budget Templates** - Pre-built category templates for different lifestyle types
 
-## Tech Stack
-
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| **Frontend (Web)** | React 18, TypeScript, Tailwind CSS | Latest |
-| **Frontend (Mobile)** | React Native, TypeScript | 0.72+ |
-| **Backend** | Node.js, Express, TypeScript | 18+ LTS |
-| **Database** | PostgreSQL | 13+ |
-| **Authentication** | JWT + bcrypt | - |
-| **Charts** | Recharts (web), react-native-svg-charts (mobile) | Latest |
-| **API Client** | Axios | Latest |
-| **Testing** | Jest, Vitest | Latest |
-| **Containerization** | Docker | Latest |
-
-## Quick Start
-
-### Prerequisites
-
-- Node.js 18+ LTS
-- PostgreSQL 13+
-- npm or yarn
-- Docker (optional, for containerized setup)
-
-### Development Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd budgeting-tool
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Backend
-   cd backend && npm install
-   
-   # Frontend
-   cd ../frontend && npm install
-   
-   # Mobile
-   cd ../mobile && npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   # Create .env file in backend directory
-   cp backend/.env.example backend/.env
-   
-   # Edit backend/.env with your configuration
-   ```
-
-4. **Start the database** (if not using Docker)
-   ```bash
-   # Create PostgreSQL database
-   psql -U postgres -c "CREATE DATABASE budgeting_tool"
-   ```
-
-5. **Start the development servers**
-   ```bash
-   # Terminal 1: Backend (runs on http://localhost:3000)
-   cd backend && npm run dev
-   
-   # Terminal 2: Frontend (runs on http://localhost:5173)
-   cd frontend && npm run dev
-   
-   # Terminal 3: Mobile (if using Expo)
-   cd mobile && npm run start
-   ```
-
-## Environment Variables
-
-### Backend (.env)
-
-```env
-NODE_ENV=development
-PORT=3000
-API_URL=http://localhost:3000
-DATABASE_URL=postgresql://user:password@localhost:5432/budgeting_tool
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=budgeting_tool
-DB_USER=postgres
-DB_PASSWORD=postgres
-JWT_SECRET=your-secret-key-here-change-in-production
-JWT_EXPIRY=7d
-FRONTEND_URL=http://localhost:5173
-SESSION_SECRET=your-session-secret
-```
-
-### Frontend (.env)
-
-```env
-VITE_API_URL=http://localhost:3000
-VITE_APP_NAME=Budgeting Tool
-```
-
-### Mobile (.env)
-
-```env
-API_URL=http://localhost:3000
-APP_ENV=development
-```
-
-## API Endpoints
-
-### Authentication
-- POST /auth/signup
-- POST /auth/login
-- POST /auth/logout
-- POST /auth/refresh-token
-- GET /auth/profile
-
-### Budgets
-- GET /budgets/:year/:month
-- POST /budgets
-- PUT /budgets/:id
-- DELETE /budgets/:id
-
-### Transactions
-- GET /transactions
-- POST /transactions
-- PUT /transactions/:id
-- DELETE /transactions/:id
-- POST /transactions/import
-
-### Analytics
-- GET /analytics
-- GET /analytics/trends
-- GET /analytics/spending-by-category
-
-### Settings
-- GET /settings
-- PUT /settings
-
-## Database Schema
-
-The database automatically initializes on server startup. Key tables:
-
-- **users** - User accounts and authentication
-- **budgets** - Monthly budgets with targets
-- **categories** - Expense categories
-- **transactions** - Income and expense transactions
-- **user_settings** - User preferences
-- **investments** - Portfolio tracking
-- **subscriptions** - Recurring payments
-- **budget_rules** - Custom alerts
-- **financial_snapshots** - Net worth history
-
-## Development Guide
-
-### Running Tests
-
-```bash
-cd backend && npm run test
-cd frontend && npm run test
-```
-
-### Building for Production
-
-```bash
-cd backend && npm run build
-cd frontend && npm run build
-cd mobile && npm run build:ios
-```
-
-### Code Formatting
-
-```bash
-npm run format
-npm run lint
-npm run lint:fix
-```
-
-## Deployment
-
-### Using Docker Compose
-
-```bash
-docker-compose up --build
-```
-
-Access at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:5000
-- PostgreSQL: localhost:5432
-
-### Production Checklist
-
-- [ ] Enable HTTPS/SSL
-- [ ] Set secure JWT secret
-- [ ] Configure database backups
-- [ ] Set up error tracking (Sentry)
-- [ ] Enable logging and monitoring
-- [ ] Configure CORS for production domains
-- [ ] Enable rate limiting
-- [ ] Set up CI/CD pipeline
-- [ ] Configure database pooling
-- [ ] Enable query caching
-
-## Performance Optimization
+## 🚀 Quick Start
 
 ### Backend
-- Database connection pooling
-- Query optimization with indexes
-- API response caching
-- Compression middleware (gzip)
-- Request rate limiting
+```bash
+cd backend
+npm install
+npm run build
+PORT=5000 npm start
+```
 
 ### Frontend
-- Code splitting and lazy loading
-- Image optimization
-- CSS minification
-- Service worker for offline support
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-### Mobile
-- Image caching with AsyncStorage
-- Lazy loading screens
-- Optimized re-renders
-- Network request debouncing
+**Access**:
+- Frontend: http://localhost:3000
+- API: http://localhost:5000/api
+- API Docs: http://localhost:5000/api-docs/
 
-## Troubleshooting
+## 📚 API Documentation
 
-**Database connection failed**
-- Ensure PostgreSQL is running
-- Check DATABASE_URL in .env
+### Interactive Swagger UI
+Navigate to: **http://localhost:5000/api-docs/**
 
-**Port already in use**
-- Kill the process: `lsof -i :3000 | grep LISTEN | awk '{print $2}' | xargs kill -9`
+### Key Phase 4 Endpoints
 
-**CORS errors**
-- Update FRONTEND_URL in backend .env
+**Projections**:
+```
+GET    /api/phase4/projections           - 90-day summary
+GET    /api/phase4/projections/detailed  - Day-by-day data
+POST   /api/phase4/projections/recurring - Add recurring item
+POST   /api/phase4/projections/refresh   - Recalculate
+```
 
-**Mobile can't connect to backend**
-- Check API_URL in mobile .env
-- Use ngrok for local device testing
+**Analytics**:
+```
+GET    /api/phase4/analytics/summary          - Monthly analytics
+GET    /api/phase4/analytics/month/:year/:month - Month-specific
+GET    /api/phase4/analytics/trends/seasonal - Seasonal patterns
+POST   /api/phase4/analytics/refresh         - Refresh data
+```
 
-## Security
+All endpoints require JWT authentication:
+```bash
+Authorization: Bearer <YOUR_TOKEN>
+```
 
-- Passwords hashed with bcrypt (10+ rounds)
-- JWT tokens with short expiry
-- HTTPS enforced in production
-- Parameterized SQL queries
-- CORS configured for specific origins
-- Rate limiting on auth endpoints
-- 2FA support
+## 🗄️ Database Setup
 
-## License
+```bash
+# PostgreSQL connection
+DATABASE_URL=postgresql://user:password@localhost:5432/budgeting_tool
 
-MIT License - see LICENSE file for details.
+# Create database
+createdb budgeting_tool
 
-## Roadmap
+# Run migrations
+cd backend
+npm run migrate
+```
 
-- ✅ Core budgeting (Phases 1-3)
-- ✅ Web frontend (Phases 4-7)
-- ✅ Mobile app (Phase 8)
-- 🔄 Plaid integration
-- 🔄 Bill tracking
-- 🔄 Household sharing
+## 🔧 Configuration
+
+See `.env.example` for all configuration options:
+- Database connection
+- JWT secret
+- Email service (SMTP)
+- Plaid API keys
+- CORS settings
+
+## 🧪 Test the API
+
+```bash
+# Sign up a user
+curl -X POST http://localhost:5000/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"password123"}'
+
+# Get projections
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://localhost:5000/api/phase4/projections
+```
+
+## 📊 Project Status
+
+**Completed Phases**:
+- ✅ Phase 1: Core Budgeting (Dark Mode & Export)
+- ✅ Phase 2: Spending Alerts & Email Reports
+- ✅ Phase 3: Advanced Search & Budget Templates  
+- ✅ Phase 4: Advanced Analytics & 90-Day Projections
+- ✅ Phase 5-7, 9-10: Additional Features & Polish
+
+**Current Focus**: Documentation and API exploration
+
+## 🤝 Development
+
+### Environment Variables
+```env
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=postgresql://user:password@localhost:5432/budgeting_tool
+JWT_SECRET=dev-secret-change-in-production
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Available Scripts
+
+**Backend**:
+- `npm run build` - Compile TypeScript
+- `npm run dev` - Start with auto-reload
+- `npm start` - Start production build
+- `npm test` - Run tests
+- `npm run migrate` - Run database migrations
+
+**Frontend**:
+- `npm run dev` - Start dev server
+- `npm run build` - Build for production
+- `npm run lint` - Run ESLint
+- `npm test` - Run tests
+
+## 🔐 Security Notes
+
+- JWT tokens expire after 7 days
+- Passwords are hashed with bcrypt
+- All API endpoints validated and sanitized
+- CORS configured for authorized origins only
+- Environment variables keep secrets secure
+
+## 📈 Performance Highlights
+
+- 90-day projections calculated on-demand
+- Daily background jobs at 2:00 AM for analytics
+- 28 database indexes for fast queries
+- Frontend bundle optimized with code splitting
+
+## 🚢 Production Deployment
+
+1. Set production environment variables
+2. Use a production database (RDS, Supabase, etc.)
+3. Enable HTTPS/SSL
+4. Configure email service for alerts
+5. Set up database backups
+6. Enable monitoring and error tracking
+
+## 📞 Support & Issues
+
+For bugs or feature requests, check the existing GitHub issues or create a new one with:
+- Steps to reproduce
+- Expected behavior
+- Actual behavior
+- Browser/Node version
+
+## 📄 License
+
+MIT - Open source and free for personal or commercial use
 
 ---
 
-**Version**: 1.0.0
-**Last Updated**: May 27, 2026
+**Last Updated**: May 28, 2026  
+**Current Version**: 1.0.0  
+**Status**: Production Ready ✅
