@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import SearchAnalytics from '../components/SearchAnalytics';
 
 interface Transaction {
   id: number;
@@ -186,39 +187,48 @@ const AdvancedSearchPage: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Advanced Search</h1>
 
-      {/* Saved Searches */}
-      {savedSearches.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Saved Searches</h2>
-          <div className="flex flex-wrap gap-2">
-            {savedSearches.map((search) => (
-              <div
-                key={search.id}
-                className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 px-3 py-2 rounded-full"
-              >
-                <button
-                  onClick={() => loadSavedSearch(search)}
-                  className="font-medium hover:underline"
-                >
-                  {search.name}
-                </button>
-                <button
-                  onClick={() => toggleSearchFavorite(search.id)}
-                  className="text-lg"
-                >
-                  {search.isFavorite ? '⭐' : '☆'}
-                </button>
-                <button
-                  onClick={() => deleteSavedSearch(search.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ×
-                </button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Saved Searches */}
+        <div className="lg:col-span-2">
+          {savedSearches.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Saved Searches</h2>
+              <div className="flex flex-wrap gap-2">
+                {savedSearches.map((search) => (
+                  <div
+                    key={search.id}
+                    className="flex items-center gap-2 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 px-3 py-2 rounded-full"
+                  >
+                    <button
+                      onClick={() => loadSavedSearch(search)}
+                      className="font-medium hover:underline"
+                    >
+                      {search.name}
+                    </button>
+                    <button
+                      onClick={() => toggleSearchFavorite(search.id)}
+                      className="text-lg"
+                    >
+                      {search.isFavorite ? '⭐' : '☆'}
+                    </button>
+                    <button
+                      onClick={() => deleteSavedSearch(search.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Search Analytics Sidebar */}
+        <div className="lg:col-span-1">
+          <SearchAnalytics />
+        </div>
+      </div>
 
       {/* Search Filters */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-6">
