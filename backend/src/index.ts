@@ -23,8 +23,12 @@ import settingsRoutes from './routes/settings';
 import notificationRoutes from './routes/notifications';
 import reportRoutes from './routes/reports';
 import smartRulesRoutes from './routes/smart-rules';
+import alertRoutes from './routes/alerts';
+import emailReportsRoutes from './routes/emailReports';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
+import { initializeScheduler } from './jobs/reportSchedulerJob';
+import { verifyEmailConfiguration } from './services/emailService';
 
 const app = express();
 
@@ -77,6 +81,8 @@ app.use('/api/user/settings', settingsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/smart-rules', smartRulesRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/email-reports', emailReportsRoutes);
 console.log('Routes configured');
 
 // 404 handler
@@ -93,6 +99,12 @@ async function startServer() {
   try {
     // Initialize database schema
     await initializeDatabase();
+
+    // Verify email configuration
+    await verifyEmailConfiguration();
+
+    // Initialize report and alert scheduler
+    initializeScheduler();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

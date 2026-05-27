@@ -24,6 +24,7 @@ import SettingsPage from './pages/SettingsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
 import SmartRulesPage from './pages/SmartRulesPage';
+import AlertsPage from './pages/AlertsPage';
 import Layout from './components/Layout';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -209,6 +210,16 @@ function AppContent() {
           <ProtectedRoute>
             <Layout>
               <SmartRulesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/alerts"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AlertsPage />
             </Layout>
           </ProtectedRoute>
         }

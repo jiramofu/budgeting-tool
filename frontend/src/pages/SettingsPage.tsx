@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { apiClient } from '../services/api';
+import EmailReportSettings from '../components/EmailReportSettings';
 
 interface UserSettings {
   userId: number;
@@ -91,6 +92,7 @@ const SettingsPage: React.FC = () => {
             {[
               { id: 'appearance', label: '🎨 Appearance' },
               { id: 'notifications', label: '🔔 Notifications' },
+              { id: 'email-reports', label: '📧 Email Reports' },
               { id: 'privacy', label: '🔒 Privacy & Security' },
               { id: 'account', label: '👤 Account' },
             ].map((tab) => (
@@ -208,6 +210,11 @@ const SettingsPage: React.FC = () => {
                 <p className="text-sm text-gray-600 dark:text-gray-400 ml-7">Receive real-time notifications on your device.</p>
               </div>
             </>
+          )}
+
+          {/* Email Reports Tab */}
+          {activeTab === 'email-reports' && (
+            <EmailReportSettings />
           )}
 
           {/* Privacy & Security Tab */}

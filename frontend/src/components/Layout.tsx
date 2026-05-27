@@ -137,6 +137,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 >
                   Reports
                 </button>
+                <button
+                  onClick={() => navigate('/alerts')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                    isActive('/alerts') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Alerts
+                </button>
               </div>
             </div>
             <div className="flex items-center space-x-4">
