@@ -25,6 +25,7 @@ import reportRoutes from './routes/reports';
 import smartRulesRoutes from './routes/smart-rules';
 import alertRoutes from './routes/alerts';
 import emailReportsRoutes from './routes/emailReports';
+import searchRoutes from './routes/search';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { initializeScheduler } from './jobs/reportSchedulerJob';
@@ -83,6 +84,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/smart-rules', smartRulesRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/email-reports', emailReportsRoutes);
+app.use('/api/search', searchRoutes);
 console.log('Routes configured');
 
 // 404 handler
