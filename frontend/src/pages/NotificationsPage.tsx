@@ -74,15 +74,15 @@ const NotificationsPage: React.FC = () => {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case 'budget_alert':
-        return 'border-l-4 border-red-500 bg-red-50';
+        return 'border-l-4 border-red-500 dark:border-red-600 bg-red-50 dark:bg-red-900';
       case 'transaction':
-        return 'border-l-4 border-blue-500 bg-blue-50';
+        return 'border-l-4 border-blue-500 dark:border-blue-600 bg-blue-50 dark:bg-blue-900';
       case 'goal_update':
-        return 'border-l-4 border-green-500 bg-green-50';
+        return 'border-l-4 border-green-500 dark:border-green-600 bg-green-50 dark:bg-green-900';
       case 'monthly_report':
-        return 'border-l-4 border-purple-500 bg-purple-50';
+        return 'border-l-4 border-purple-500 dark:border-purple-600 bg-purple-50 dark:bg-purple-900';
       default:
-        return 'border-l-4 border-gray-500 bg-gray-50';
+        return 'border-l-4 border-gray-500 dark:border-gray-600 bg-gray-50 dark:bg-gray-800';
     }
   };
 
@@ -104,7 +104,7 @@ const NotificationsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-lg text-gray-500">Loading notifications...</div>
+        <div className="text-lg text-gray-500 dark:text-gray-400">Loading notifications...</div>
       </div>
     );
   }
@@ -112,10 +112,10 @@ const NotificationsPage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Notifications</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Notifications</h1>
         {unreadCount > 0 && (
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               {unreadCount} unread {unreadCount === 1 ? 'notification' : 'notifications'}
             </span>
             <button
@@ -131,8 +131,8 @@ const NotificationsPage: React.FC = () => {
       {notifications.length === 0 ? (
         <div className="text-center py-16">
           <div className="text-4xl mb-4">🔔</div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No notifications yet</h2>
-          <p className="text-gray-500">
+          <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No notifications yet</h2>
+          <p className="text-gray-500 dark:text-gray-400">
             You'll receive notifications about budget alerts, transactions, and reports here.
           </p>
         </div>
@@ -149,9 +149,9 @@ const NotificationsPage: React.FC = () => {
                 <div className="flex items-start gap-4 flex-1">
                   <span className="text-2xl">{getNotificationIcon(notification.type)}</span>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">{notification.title}</h3>
-                    <p className="text-gray-600 mt-1">{notification.message}</p>
-                    <p className="text-xs text-gray-500 mt-2">{formatDate(notification.created_at)}</p>
+                    <h3 className="font-semibold text-gray-800 dark:text-white">{notification.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300 mt-1">{notification.message}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatDate(notification.created_at)}</p>
                   </div>
                 </div>
                 {!notification.read_at && (

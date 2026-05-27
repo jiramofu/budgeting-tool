@@ -79,17 +79,17 @@ export default function ImportCSVPage() {
     return (
       <Layout>
         <div className="p-8 max-w-2xl mx-auto">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h2 className="text-2xl font-bold text-green-800 mb-4">Import Complete!</h2>
-            <p className="text-green-700 mb-2">
+          <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-green-800 dark:text-green-200 mb-4">Import Complete!</h2>
+            <p className="text-green-700 dark:text-green-300 mb-2">
               Successfully imported <strong>{result.imported}</strong> transactions
             </p>
             {result.duplicates > 0 && (
-              <p className="text-yellow-600 mb-2">
+              <p className="text-yellow-600 dark:text-yellow-400 mb-2">
                 Skipped <strong>{result.duplicates}</strong> duplicate transactions
               </p>
             )}
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
               Redirecting to dashboard...
             </p>
           </div>
@@ -101,39 +101,39 @@ export default function ImportCSVPage() {
   return (
     <Layout>
       <div className="p-8 max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Import Transactions from CSV</h1>
+        <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Import Transactions from CSV</h1>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               CSV File
             </label>
             <input
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               disabled={loading}
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               Upload a CSV file with headers in the first row
             </p>
           </div>
 
           {preview.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Preview (first 3 lines)
               </label>
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-3 text-xs font-mono space-y-1 max-h-24 overflow-auto">
+              <div className="bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-3 text-xs font-mono space-y-1 max-h-24 overflow-auto">
                 {preview.map((line, i) => (
-                  <div key={i} className="text-gray-700">
+                  <div key={i} className="text-gray-700 dark:text-gray-300">
                     {line}
                   </div>
                 ))}
@@ -143,28 +143,28 @@ export default function ImportCSVPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Date Column Name
               </label>
               <input
                 type="text"
                 value={dateColumn}
                 onChange={(e) => setDateColumn(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="e.g., date, Date, transaction_date"
                 disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Amount Column Name
               </label>
               <input
                 type="text"
                 value={amountColumn}
                 onChange={(e) => setAmountColumn(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="e.g., amount, Amount, value"
                 disabled={loading}
               />
@@ -172,14 +172,14 @@ export default function ImportCSVPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description Column Name
             </label>
             <input
               type="text"
               value={descriptionColumn}
               onChange={(e) => setDescriptionColumn(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               placeholder="e.g., description, Description, memo"
               disabled={loading}
             />
@@ -187,28 +187,28 @@ export default function ImportCSVPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Budget (Optional)
               </label>
               <input
                 type="text"
                 value={budgetId}
                 onChange={(e) => setBudgetId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Budget ID"
                 disabled={loading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Category (Optional)
               </label>
               <input
                 type="text"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Category ID"
                 disabled={loading}
               />
@@ -224,12 +224,12 @@ export default function ImportCSVPage() {
           </button>
         </form>
 
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">CSV Format</h3>
-          <p className="text-sm text-blue-800 mb-2">
+        <div className="mt-8 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">CSV Format</h3>
+          <p className="text-sm text-blue-800 dark:text-blue-300 mb-2">
             Your CSV file should have headers in the first row and include at least these columns:
           </p>
-          <ul className="text-sm text-blue-800 space-y-1 ml-4">
+          <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1 ml-4">
             <li>• A date column (e.g., Date, date, Transaction Date)</li>
             <li>• An amount column (e.g., Amount, amount, Value)</li>
             <li>• A description column (e.g., Description, Memo, Payee)</li>
