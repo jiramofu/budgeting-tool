@@ -64,15 +64,15 @@ const Dashboard: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading...</div>;
+    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
         {budget && (
-          <div className="text-gray-600">
+          <div className="text-gray-600 dark:text-gray-400">
             {new Date(budget.year, budget.month - 1).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">{error}</div>}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
@@ -94,7 +94,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div>
-        <h2 className="text-2xl font-bold mb-4">Recent Transactions</h2>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Recent Transactions</h2>
         <TransactionList transactions={transactions} />
       </div>
     </div>

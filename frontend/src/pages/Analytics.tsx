@@ -114,37 +114,37 @@ const Analytics: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading analytics...</div>;
+    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading analytics...</div>;
   }
 
   if (error) {
-    return <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>;
+    return <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">{error}</div>;
   }
 
   if (!analysis) {
-    return <div className="text-center py-8">No data available</div>;
+    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">No data available</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Spending Analytics</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Spending Analytics</h1>
 
         <div className="flex items-center gap-4 mb-6">
           <button
             onClick={handlePreviousPeriod}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm font-medium text-gray-900 dark:text-white"
           >
             ← Previous
           </button>
 
           <div className="flex-1">
-            <span className="text-lg font-semibold">{analysis.period}</span>
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">{analysis.period}</span>
           </div>
 
           <button
             onClick={handleNextPeriod}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded text-sm font-medium text-gray-900 dark:text-white"
           >
             Next →
           </button>
@@ -153,7 +153,7 @@ const Analytics: React.FC = () => {
             <button
               onClick={() => setViewType('monthly')}
               className={`px-4 py-2 rounded text-sm font-medium ${
-                viewType === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                viewType === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
               }`}
             >
               Monthly
@@ -161,7 +161,7 @@ const Analytics: React.FC = () => {
             <button
               onClick={() => setViewType('yearly')}
               className={`px-4 py-2 rounded text-sm font-medium ${
-                viewType === 'yearly' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'
+                viewType === 'yearly' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
               }`}
             >
               Yearly
@@ -172,43 +172,43 @@ const Analytics: React.FC = () => {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-600 text-sm font-medium">Total Income</div>
-          <div className="text-2xl font-bold text-green-600 mt-2">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Income</div>
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
             ${Number(analysis.totalIncome).toFixed(2)}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-600 text-sm font-medium">Total Expenses</div>
-          <div className="text-2xl font-bold text-red-600 mt-2">
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Expenses</div>
+          <div className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
             ${Number(analysis.totalExpenses).toFixed(2)}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-600 text-sm font-medium">Net Cash Flow</div>
-          <div className={`text-2xl font-bold mt-2 ${Number(analysis.netCashFlow) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Net Cash Flow</div>
+          <div className={`text-2xl font-bold mt-2 ${Number(analysis.netCashFlow) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             ${Number(analysis.netCashFlow).toFixed(2)}
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <div className="text-gray-600 text-sm font-medium">Savings Rate</div>
-          <div className="text-2xl font-bold text-blue-600 mt-2">{Number(analysis.savingsRate).toFixed(1)}%</div>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Savings Rate</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">{Number(analysis.savingsRate).toFixed(1)}%</div>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Trends */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Monthly Trends</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Monthly Trends</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={analysis.monthlyTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ccc" />
+              <XAxis dataKey="month" stroke="#666" />
+              <YAxis stroke="#666" />
               <Tooltip formatter={(value) => `$${Number(value).toFixed(2)}`} />
               <Legend />
               <Line type="monotone" dataKey="totalIncome" stroke="#10b981" name="Income" />
@@ -219,8 +219,8 @@ const Analytics: React.FC = () => {
         </div>
 
         {/* Category Distribution */}
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Spending by Category</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Spending by Category</h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -243,25 +243,25 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* Top Categories Table */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">Top Spending Categories</h2>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Top Spending Categories</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
               <tr>
-                <th className="text-left px-4 py-2 font-semibold">Category</th>
-                <th className="text-right px-4 py-2 font-semibold">Amount</th>
-                <th className="text-right px-4 py-2 font-semibold">% of Total</th>
-                <th className="text-right px-4 py-2 font-semibold">Transactions</th>
+                <th className="text-left px-4 py-2 font-semibold text-gray-900 dark:text-white">Category</th>
+                <th className="text-right px-4 py-2 font-semibold text-gray-900 dark:text-white">Amount</th>
+                <th className="text-right px-4 py-2 font-semibold text-gray-900 dark:text-white">% of Total</th>
+                <th className="text-right px-4 py-2 font-semibold text-gray-900 dark:text-white">Transactions</th>
               </tr>
             </thead>
             <tbody>
               {analysis.topCategories.map((category, index) => (
-                <tr key={category.categoryId} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="px-4 py-3">{category.categoryName}</td>
-                  <td className="text-right px-4 py-3 font-semibold">${Number(category.amount).toFixed(2)}</td>
-                  <td className="text-right px-4 py-3">{Number(category.percentage).toFixed(1)}%</td>
-                  <td className="text-right px-4 py-3 text-gray-600">{category.transactionCount}</td>
+                <tr key={category.categoryId} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
+                  <td className="px-4 py-3 text-gray-900 dark:text-white">{category.categoryName}</td>
+                  <td className="text-right px-4 py-3 font-semibold text-gray-900 dark:text-white">${Number(category.amount).toFixed(2)}</td>
+                  <td className="text-right px-4 py-3 text-gray-900 dark:text-white">{Number(category.percentage).toFixed(1)}%</td>
+                  <td className="text-right px-4 py-3 text-gray-600 dark:text-gray-400">{category.transactionCount}</td>
                 </tr>
               ))}
             </tbody>
@@ -270,28 +270,28 @@ const Analytics: React.FC = () => {
       </div>
 
       {/* All Categories */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-bold mb-4">All Categories</h2>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">All Categories</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {analysis.categoryBreakdown.map((category) => (
-            <div key={category.categoryId} className="border rounded-lg p-4">
+            <div key={category.categoryId} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 dark:bg-gray-700">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <div className="font-semibold">{category.categoryName}</div>
-                  <div className="text-sm text-gray-500 capitalize">{category.type}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{category.categoryName}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">{category.type}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold">${Number(category.amount).toFixed(2)}</div>
-                  <div className="text-sm text-gray-500">{Number(category.percentage).toFixed(1)}%</div>
+                  <div className="font-bold text-gray-900 dark:text-white">${Number(category.amount).toFixed(2)}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{Number(category.percentage).toFixed(1)}%</div>
                 </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                 <div
                   className="bg-blue-500 h-2 rounded-full"
                   style={{ width: `${Math.min(category.percentage, 100)}%` }}
                 ></div>
               </div>
-              <div className="text-xs text-gray-500 mt-2">{category.transactionCount} transactions</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{category.transactionCount} transactions</div>
             </div>
           ))}
         </div>
