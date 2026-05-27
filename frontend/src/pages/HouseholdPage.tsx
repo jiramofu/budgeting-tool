@@ -180,15 +180,15 @@ export const HouseholdPage = () => {
   };
 
   if (loading) {
-    return <div className="p-8 text-center">Loading households...</div>;
+    return <div className="p-8 text-center text-gray-700 dark:text-gray-300">Loading households...</div>;
   }
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-8">Household & Sharing</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Household & Sharing</h1>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 rounded">
           {error}
         </div>
       )}
@@ -196,13 +196,13 @@ export const HouseholdPage = () => {
       {/* Pending Invitations */}
       {pendingInvitations.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Pending Invitations</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Pending Invitations</h2>
           <div className="space-y-2">
             {pendingInvitations.map((invitation) => (
-              <div key={invitation.id} className="p-4 bg-blue-50 border border-blue-200 rounded flex items-center justify-between">
+              <div key={invitation.id} className="p-4 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Join household from {invitation.household_id}</p>
-                  <p className="text-sm text-gray-600">Role: {invitation.role}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">Join household from {invitation.household_id}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Role: {invitation.role}</p>
                 </div>
                 <button
                   onClick={() => handleAcceptInvitation(invitation.token)}
@@ -220,7 +220,7 @@ export const HouseholdPage = () => {
         {/* Households List */}
         <div className="lg:col-span-1">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Your Households</h2>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">Your Households</h2>
             <button
               onClick={() => setShowCreateForm(!showCreateForm)}
               className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
@@ -230,20 +230,20 @@ export const HouseholdPage = () => {
           </div>
 
           {showCreateForm && (
-            <form onSubmit={handleCreateHousehold} className="mb-6 p-4 border rounded bg-gray-50">
+            <form onSubmit={handleCreateHousehold} className="mb-6 p-4 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
               <input
                 type="text"
                 placeholder="Household name"
                 value={createFormData.name}
                 onChange={(e) => setCreateFormData({ ...createFormData, name: e.target.value })}
-                className="w-full px-3 py-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-2 bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-600"
                 required
               />
               <textarea
                 placeholder="Description (optional)"
                 value={createFormData.description}
                 onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
-                className="w-full px-3 py-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-green-600"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-3 bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-600"
                 rows={2}
               />
               <div className="flex gap-2">
@@ -256,7 +256,7 @@ export const HouseholdPage = () => {
                 <button
                   type="button"
                   onClick={() => setShowCreateForm(false)}
-                  className="flex-1 px-3 py-2 border rounded hover:bg-gray-100"
+                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
                 >
                   Cancel
                 </button>
@@ -266,7 +266,7 @@ export const HouseholdPage = () => {
 
           <div className="space-y-2">
             {households.length === 0 ? (
-              <p className="p-4 text-gray-500 text-center">No households yet. Create one to get started!</p>
+              <p className="p-4 text-gray-500 dark:text-gray-400 text-center">No households yet. Create one to get started!</p>
             ) : (
               households.map((household) => (
                 <button
@@ -274,13 +274,13 @@ export const HouseholdPage = () => {
                   onClick={() => setSelectedHousehold(household.id)}
                   className={`w-full text-left p-4 rounded border transition ${
                     selectedHousehold === household.id
-                      ? 'bg-blue-100 border-blue-400'
-                      : 'bg-white border-gray-200 hover:border-gray-300'
+                      ? 'bg-blue-100 dark:bg-blue-900 border-blue-400 dark:border-blue-600 text-gray-900 dark:text-white'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-900 dark:text-white'
                   }`}
                 >
                   <p className="font-semibold">{household.name}</p>
                   {household.description && (
-                    <p className="text-sm text-gray-600">{household.description}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{household.description}</p>
                   )}
                 </button>
               ))
@@ -294,7 +294,7 @@ export const HouseholdPage = () => {
             {/* Members Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold">Members</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Members</h3>
                 <button
                   onClick={() => setShowInviteForm(!showInviteForm)}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -304,19 +304,19 @@ export const HouseholdPage = () => {
               </div>
 
               {showInviteForm && (
-                <form onSubmit={handleInviteMember} className="mb-6 p-4 border rounded bg-gray-50">
+                <form onSubmit={handleInviteMember} className="mb-6 p-4 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700">
                   <input
                     type="email"
                     placeholder="Email address"
                     value={inviteFormData.email}
                     onChange={(e) => setInviteFormData({ ...inviteFormData, email: e.target.value })}
-                    className="w-full px-3 py-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-2 bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                     required
                   />
                   <select
                     value={inviteFormData.role}
                     onChange={(e) => setInviteFormData({ ...inviteFormData, role: e.target.value as any })}
-                    className="w-full px-3 py-2 border rounded mb-3 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded mb-3 bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     <option value="viewer">Viewer (read-only)</option>
                     <option value="editor">Editor (can modify)</option>
@@ -332,7 +332,7 @@ export const HouseholdPage = () => {
                     <button
                       type="button"
                       onClick={() => setShowInviteForm(false)}
-                      className="flex-1 px-3 py-2 border rounded hover:bg-gray-100"
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-900 dark:text-white"
                     >
                       Cancel
                     </button>
@@ -342,11 +342,11 @@ export const HouseholdPage = () => {
 
               <div className="space-y-3">
                 {members.map((member) => (
-                  <div key={member.id} className="p-4 border rounded flex items-center justify-between">
+                  <div key={member.id} className="p-4 border border-gray-300 dark:border-gray-600 rounded flex items-center justify-between bg-white dark:bg-gray-800">
                     <div>
-                      <p className="font-medium">{member.email}</p>
+                      <p className="font-medium text-gray-900 dark:text-white">{member.email}</p>
                       {member.firstName && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
                           {member.firstName} {member.lastName}
                         </p>
                       )}
@@ -355,7 +355,7 @@ export const HouseholdPage = () => {
                       <select
                         value={member.role}
                         onChange={(e) => handleUpdateMemberRole(member.id, e.target.value)}
-                        className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                       >
                         <option value="viewer">Viewer</option>
                         <option value="editor">Editor</option>
@@ -376,15 +376,15 @@ export const HouseholdPage = () => {
             {/* Pending Invitations for this Household */}
             {invitations.filter(i => !i.is_accepted).length > 0 && (
               <div>
-                <h3 className="text-xl font-semibold mb-4">Pending Invitations</h3>
+                <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Pending Invitations</h3>
                 <div className="space-y-3">
                   {invitations
                     .filter((i) => !i.is_accepted)
                     .map((invitation) => (
-                      <div key={invitation.id} className="p-4 border rounded bg-yellow-50">
-                        <p className="font-medium">{invitation.invited_email}</p>
-                        <p className="text-sm text-gray-600">Role: {invitation.role}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                      <div key={invitation.id} className="p-4 border border-yellow-300 dark:border-yellow-700 rounded bg-yellow-50 dark:bg-yellow-900">
+                        <p className="font-medium text-gray-900 dark:text-white">{invitation.invited_email}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Role: {invitation.role}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Expires: {new Date(invitation.expires_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -394,7 +394,7 @@ export const HouseholdPage = () => {
             )}
 
             {/* Delete Household */}
-            <div className="pt-6 border-t">
+            <div className="pt-6 border-t border-gray-300 dark:border-gray-700">
               <button
                 onClick={() => handleDeleteHousehold(selectedHousehold)}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"

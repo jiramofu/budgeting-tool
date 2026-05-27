@@ -148,14 +148,14 @@ const ReportsPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8">Reports & Analytics</h1>
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Reports & Analytics</h1>
 
       {downloadMessage && (
         <div
           className={`mb-6 p-4 rounded ${
             downloadMessage.includes('successfully')
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-100 text-red-700'
+              ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+              : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
           }`}
         >
           {downloadMessage}
@@ -164,19 +164,19 @@ const ReportsPage: React.FC = () => {
 
       <div className="space-y-8">
         {/* Monthly Report Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">Monthly Report</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Monthly Report</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Download a detailed report of your spending for a specific month.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Month</label>
               <select
                 value={selectedMonth || ''}
                 onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {months.map((month, index) => (
                   <option key={index} value={index + 1}>
@@ -187,11 +187,11 @@ const ReportsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year</label>
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {metadata?.availableYears.map((year) => (
                   <option key={year} value={year}>
@@ -221,18 +221,18 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Annual Report Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">Annual Report</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Annual Report</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Download a comprehensive report covering all 12 months of a year.
           </p>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year</label>
             <select
               value={selectedYear || ''}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {metadata?.availableYears.map((year) => (
                 <option key={year} value={year}>
@@ -252,18 +252,18 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Spending Trends Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4">Spending Trends</h2>
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Spending Trends</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
             Analyze your spending patterns over multiple months.
           </p>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Time Period</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
             <select
               value={selectedTrendMonths}
               onChange={(e) => setSelectedTrendMonths(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {metadata?.trendMonths.map((months) => (
                 <option key={months} value={months}>
@@ -283,9 +283,9 @@ const ReportsPage: React.FC = () => {
         </div>
 
         {/* Information Section */}
-        <div className="bg-blue-50 rounded-lg p-6 border-l-4 border-blue-500">
-          <h3 className="font-semibold text-blue-900 mb-2">💡 Report Information</h3>
-          <ul className="text-sm text-blue-800 space-y-1">
+        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-6 border-l-4 border-blue-500">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Report Information</h3>
+          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
             <li>• PDF reports include formatted summaries and charts</li>
             <li>• CSV files can be imported into spreadsheets for further analysis</li>
             <li>• Reports include all transactions and budget information</li>

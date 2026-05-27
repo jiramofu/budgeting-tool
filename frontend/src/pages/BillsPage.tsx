@@ -156,13 +156,13 @@ const BillsPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8">Loading bills...</div>;
+    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading bills...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Bills & Recurring Expenses</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bills & Recurring Expenses</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -171,54 +171,54 @@ const BillsPage: React.FC = () => {
         </button>
       </div>
 
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
+      {error && <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">{error}</div>}
 
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-gray-600 text-sm font-medium">Total Upcoming (30 days)</div>
-            <div className="text-2xl font-bold text-blue-600 mt-2">${Number(summary.totalUpcoming).toFixed(2)}</div>
-            <div className="text-xs text-gray-500 mt-2">{bills.length} bills tracked</div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Upcoming (30 days)</div>
+            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">${Number(summary.totalUpcoming).toFixed(2)}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{bills.length} bills tracked</div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-gray-600 text-sm font-medium">Due This Month</div>
-            <div className="text-2xl font-bold text-orange-600 mt-2">${Number(summary.billsDueThisMonth).toFixed(2)}</div>
-            <div className="text-xs text-gray-500 mt-2">Bills to pay soon</div>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Due This Month</div>
+            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">${Number(summary.billsDueThisMonth).toFixed(2)}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Bills to pay soon</div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow">
-            <div className="text-gray-600 text-sm font-medium">Overdue</div>
-            <div className={`text-2xl font-bold mt-2 ${summary.overdueBills > 0 ? 'text-red-600' : 'text-green-600'}`}>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Overdue</div>
+            <div className={`text-2xl font-bold mt-2 ${summary.overdueBills > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
               {summary.overdueBills} bill{summary.overdueBills !== 1 ? 's' : ''}
             </div>
-            <div className="text-xs text-gray-500 mt-2">Action needed</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Action needed</div>
           </div>
         </div>
       )}
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">{editingId ? 'Edit Bill' : 'Add New Bill'}</h2>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{editingId ? 'Edit Bill' : 'Add New Bill'}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Bill Name *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bill Name *</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
                   placeholder="e.g., Electricity Bill"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Amount *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Amount *</label>
                 <input
                   type="number"
                   name="amount"
@@ -226,13 +226,13 @@ const BillsPage: React.FC = () => {
                   onChange={handleInputChange}
                   placeholder="0.00"
                   step="0.01"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Due Day of Month *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Due Day of Month *</label>
                 <input
                   type="number"
                   name="dueDateDay"
@@ -240,18 +240,18 @@ const BillsPage: React.FC = () => {
                   onChange={handleInputChange}
                   min="1"
                   max="31"
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Frequency *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Frequency *</label>
                 <select
                   name="frequency"
                   value={formData.frequency}
                   onChange={handleInputChange}
-                  className="w-full border rounded-lg px-4 py-2"
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
                   <option value="monthly">Monthly</option>
                   <option value="quarterly">Quarterly</option>
@@ -262,14 +262,14 @@ const BillsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Notes</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notes</label>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
                 placeholder="Add any notes..."
                 rows={3}
-                className="w-full border rounded-lg px-4 py-2"
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
             </div>
 
@@ -283,7 +283,7 @@ const BillsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-white rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500"
               >
                 Cancel
               </button>
@@ -293,35 +293,35 @@ const BillsPage: React.FC = () => {
       )}
 
       {/* Bills Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <h2 className="text-xl font-bold p-6 border-b">All Bills</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <h2 className="text-xl font-bold p-6 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white">All Bills</h2>
         {bills.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">No bills tracked yet. Add one to get started!</div>
+          <div className="p-6 text-center text-gray-500 dark:text-gray-400">No bills tracked yet. Add one to get started!</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                 <tr>
-                  <th className="text-left px-6 py-3 font-semibold">Name</th>
-                  <th className="text-right px-6 py-3 font-semibold">Amount</th>
-                  <th className="text-left px-6 py-3 font-semibold">Frequency</th>
-                  <th className="text-left px-6 py-3 font-semibold">Due Date</th>
-                  <th className="text-left px-6 py-3 font-semibold">Next Due</th>
-                  <th className="text-center px-6 py-3 font-semibold">Status</th>
-                  <th className="text-center px-6 py-3 font-semibold">Actions</th>
+                  <th className="text-left px-6 py-3 font-semibold text-gray-900 dark:text-white">Name</th>
+                  <th className="text-right px-6 py-3 font-semibold text-gray-900 dark:text-white">Amount</th>
+                  <th className="text-left px-6 py-3 font-semibold text-gray-900 dark:text-white">Frequency</th>
+                  <th className="text-left px-6 py-3 font-semibold text-gray-900 dark:text-white">Due Date</th>
+                  <th className="text-left px-6 py-3 font-semibold text-gray-900 dark:text-white">Next Due</th>
+                  <th className="text-center px-6 py-3 font-semibold text-gray-900 dark:text-white">Status</th>
+                  <th className="text-center px-6 py-3 font-semibold text-gray-900 dark:text-white">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {bills.map((bill, index) => (
-                  <tr key={bill.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <tr key={bill.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
                     <td className="px-6 py-4">
-                      <div className="font-medium">{bill.name}</div>
-                      {bill.categoryName && <div className="text-sm text-gray-500">{bill.categoryName}</div>}
+                      <div className="font-medium text-gray-900 dark:text-white">{bill.name}</div>
+                      {bill.categoryName && <div className="text-sm text-gray-500 dark:text-gray-400">{bill.categoryName}</div>}
                     </td>
-                    <td className="text-right px-6 py-4 font-semibold">${Number(bill.amount).toFixed(2)}</td>
-                    <td className="px-6 py-4 capitalize">{bill.frequency}</td>
-                    <td className="px-6 py-4">Day {bill.due_date_day}</td>
-                    <td className="px-6 py-4">
+                    <td className="text-right px-6 py-4 font-semibold text-gray-900 dark:text-white">${Number(bill.amount).toFixed(2)}</td>
+                    <td className="px-6 py-4 capitalize text-gray-900 dark:text-white">{bill.frequency}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">Day {bill.due_date_day}</td>
+                    <td className="px-6 py-4 text-gray-900 dark:text-white">
                       {new Date(bill.next_due_date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -330,7 +330,7 @@ const BillsPage: React.FC = () => {
                     <td className="text-center px-6 py-4">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          bill.is_paid ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          bill.is_paid ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300'
                         }`}
                       >
                         {bill.is_paid ? 'Paid' : 'Pending'}
