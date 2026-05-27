@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider } from './components/Toast';
 import { DashboardSkeleton } from './components/SkeletonLoader';
@@ -221,12 +222,14 @@ function App() {
   return (
     <ErrorBoundary>
       <ToastProvider>
-        <Router>
-          <AuthProvider>
-            <OfflineDetector />
-            <AppContent />
-          </AuthProvider>
-        </Router>
+        <ThemeProvider>
+          <Router>
+            <AuthProvider>
+              <OfflineDetector />
+              <AppContent />
+            </AuthProvider>
+          </Router>
+        </ThemeProvider>
       </ToastProvider>
     </ErrorBoundary>
   );
