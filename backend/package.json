@@ -8,6 +8,7 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "migrate": "node dist/database/migrate.js",
+    "seed": "ts-node src/scripts/seedTestData.ts",
     "test": "jest",
     "lint": "eslint src/**/*.ts"
   },
@@ -37,6 +38,7 @@
     "@types/bcrypt": "^5.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.17",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^20.19.41",

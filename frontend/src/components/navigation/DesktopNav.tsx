@@ -95,7 +95,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
   return (
     <div
       className={`
-        hidden lg:flex flex-col h-screen fixed left-0 top-0 z-40 bg-color-bg-primary border-r border-color-border-primary transition-all duration-300
+        hidden lg:flex flex-col fixed left-0 top-16 bottom-0 z-40 bg-color-bg-primary border-r border-color-border-primary transition-all duration-300
         ${isSidebarCollapsed ? 'w-20' : 'w-64'}
       `}
       style={{
@@ -103,35 +103,9 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
         borderColor: 'var(--color-border-primary)',
       }}
     >
-      {/* Header */}
-      <div
-        className={`
-          flex items-center justify-between h-16 px-4 border-b border-color-border-primary
-          ${isSidebarCollapsed ? 'justify-center' : ''}
-        `}
-        style={{ borderColor: 'var(--color-border-primary)' }}
-      >
-        {!isSidebarCollapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white font-bold text-sm">BT</span>
-            </div>
-            <span className="font-semibold text-sm text-color-text-primary">Budget</span>
-          </div>
-        )}
-
-        <button
-          onClick={onToggleCollapse}
-          className="p-2 hover:bg-color-bg-secondary rounded-md transition-colors"
-          style={{ color: 'var(--color-text-secondary)' }}
-          title={isSidebarCollapsed ? 'Expand' : 'Collapse'}
-        >
-          {isSidebarCollapsed ? <Menu size={18} /> : <X size={18} />}
-        </button>
-      </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto py-4">
+      <div className="flex-1 overflow-y-auto py-2">
         <nav className="space-y-1 px-2">
           {mainNavItems.map((item) => (
             <button
@@ -210,7 +184,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
 
       {/* Footer */}
       <div
-        className="border-t border-color-border-primary p-4"
+        className="border-t border-color-border-primary p-2"
         style={{ borderColor: 'var(--color-border-primary)' }}
       >
         <button

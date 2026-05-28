@@ -202,7 +202,7 @@
 }
 
 .hover-scale-sm {
-  @apply transition-transform hover:scale-102;
+  @apply transition-transform hover:scale-105;
 }
 
 /* Active/pressed states */
@@ -275,7 +275,7 @@
 
 /* Smooth grid animations */
 .grid-fade-in {
-  @apply animate-in fade-in duration-500;
+  animation: fadeIn 0.5s ease-out;
 }
 
 /* Tooltip animations */

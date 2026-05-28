@@ -143,12 +143,12 @@ const Dashboard: React.FC = () => {
       : 0;
 
     setMetrics({
-      totalSpending,
-      budgetRemaining,
-      budgetLimit,
-      income: totalIncome,
-      avgDailySpending,
-      spendingTrend,
+      totalSpending: Number(totalSpending) || 0,
+      budgetRemaining: Number(budgetRemaining) || 0,
+      budgetLimit: Number(budgetLimit) || 0,
+      income: Number(totalIncome) || 0,
+      avgDailySpending: Number(avgDailySpending) || 0,
+      spendingTrend: Number(spendingTrend) || 0,
     });
   };
 
@@ -197,9 +197,9 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="flex flex-col items-start md:items-end gap-2">
             <div className="text-2xl font-bold text-slate-50">
-              ${metrics.totalSpending.toFixed(2)}
+              ${(Number(metrics.totalSpending) || 0).toFixed(2)}
             </div>
-            <p className="text-sm text-slate-400">of ${metrics.budgetLimit.toFixed(2)} budget</p>
+            <p className="text-sm text-slate-400">of ${(Number(metrics.budgetLimit) || 0).toFixed(2)} budget</p>
           </div>
         </div>
 
@@ -233,8 +233,8 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Total expenses for the current month" position="bottom">
           <MetricCard
             title="Total Spending"
-            value={`$${metrics.totalSpending.toFixed(2)}`}
-            subtitle={`of $${metrics.budgetLimit.toFixed(2)}`}
+            value={`$${(Number(metrics.totalSpending) || 0).toFixed(2)}`}
+            subtitle={`of $${(Number(metrics.budgetLimit) || 0).toFixed(2)}`}
             icon={<DollarSign className="w-5 h-5" />}
             trend={{
               direction: metrics.spendingTrend > 0 ? 'up' : 'down',
@@ -248,7 +248,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="How much budget you have left this month" position="bottom">
           <MetricCard
             title="Budget Remaining"
-            value={`$${metrics.budgetRemaining.toFixed(2)}`}
+            value={`$${(Number(metrics.budgetRemaining) || 0).toFixed(2)}`}
             subtitle={metrics.budgetRemaining > 0 ? 'You\'re on track' : 'Over budget'}
             icon={<Wallet className="w-5 h-5" />}
             variant={metrics.budgetRemaining > 0 ? 'success' : 'danger'}
@@ -258,7 +258,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Average spending per day based on days elapsed" position="bottom">
           <MetricCard
             title="Average Daily"
-            value={`$${metrics.avgDailySpending.toFixed(2)}`}
+            value={`$${(Number(metrics.avgDailySpending) || 0).toFixed(2)}`}
             subtitle="This month"
             icon={<TrendingUp className="w-5 h-5" />}
             variant="default"
@@ -268,7 +268,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Total income received this month" position="bottom">
           <MetricCard
             title="Income"
-            value={`$${metrics.income.toFixed(2)}`}
+            value={`$${(metrics.income || 0).toFixed(2)}`}
             subtitle="This month"
             icon={<DollarSign className="w-5 h-5" />}
             variant="success"

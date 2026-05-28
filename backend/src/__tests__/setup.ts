@@ -1,57 +1,61 @@
-﻿import { pool } from "../config/database";
+﻿// Mock database for testing (PostgreSQL not available in test environment)
+const mockDatabase: Record<string, any[]> = {
+  users: [],
+  budgets: [],
+  categories: [],
+  transactions: [],
+  households: [],
+  household_members: [],
+  household_invitations: [],
+  budget_targets: [],
+  bank_connections: [],
+  user_settings: [],
+  investments: [],
+  subscriptions: [],
+  financial_snapshots: [],
+  budget_rules: [],
+  notifications: [],
+};
+
+let nextIds: Record<string, number> = {
+  users: 1,
+  budgets: 1,
+  categories: 1,
+  transactions: 1,
+  households: 1,
+};
 
 export const setupTestDB = async () => {
-  try {
-    const client = await pool.connect();
-    
-    await client.query("BEGIN");
-    
-    const tables = [
-      "notifications",
-      "household_budgets",
-      "household_invitations",
-      "household_members",
-      "households",
-      "budget_rules",
-      "financial_snapshots",
-      "subscriptions",
-      "investments",
-      "user_settings",
-      "bank_connections",
-      "budget_targets",
-      "transactions",
-      "budgets",
-      "categories",
-      "users",
-    ];
-    
-    for (const table of tables) {
-      await client.query(`TRUNCATE TABLE ${table} CASCADE`);
-    }
-    
-    await client.query("COMMIT");
-    client.release();
-  } catch (error) {
-    console.error("Error setting up test database:", error);
-    throw error;
-  }
+  // Reset mock database
+  Object.keys(mockDatabase).forEach(key => {
+    mockDatabase[key] = [];
+  });
+  Object.keys(nextIds).forEach(key => {
+    nextIds[key] = 1;
+  });
 };
 
 export const teardownTestDB = async () => {
-  await pool.end();
+  // Cleanup mock database
+  Object.keys(mockDatabase).forEach(key => {
+    mockDatabase[key] = [];
+  });
 };
 
 export const createTestUser = async (
   email: string = "test@example.com",
   password: string = "password123"
 ) => {
-  const result = await pool.query(
-    `INSERT INTO users (email, password_hash, created_at)
-     VALUES ($1, $2, NOW())
-     RETURNING id, email`,
-    [email, password]
-  );
-  return result.rows[0];
+  const id = nextIds.users++;
+  const user = {
+    id,
+    email,
+    password_hash: password,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+  mockDatabase.users.push(user);
+  return { id, email };
 };
 
 export const createTestBudget = async (
@@ -59,26 +63,35 @@ export const createTestBudget = async (
   month: number = 5,
   year: number = 2026
 ) => {
-  const result = await pool.query(
-    `INSERT INTO budgets (user_id, month, year, total_budgeted, created_at)
-     VALUES ($1, $2, $3, $4, NOW())
-     RETURNING id`,
-    [userId, month, year, 5000]
-  );
-  return result.rows[0];
+  const id = nextIds.budgets++;
+  const budget = {
+    id,
+    user_id: userId,
+    month,
+    year,
+    total_budgeted: 5000,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+  mockDatabase.budgets.push(budget);
+  return { id };
 };
 
 export const createTestCategory = async (
   userId: number,
   name: string = "Groceries"
 ) => {
-  const result = await pool.query(
-    `INSERT INTO categories (user_id, name, type, created_at)
-     VALUES ($1, $2, $3, NOW())
-     RETURNING id`,
-    [userId, name, "variable"]
-  );
-  return result.rows[0];
+  const id = nextIds.categories++;
+  const category = {
+    id,
+    user_id: userId,
+    name,
+    type: "variable",
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+  mockDatabase.categories.push(category);
+  return { id };
 };
 
 export const createTestTransaction = async (
@@ -87,11 +100,18 @@ export const createTestTransaction = async (
   amount: number = -50,
   description: string = "Test transaction"
 ) => {
-  const result = await pool.query(
-    `INSERT INTO transactions (user_id, date, amount, description, category_id, source, created_at)
-     VALUES ($1, NOW(), $2, $3, $4, $5, NOW())
-     RETURNING id`,
-    [userId, amount, description, categoryId, "manual"]
-  );
-  return result.rows[0];
+  const id = nextIds.transactions++;
+  const transaction = {
+    id,
+    user_id: userId,
+    date: new Date(),
+    amount,
+    description,
+    category_id: categoryId,
+    source: "manual",
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+  mockDatabase.transactions.push(transaction);
+  return { id };
 };
