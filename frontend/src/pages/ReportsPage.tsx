@@ -8,6 +8,8 @@ import {
   SpendingChart,
   CategoryBreakdown,
 } from '../components/reports';
+import { useToast } from '../hooks/useToast';
+import { Tooltip, HelpIcon } from '../components/ui/tooltip';
 
 interface Transaction {
   id: number;
@@ -31,6 +33,7 @@ interface CategoryData {
 }
 
 const ReportsPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [activeReport, setActiveReport] = useState<ReportType>('spending-trend');
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -193,7 +196,8 @@ const ReportsPage: React.FC = () => {
       : 0;
 
   const handleExportPDF = () => {
-    const content = `
+    try {
+      const content = `
 Spending Report
 Period: ${selectedPeriod}
 
@@ -207,16 +211,20 @@ Categories:
 ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.percentage.toFixed(1)}%)`).join('\n')}
     `.trim();
 
-    const element = document.createElement('a');
-    element.setAttribute(
-      'href',
-      'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
-    );
-    element.setAttribute('download', `report-${selectedPeriod}.txt`);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+      const element = document.createElement('a');
+      element.setAttribute(
+        'href',
+        'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
+      );
+      element.setAttribute('download', `report-${selectedPeriod}.txt`);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      success('Report exported successfully');
+    } catch (err) {
+      showError('Failed to export report');
+    }
   };
 
   return (
@@ -255,39 +263,47 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Total Spending</p>
-          <p className="text-3xl font-bold text-red-400 mb-1">
-            ${totalSpending.toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
-        </div>
+        <Tooltip content="All expenses in the selected period" position="bottom">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-slate-400 text-sm font-medium mb-2">Total Spending</p>
+            <p className="text-3xl font-bold text-red-400 mb-1">
+              ${totalSpending.toFixed(2)}
+            </p>
+            <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
+          </div>
+        </Tooltip>
 
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Total Income</p>
-          <p className="text-3xl font-bold text-green-400 mb-1">
-            ${totalIncome.toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
-        </div>
+        <Tooltip content="All income received in the selected period" position="bottom">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-slate-400 text-sm font-medium mb-2">Total Income</p>
+            <p className="text-3xl font-bold text-green-400 mb-1">
+              ${totalIncome.toFixed(2)}
+            </p>
+            <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
+          </div>
+        </Tooltip>
 
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Net Change</p>
-          <p className={`text-3xl font-bold mb-1 ${
-            totalIncome - totalSpending >= 0 ? 'text-green-400' : 'text-red-400'
-          }`}>
-            ${(totalIncome - totalSpending).toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-500">Income - Expenses</p>
-        </div>
+        <Tooltip content="Total income minus total expenses for the period" position="bottom">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-slate-400 text-sm font-medium mb-2">Net Change</p>
+            <p className={`text-3xl font-bold mb-1 ${
+              totalIncome - totalSpending >= 0 ? 'text-green-400' : 'text-red-400'
+            }`}>
+              ${(totalIncome - totalSpending).toFixed(2)}
+            </p>
+            <p className="text-xs text-slate-500">Income - Expenses</p>
+          </div>
+        </Tooltip>
 
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Daily Average</p>
-          <p className="text-3xl font-bold text-slate-50 mb-1">
-            ${averageDailySpending.toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-500">Per day</p>
-        </div>
+        <Tooltip content="Average daily spending across the selected period" position="bottom">
+          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-slate-400 text-sm font-medium mb-2">Daily Average</p>
+            <p className="text-3xl font-bold text-slate-50 mb-1">
+              ${averageDailySpending.toFixed(2)}
+            </p>
+            <p className="text-xs text-slate-500">Per day</p>
+          </div>
+        </Tooltip>
       </div>
 
       {/* Report content */}

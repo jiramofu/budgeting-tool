@@ -42,10 +42,17 @@ const EmailPreferencesPage: React.FC = () => {
   const [testEmailSent, setTestEmailSent] = useState(false);
 
   // Form state for new report
-  const [newReport, setNewReport] = useState({
-    reportType: 'spending' as const,
+  const [newReport, setNewReport] = useState<{
+    reportType: 'spending' | 'budget' | 'alert' | 'summary';
+    recipientEmail: string;
+    frequency: 'daily' | 'weekly' | 'monthly';
+    scheduledDayOfWeek: number;
+    scheduledDayOfMonth: number;
+    scheduledTime: string;
+  }>({
+    reportType: 'spending',
     recipientEmail: '',
-    frequency: 'weekly' as const,
+    frequency: 'weekly',
     scheduledDayOfWeek: 1,
     scheduledDayOfMonth: 1,
     scheduledTime: '09:00',

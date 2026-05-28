@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface NetWorthSnapshot {
@@ -40,6 +43,7 @@ interface SavingsRateAnalysis {
 }
 
 const WellnessPage: React.FC = () => {
+  const { error: showError } = useToast();
   const [netWorth, setNetWorth] = useState<NetWorthSnapshot | null>(null);
   const [debtPlans, setDebtPlans] = useState<DebtPayoffPlan[]>([]);
   const [taxInsights, setTaxInsights] = useState<TaxInsight[]>([]);
@@ -70,14 +74,20 @@ const WellnessPage: React.FC = () => {
       setSavingsAnalysis(savingsRes.data);
     } catch (err: any) {
       console.error('Failed to load wellness data:', err);
-      setError('Failed to load wellness data');
+      const errorMsg = 'Failed to load wellness data';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading wellness data...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (

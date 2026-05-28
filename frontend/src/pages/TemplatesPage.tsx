@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 
 interface BudgetTemplate {
   id: string;
@@ -21,6 +24,7 @@ interface CategorySuggestion {
 }
 
 const TemplatesPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [templates, setTemplates] = useState<BudgetTemplate[]>([]);
   const [suggestions, setSuggestions] = useState<CategorySuggestion[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<BudgetTemplate | null>(null);
@@ -48,7 +52,9 @@ const TemplatesPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to load templates:', err);
-      setError('Failed to load budget templates');
+      const errorMsg = 'Failed to load budget templates';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +69,9 @@ const TemplatesPage: React.FC = () => {
       const budgetId = budgetRes.data?.id;
 
       if (!budgetId || !selectedTemplate) {
-        setError('Budget not found');
+        const errorMsg = 'Budget not found';
+        setError(errorMsg);
+        showError(errorMsg);
         return;
       }
 
@@ -71,24 +79,34 @@ const TemplatesPage: React.FC = () => {
         data: { budgetId },
       });
 
+      success('Template applied successfully');
       setShowApplyConfirm(false);
       setSelectedTemplate(null);
       // Optionally reload or redirect
       window.location.href = '/';
     } catch (err: any) {
       console.error('Failed to apply template:', err);
-      setError('Failed to apply template');
+      const errorMsg = 'Failed to apply template';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading budget templates...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Budget Templates</h1>
+        <div className="flex items-center gap-2 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Budget Templates</h1>
+          <HelpIcon text="Choose a pre-built budget template to apply recommended categories and spending targets to your budget" position="right" />
+        </div>
         <p className="text-gray-600 dark:text-gray-400">
           Choose a pre-built budget template to get started quickly with recommended categories and spending percentages.
         </p>

@@ -1,13 +1,20 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { BillsService } from '../services/bills-service';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 
 const router = Router();
 
 console.log('[Bills Routes] Loading bills routes...');
 
 // Get all bills
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Bills] GET all bills');
   try {
     if (!req.userId) {
@@ -23,7 +30,12 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Get bill summary
-router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/summary',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Bills] GET summary');
   try {
     if (!req.userId) {
@@ -39,7 +51,12 @@ router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Get upcoming bills (next 30 days)
-router.get('/upcoming', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/upcoming',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Bills] GET upcoming bills');
   try {
     if (!req.userId) {
@@ -56,7 +73,12 @@ router.get('/upcoming', authenticate, async (req: AuthRequest, res: Response) =>
 });
 
 // Get single bill
-router.get('/:billId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/:billId',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Bills] GET bill by id');
   try {
     if (!req.userId) {
@@ -78,7 +100,12 @@ router.get('/:billId', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Create bill
-router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.post(
+  '/',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Bills] POST create bill');
   try {
     if (!req.userId) {

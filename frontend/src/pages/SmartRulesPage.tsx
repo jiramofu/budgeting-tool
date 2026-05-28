@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
-import { useToast } from '../components/Toast';
-import { Skeleton, TableSkeleton } from '../components/SkeletonLoader';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 
 interface Recommendation {
   categoryId: number;
@@ -27,7 +28,7 @@ const SmartRulesPage: React.FC = () => {
   const [alerts, setAlerts] = useState<SpendingAlert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'recommendations' | 'alerts'>('recommendations');
-  const { addToast } = useToast();
+  const { success, error: showError } = useToast();
 
   useEffect(() => {
     loadSmartInsights();
@@ -43,9 +44,11 @@ const SmartRulesPage: React.FC = () => {
 
       setRecommendations(recsRes.data.recommendations || []);
       setAlerts(alertsRes.data.alerts || []);
+      success('Smart insights refreshed successfully');
     } catch (error: any) {
-      addToast('Failed to load smart insights', 'error');
-      console.error(error);
+      console.error('Failed to load smart insights:', error);
+      const errorMsg = 'Failed to load smart insights';
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +74,10 @@ const SmartRulesPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Budget Insights</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Smart Budget Insights</h1>
+          <HelpIcon text="AI-powered recommendations and alerts based on your spending patterns and budget targets" position="right" />
+        </div>
         <button
           onClick={loadSmartInsights}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -104,7 +110,9 @@ const SmartRulesPage: React.FC = () => {
       </div>
 
       {isLoading ? (
-        <TableSkeleton />
+        <div className="space-y-4">
+          <SkeletonCard count={3} />
+        </div>
       ) : activeTab === 'recommendations' ? (
         <RecommendationsView recommendations={recommendations} getPriorityColor={getPriorityColor} />
       ) : (

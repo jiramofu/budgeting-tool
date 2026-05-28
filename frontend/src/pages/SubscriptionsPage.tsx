@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 
 interface Subscription {
   id: number;
@@ -18,6 +21,7 @@ interface SubscriptionSummary {
 }
 
 const SubscriptionsPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,7 +47,9 @@ const SubscriptionsPage: React.FC = () => {
       setSummary(response.data);
     } catch (err: any) {
       console.error('Failed to load subscriptions:', err);
-      setError('Failed to load subscriptions');
+      const errorMsg = 'Failed to load subscriptions';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -79,11 +85,14 @@ const SubscriptionsPage: React.FC = () => {
         categoryId: '',
         notes: '',
       });
+      success('Subscription added successfully');
       setShowForm(false);
       await loadSubscriptions();
     } catch (err: any) {
       console.error('Failed to add subscription:', err);
-      setError('Failed to add subscription');
+      const errorMsg = 'Failed to add subscription';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -91,22 +100,32 @@ const SubscriptionsPage: React.FC = () => {
     if (window.confirm('Are you sure you want to cancel this subscription?')) {
       try {
         await apiClient.put(`/subscriptions/${id}/cancel`, {});
+        success('Subscription cancelled successfully');
         await loadSubscriptions();
       } catch (err: any) {
         console.error('Failed to cancel subscription:', err);
-        setError('Failed to cancel subscription');
+        const errorMsg = 'Failed to cancel subscription';
+        setError(errorMsg);
+        showError(errorMsg);
       }
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading subscriptions...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscriptions & Memberships</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscriptions & Memberships</h1>
+          <HelpIcon text="Track all your recurring subscriptions and memberships in one place" position="right" />
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

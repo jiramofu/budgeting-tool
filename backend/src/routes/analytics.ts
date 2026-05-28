@@ -1,13 +1,20 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { AnalyticsService } from '../services/analytics-service';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 
 const router = Router();
 
 console.log('[Analytics Routes] Loading analytics routes...');
 
 // Get monthly spending analysis
-router.get('/monthly/:year/:month', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/monthly/:year/:month',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Analytics] GET monthly analysis');
   try {
     if (!req.userId) {
@@ -30,7 +37,12 @@ router.get('/monthly/:year/:month', authenticate, async (req: AuthRequest, res: 
 });
 
 // Get yearly spending analysis
-router.get('/yearly/:year', authenticate, async (req: AuthRequest, res: Response) => {
+router.get(
+  '/yearly/:year',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Analytics] GET yearly analysis');
   try {
     if (!req.userId) {

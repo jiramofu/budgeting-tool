@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 
 interface Investment {
   id: number;
@@ -25,6 +28,7 @@ interface PortfolioSummary {
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 const InvestmentsPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [portfolio, setPortfolio] = useState<PortfolioSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,7 +55,9 @@ const InvestmentsPage: React.FC = () => {
       setPortfolio(response.data);
     } catch (err: any) {
       console.error('Failed to load portfolio:', err);
-      setError('Failed to load portfolio data');
+      const errorMsg = 'Failed to load portfolio data';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +84,7 @@ const InvestmentsPage: React.FC = () => {
         purchaseDate: formData.purchaseDate,
       });
 
+      success('Investment added successfully');
       setFormData({
         name: '',
         type: 'stocks',
@@ -91,18 +98,27 @@ const InvestmentsPage: React.FC = () => {
       await loadPortfolio();
     } catch (err: any) {
       console.error('Failed to add investment:', err);
-      setError('Failed to add investment');
+      const errorMsg = 'Failed to add investment';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading portfolio...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
+          <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"

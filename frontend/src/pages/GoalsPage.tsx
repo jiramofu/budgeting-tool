@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { exportGoalsToExcel } from '../services/excelExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { HelpIcon } from '../components/ui/tooltip';
 
 interface Goal {
   id: number;
@@ -42,6 +45,7 @@ const GoalTypeIcon: React.FC<{ type: string }> = ({ type }) => {
 };
 
 const GoalsPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [summary, setSummary] = useState<GoalSummary | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +78,9 @@ const GoalsPage: React.FC = () => {
       setGoals(summaryRes.data.goals);
     } catch (err: any) {
       console.error('Failed to load goals:', err);
-      setError('Failed to load goals');
+      const errorMsg = 'Failed to load goals';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -100,6 +106,7 @@ const GoalsPage: React.FC = () => {
           target_amount: parseFloat(formData.targetAmount),
           target_date: formData.targetDate,
         });
+        success('Goal updated successfully');
       } else {
         await apiClient.createGoal(
           formData.name,
@@ -109,6 +116,7 @@ const GoalsPage: React.FC = () => {
           formData.categoryId ? parseInt(formData.categoryId) : undefined,
           formData.description
         );
+        success('Goal created successfully');
       }
 
       setFormData({
@@ -124,7 +132,9 @@ const GoalsPage: React.FC = () => {
       await loadGoals();
     } catch (err: any) {
       console.error('Failed to save goal:', err);
-      setError('Failed to save goal');
+      const errorMsg = 'Failed to save goal';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -144,17 +154,22 @@ const GoalsPage: React.FC = () => {
   const handleAddProgress = async (goalId: number) => {
     try {
       if (!progressAmount) {
-        setError('Please enter an amount');
+        const errorMsg = 'Please enter an amount';
+        setError(errorMsg);
+        showError(errorMsg);
         return;
       }
 
       await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
+      success('Progress added successfully');
       setProgressAmount('');
       setShowProgressForm(null);
       await loadGoals();
     } catch (err: any) {
       console.error('Failed to add progress:', err);
-      setError('Failed to add progress');
+      const errorMsg = 'Failed to add progress';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -162,10 +177,13 @@ const GoalsPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this goal?')) {
       try {
         await apiClient.deleteGoal(goalId);
+        success('Goal deleted successfully');
         await loadGoals();
       } catch (err: any) {
         console.error('Failed to delete goal:', err);
-        setError('Failed to delete goal');
+        const errorMsg = 'Failed to delete goal';
+        setError(errorMsg);
+        showError(errorMsg);
       }
     }
   };
@@ -185,30 +203,43 @@ const GoalsPage: React.FC = () => {
 
   const handleExportToExcel = () => {
     if (!goals || goals.length === 0) {
-      alert('No goals to export');
+      showError('No goals to export');
       return;
     }
 
-    const goalsForExport = goals.map((goal) => ({
-      id: goal.id,
-      name: goal.name,
-      targetAmount: goal.target_amount,
-      currentAmount: goal.current_amount,
-      targetDate: goal.target_date || '',
-      progress: Math.round(goal.progress_percentage),
-    }));
+    try {
+      const goalsForExport = goals.map((goal) => ({
+        id: goal.id,
+        name: goal.name,
+        targetAmount: goal.target_amount,
+        currentAmount: goal.current_amount,
+        targetDate: goal.target_date || '',
+        progress: Math.round(goal.progress_percentage),
+      }));
 
-    exportGoalsToExcel(goalsForExport, `financial-goals-${new Date().toISOString().split('T')[0]}.xlsx`);
+      exportGoalsToExcel(goalsForExport, `financial-goals-${new Date().toISOString().split('T')[0]}.xlsx`);
+      success('Goals exported successfully');
+    } catch (err: any) {
+      console.error('Failed to export goals:', err);
+      showError('Failed to export goals');
+    }
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading goals...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Goals</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Financial Goals</h1>
+          <HelpIcon text="Track and manage your financial goals including savings, debt payoff, and investments" position="right" />
+        </div>
         <div className="flex gap-2">
           <button
             onClick={handleExportToExcel}

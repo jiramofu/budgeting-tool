@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { Tooltip, HelpIcon } from '../components/ui/tooltip';
 
 interface EnvelopeStatus {
   categoryId: number;
@@ -39,6 +42,7 @@ interface AdherenceRecord {
 }
 
 const AdvancedBudgetingPage: React.FC = () => {
+  const { error: showError } = useToast();
   const [envelopes, setEnvelopes] = useState<EnvelopeStatus[]>([]);
   const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
   const [recommendations, setRecommendations] = useState<BudgetRecommendation[]>([]);
@@ -71,7 +75,9 @@ const AdvancedBudgetingPage: React.FC = () => {
       setAdherence(adherenceRes.data || []);
     } catch (err: any) {
       console.error('Failed to load budgeting data:', err);
-      setError('Failed to load budgeting data');
+      const errorMsg = 'Failed to load budgeting data';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +104,11 @@ const AdvancedBudgetingPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading budgeting data...</div>;
+    return (
+      <div className="space-y-8">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
@@ -164,7 +174,10 @@ const AdvancedBudgetingPage: React.FC = () => {
       {/* Envelope Budgeting (Zero-Based) */}
       {envelopes.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Budget Envelopes (Zero-Based Budget)</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Budget Envelopes (Zero-Based Budget)</h2>
+            <HelpIcon text="Allocate every dollar to a specific category. When an envelope is empty, you've spent all that category's budget." position="top" />
+          </div>
           <div className="space-y-4">
             {envelopes.map((envelope) => (
               <div key={envelope.categoryId} className="border border-gray-200 dark:border-gray-700 rounded p-4">

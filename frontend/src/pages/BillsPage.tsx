@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { useToast } from '../hooks/useToast';
+import { SkeletonCard } from '../components/ui/loaders';
+import { Tooltip, HelpIcon } from '../components/ui/tooltip';
 
 interface Bill {
   id: number;
@@ -22,6 +25,7 @@ interface BillSummary {
 }
 
 const BillsPage: React.FC = () => {
+  const { success, error: showError } = useToast();
   const [summary, setSummary] = useState<BillSummary | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +56,9 @@ const BillsPage: React.FC = () => {
       setBills(summaryRes.data.bills);
     } catch (err: any) {
       console.error('Failed to load bills:', err);
-      setError('Failed to load bills');
+      const errorMsg = 'Failed to load bills';
+      setError(errorMsg);
+      showError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +85,7 @@ const BillsPage: React.FC = () => {
           category_id: formData.categoryId ? parseInt(formData.categoryId) : null,
           notes: formData.notes,
         });
+        success('Bill updated successfully');
       } else {
         await apiClient.createBill(
           formData.name,
@@ -88,6 +95,7 @@ const BillsPage: React.FC = () => {
           formData.categoryId ? parseInt(formData.categoryId) : undefined,
           formData.notes
         );
+        success('Bill created successfully');
       }
 
       setFormData({
@@ -103,7 +111,9 @@ const BillsPage: React.FC = () => {
       await loadBills();
     } catch (err: any) {
       console.error('Failed to save bill:', err);
-      setError('Failed to save bill');
+      const errorMsg = 'Failed to save bill';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -124,10 +134,13 @@ const BillsPage: React.FC = () => {
     if (window.confirm('Are you sure you want to delete this bill?')) {
       try {
         await apiClient.deleteBill(billId);
+        success('Bill deleted successfully');
         await loadBills();
       } catch (err: any) {
         console.error('Failed to delete bill:', err);
-        setError('Failed to delete bill');
+        const errorMsg = 'Failed to delete bill';
+        setError(errorMsg);
+        showError(errorMsg);
       }
     }
   };
@@ -135,10 +148,13 @@ const BillsPage: React.FC = () => {
   const handleMarkPaid = async (billId: number) => {
     try {
       await apiClient.markBillAsPaid(billId);
+      success('Bill marked as paid');
       await loadBills();
     } catch (err: any) {
       console.error('Failed to mark bill as paid:', err);
-      setError('Failed to mark bill as paid');
+      const errorMsg = 'Failed to mark bill as paid';
+      setError(errorMsg);
+      showError(errorMsg);
     }
   };
 
@@ -156,13 +172,20 @@ const BillsPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-700 dark:text-gray-300">Loading bills...</div>;
+    return (
+      <div className="space-y-4">
+        <SkeletonCard count={3} />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bills & Recurring Expenses</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Bills & Recurring Expenses</h1>
+          <HelpIcon text="Track upcoming bills and recurring payments" position="right" />
+        </div>
         <button
           onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -176,25 +199,31 @@ const BillsPage: React.FC = () => {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Upcoming (30 days)</div>
-            <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">${Number(summary.totalUpcoming).toFixed(2)}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{bills.length} bills tracked</div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Due This Month</div>
-            <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">${Number(summary.billsDueThisMonth).toFixed(2)}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Bills to pay soon</div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-            <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Overdue</div>
-            <div className={`text-2xl font-bold mt-2 ${summary.overdueBills > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-              {summary.overdueBills} bill{summary.overdueBills !== 1 ? 's' : ''}
+          <Tooltip content="All bills due within the next 30 days from today">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow cursor-help">
+              <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Upcoming (30 days)</div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">${Number(summary.totalUpcoming).toFixed(2)}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{bills.length} bills tracked</div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Action needed</div>
-          </div>
+          </Tooltip>
+
+          <Tooltip content="Bills that are scheduled to be due during the current month">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow cursor-help">
+              <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Due This Month</div>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">${Number(summary.billsDueThisMonth).toFixed(2)}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Bills to pay soon</div>
+            </div>
+          </Tooltip>
+
+          <Tooltip content="Bills that have already passed their due date and require immediate payment">
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow cursor-help">
+              <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Overdue</div>
+              <div className={`text-2xl font-bold mt-2 ${summary.overdueBills > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                {summary.overdueBills} bill{summary.overdueBills !== 1 ? 's' : ''}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Action needed</div>
+            </div>
+          </Tooltip>
         </div>
       )}
 

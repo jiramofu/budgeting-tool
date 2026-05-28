@@ -1,12 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import SearchModal from '../components/ui/search/SearchModal';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Setup keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      cmd: true,
+      callback: () => setSearchOpen(true),
+      description: 'Open search',
+      preventDefault: true,
+    },
+  ]);
 
   const handleLogout = () => {
     logout();
@@ -14,6 +29,38 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const isActive = (path: string) => location.pathname === path;
+
+  // Mock search results for now
+  const searchResults = [
+    {
+      id: 'dashboard',
+      title: 'Dashboard',
+      category: 'navigation' as const,
+      icon: '📊',
+      onSelect: () => navigate('/'),
+    },
+    {
+      id: 'reports',
+      title: 'Reports',
+      category: 'navigation' as const,
+      icon: '📈',
+      onSelect: () => navigate('/reports'),
+    },
+    {
+      id: 'budgets',
+      title: 'Budgets',
+      category: 'navigation' as const,
+      icon: '💰',
+      onSelect: () => navigate('/budgeting'),
+    },
+    {
+      id: 'analytics',
+      title: 'Analytics',
+      category: 'navigation' as const,
+      icon: '📉',
+      onSelect: () => navigate('/analytics'),
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -161,6 +208,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 >
                   Search
                 </button>
+                <button
+                  onClick={() => navigate('/projections')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                    isActive('/projections') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Projections
+                </button>
+                <button
+                  onClick={() => navigate('/phase4-analytics')}
+                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                    isActive('/phase4-analytics') ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Advanced Analytics
+                </button>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -183,6 +246,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </div>
       </nav>
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        results={searchResults}
+      />
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {children}
       </main>

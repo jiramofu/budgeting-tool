@@ -3,9 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, ToastContainer } from './components/ui/toast';
 import { DashboardSkeleton } from './components/SkeletonLoader';
 import OfflineDetector from './components/OfflineDetector';
+import { NavigationLayout } from './components/navigation';
+import './styles/animations.css';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
@@ -27,6 +29,8 @@ import SmartRulesPage from './pages/SmartRulesPage';
 import AlertsPage from './pages/AlertsPage';
 import EmailPreferencesPage from './pages/EmailPreferencesPage';
 import AdvancedSearchPage from './pages/AdvancedSearchPage';
+import ProjectionsPage from './pages/ProjectionsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import Layout from './components/Layout';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,11 +38,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (isLoading) {
     return (
-      <Layout>
+      <NavigationLayout>
         <div className="p-8">
           <DashboardSkeleton />
         </div>
-      </Layout>
+      </NavigationLayout>
     );
   }
 
@@ -46,7 +50,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" />;
   }
 
-  return <>{children}</>;
+  return <NavigationLayout>{children}</NavigationLayout>;
 };
 
 function AppContent() {
@@ -60,9 +64,7 @@ function AppContent() {
         path="/"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
+            <Dashboard />
           </ProtectedRoute>
         }
       />
@@ -246,6 +248,26 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/projections"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ProjectionsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/phase4-analytics"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <AnalyticsPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
@@ -260,6 +282,7 @@ function App() {
             <AuthProvider>
               <OfflineDetector />
               <AppContent />
+              <ToastContainer />
             </AuthProvider>
           </Router>
         </ThemeProvider>

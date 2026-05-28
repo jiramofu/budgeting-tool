@@ -28,10 +28,17 @@ import emailReportsRoutes from './routes/emailReports';
 import searchRoutes from './routes/search';
 import phase4ProjectionsRoutes from './routes/phase4-projections';
 import phase4AnalyticsRoutes from './routes/phase4-analytics';
+import organizationsRoutes from './routes/organizations';
+import auditLogsRoutes from './routes/auditLogs';
+import adminDashboardRoutes from './routes/adminDashboard';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
+import { auditRequestSetup, auditErrorLogger } from './middleware/auditLog';
+import { applyRateLimit } from './middleware/rateLimit';
+import { loadUserOrganizations } from './middleware/permissions';
 import { initializeScheduler } from './jobs/reportSchedulerJob';
 import { initializePhase4Jobs } from './jobs/phase4-calculation-jobs';
+import { initializeEnterpriseMetricsJobs } from './jobs/enterpriseMetricsJob';
 import { verifyEmailConfiguration } from './services/emailService';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
@@ -53,6 +60,22 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+
+// Phase 8: Enterprise Features Middleware (with feature flag)
+if (config.enableOrganizations) {
+  console.log('Enterprise Features enabled - initializing RBAC, audit logging, and rate limiting middleware');
+
+  // Request setup for audit and rate limiting context
+  app.use(auditRequestSetup);
+
+  // Rate limiting middleware (applied to all authenticated requests)
+  app.use(applyRateLimit);
+
+  // Load user organizations (populate req.userOrganizations)
+  app.use(loadUserOrganizations);
+} else {
+  console.log('Enterprise Features disabled - ENABLE_ORGANIZATIONS=false');
+}
 
 // Swagger JSON endpoint (must come before swagger-ui.serve)
 app.get('/api-docs/swagger.json', (req, res) => {
@@ -115,6 +138,18 @@ console.log('✓ Phase 4 projections routes mounted');
 console.log('Mounting Phase 4 analytics routes to /api/phase4/analytics...');
 app.use('/api/phase4/analytics', phase4AnalyticsRoutes);
 console.log('✓ Phase 4 analytics routes mounted');
+
+// Phase 8: Enterprise Features Routes (with feature flag)
+if (config.enableOrganizations) {
+  console.log('Mounting enterprise feature routes...');
+  app.use('/api/organizations', organizationsRoutes);
+  console.log('✓ Organizations routes mounted');
+  app.use('/api/audit-logs', auditLogsRoutes);
+  console.log('✓ Audit logs routes mounted');
+  app.use('/api/admin/dashboard', adminDashboardRoutes);
+  console.log('✓ Admin dashboard routes mounted');
+}
+
 console.log('Routes configured');
 console.log('Total middleware/routes in app stack:', app._router.stack.length);
 
@@ -122,6 +157,11 @@ console.log('Total middleware/routes in app stack:', app._router.stack.length);
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
+
+// Phase 8: Error handler for audit logging
+if (config.enableOrganizations) {
+  app.use(auditErrorLogger);
+}
 
 // Error handler
 app.use(errorHandler);
@@ -141,6 +181,11 @@ async function startServer() {
 
     // Initialize Phase 4 calculation jobs
     initializePhase4Jobs();
+
+    // Initialize Phase 8 enterprise metrics jobs (with feature flag)
+    if (config.enableOrganizations) {
+      initializeEnterpriseMetricsJobs();
+    }
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

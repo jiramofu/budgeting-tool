@@ -4,6 +4,8 @@ import Papa from 'papaparse';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { query } from '../config/database';
 import { TransactionCategorizer } from '../services/categorizer';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -45,7 +47,13 @@ function parseAmount(amountStr: string): number {
 }
 
 // CSV import endpoint
-router.post('/csv', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
+router.post(
+  '/csv',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  upload.single('file'),
+  async (req: PermissionRequest, res: Response) => {
   console.log('[Import] CSV upload received');
   try {
     if (!req.file) {
@@ -114,11 +122,12 @@ router.post('/csv', authenticate, upload.single('file'), async (req: AuthRequest
         const dupCheck = await query(
           `SELECT id FROM transactions
            WHERE user_id = $1
-           AND DATE(transaction_date) = $2
-           AND description = $3
-           AND amount = $4
+           AND organization_id = $2
+           AND DATE(transaction_date) = $3
+           AND description = $4
+           AND amount = $5
            LIMIT 1`,
-          [req.userId, txn.date, txn.description, txn.amount]
+          [req.userId, req.organizationId, txn.date, txn.description, txn.amount]
         );
 
         if (dupCheck.rows.length > 0) {
@@ -142,8 +151,8 @@ router.post('/csv', authenticate, upload.single('file'), async (req: AuthRequest
         // Insert the transaction
         await query(
           `INSERT INTO transactions
-           (user_id, budget_id, category_id, amount, description, transaction_date, transaction_type, source)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           (user_id, budget_id, category_id, amount, description, transaction_date, transaction_type, source, organization_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
           [
             req.userId,
             budgetId || null,
@@ -153,6 +162,7 @@ router.post('/csv', authenticate, upload.single('file'), async (req: AuthRequest
             txn.date,
             'expense',
             'csv',
+            req.organizationId,
           ]
         );
         successCount++;
