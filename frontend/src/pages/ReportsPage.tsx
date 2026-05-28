@@ -1,371 +1,388 @@
-import React, { useState, useEffect } from 'react';
-import { apiClient } from '../services/api';
-import { exportSpendingReportToExcel } from '../services/excelExport';
+import React, { useState, useMemo } from 'react';
+import { Download, AlertCircle } from 'lucide-react';
+import {
+  ReportTabs,
+  ReportType,
+  TimeSelector,
+  TimePeriod,
+  SpendingChart,
+  CategoryBreakdown,
+} from '../components/reports';
 
-interface ReportMetadata {
-  currentMonth: number;
-  currentYear: number;
-  availableYears: number[];
-  trendMonths: number[];
+interface Transaction {
+  id: number;
+  date: string;
+  amount: number;
+  category: string;
+  type: 'income' | 'expense';
+}
+
+interface ChartDataPoint {
+  date: string;
+  spending: number;
+  budget: number;
+  income: number;
+}
+
+interface CategoryData {
+  name: string;
+  value: number;
+  percentage: number;
 }
 
 const ReportsPage: React.FC = () => {
-  const [metadata, setMetadata] = useState<ReportMetadata | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedTrendMonths, setSelectedTrendMonths] = useState<number>(12);
-  const [loading, setLoading] = useState(false);
-  const [downloadMessage, setDownloadMessage] = useState('');
+  const [activeReport, setActiveReport] = useState<ReportType>('spending-trend');
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
-  useEffect(() => {
-    loadMetadata();
-  }, []);
-
-  const loadMetadata = async () => {
-    try {
-      const response = await apiClient.get('/reports/metadata');
-      setMetadata(response.data);
-      setSelectedMonth(response.data.currentMonth);
-      setSelectedYear(response.data.currentYear);
-    } catch (error) {
-      console.error('Failed to load report metadata:', error);
-    }
-  };
-
-  const handleDownloadMonthlyPDF = async () => {
-    try {
-      setLoading(true);
-      setDownloadMessage('');
-      const response = await apiClient.get('/reports/monthly/pdf', {
-        params: { month: selectedMonth, year: selectedYear },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        `budget-report-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.pdf`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-
-      setDownloadMessage('PDF downloaded successfully!');
-    } catch (error) {
-      console.error('Failed to download PDF:', error);
-      setDownloadMessage('Failed to download PDF. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadMonthlyCSV = async () => {
-    try {
-      setLoading(true);
-      setDownloadMessage('');
-      const response = await apiClient.get('/reports/monthly/csv', {
-        params: { month: selectedMonth, year: selectedYear },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute(
-        'download',
-        `budget-report-${selectedYear}-${String(selectedMonth).padStart(2, '0')}.csv`
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-
-      setDownloadMessage('CSV downloaded successfully!');
-    } catch (error) {
-      console.error('Failed to download CSV:', error);
-      setDownloadMessage('Failed to download CSV. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadAnnualCSV = async () => {
-    try {
-      setLoading(true);
-      setDownloadMessage('');
-      const response = await apiClient.get('/reports/annual/csv', {
-        params: { year: selectedYear },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `annual-report-${selectedYear}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-
-      setDownloadMessage('Annual report downloaded successfully!');
-    } catch (error) {
-      console.error('Failed to download annual report:', error);
-      setDownloadMessage('Failed to download annual report. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadSpendingTrends = async () => {
-    try {
-      setLoading(true);
-      setDownloadMessage('');
-      const response = await apiClient.get('/reports/spending-trends/csv', {
-        params: { months: selectedTrendMonths },
-        responseType: 'blob',
-      });
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `spending-trends-${selectedTrendMonths}m.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-
-      setDownloadMessage('Spending trends downloaded successfully!');
-    } catch (error) {
-      console.error('Failed to download spending trends:', error);
-      setDownloadMessage('Failed to download spending trends. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleExportToExcel = async () => {
-    try {
-      setLoading(true);
-      setDownloadMessage('');
-
-      // Fetch report data for Excel export
-      const response = await apiClient.get('/reports/data', {
-        params: { months: selectedTrendMonths },
-      });
-
-      if (response.data && Array.isArray(response.data)) {
-        const reportData = response.data.map((item: any) => ({
-          month: item.month || item.name,
-          income: item.income || 0,
-          expenses: item.expenses || 0,
-          netCashFlow: (item.income || 0) - (item.expenses || 0),
-          savingsRate: item.savingsRate || 0,
-          topCategories: item.topCategories || [],
-        }));
-
-        exportSpendingReportToExcel(
-          reportData,
-          `spending-report-${new Date().toISOString().split('T')[0]}.xlsx`
-        );
-
-        setDownloadMessage('Excel file downloaded successfully!');
-      } else {
-        setDownloadMessage('No report data available to export.');
-      }
-    } catch (error) {
-      console.error('Failed to export Excel:', error);
-      setDownloadMessage('Failed to export to Excel. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+  // Mock transactions
+  const mockTransactions: Transaction[] = [
+    { id: 1, date: '2026-05-28', amount: -85.32, category: 'Groceries', type: 'expense' },
+    { id: 2, date: '2026-05-28', amount: 5000, category: 'Salary', type: 'income' },
+    { id: 3, date: '2026-05-27', amount: -14.50, category: 'Dining', type: 'expense' },
+    { id: 4, date: '2026-05-27', amount: -12.75, category: 'Transportation', type: 'expense' },
+    { id: 5, date: '2026-05-26', amount: -15.99, category: 'Entertainment', type: 'expense' },
+    { id: 6, date: '2026-05-26', amount: -32.45, category: 'Healthcare', type: 'expense' },
+    { id: 7, date: '2026-05-25', amount: -52.00, category: 'Transportation', type: 'expense' },
+    { id: 8, date: '2026-05-25', amount: -67.89, category: 'Shopping', type: 'expense' },
+    { id: 9, date: '2026-05-24', amount: -5.75, category: 'Dining', type: 'expense' },
+    { id: 10, date: '2026-05-24', amount: -42.99, category: 'Shopping', type: 'expense' },
+    { id: 11, date: '2026-05-23', amount: -28.50, category: 'Groceries', type: 'expense' },
+    { id: 12, date: '2026-05-23', amount: -8.99, category: 'Entertainment', type: 'expense' },
+    { id: 13, date: '2026-05-22', amount: -125.00, category: 'Utilities', type: 'expense' },
+    { id: 14, date: '2026-05-22', amount: -45.30, category: 'Dining', type: 'expense' },
+    { id: 15, date: '2026-05-21', amount: -200.00, category: 'Healthcare', type: 'expense' },
+    { id: 16, date: '2026-05-20', amount: -89.99, category: 'Shopping', type: 'expense' },
+    { id: 17, date: '2026-05-19', amount: -55.00, category: 'Groceries', type: 'expense' },
+    { id: 18, date: '2026-05-19', amount: -18.75, category: 'Dining', type: 'expense' },
+    { id: 19, date: '2026-05-18', amount: -95.50, category: 'Transportation', type: 'expense' },
+    { id: 20, date: '2026-05-17', amount: -150.00, category: 'Entertainment', type: 'expense' },
   ];
 
+  const getDateRange = (
+    period: TimePeriod
+  ): { start: Date; end: Date } => {
+    const today = new Date();
+    const end = new Date(today);
+    let start = new Date(today);
+
+    switch (period) {
+      case 'week':
+        start.setDate(today.getDate() - today.getDay());
+        break;
+      case 'month':
+        start.setDate(1);
+        break;
+      case 'quarter':
+        const quarter = Math.floor(today.getMonth() / 3);
+        start.setMonth(quarter * 3, 1);
+        break;
+      case 'year':
+        start.setMonth(0, 1);
+        break;
+      case 'custom':
+        return {
+          start: customStartDate ? new Date(customStartDate) : today,
+          end: customEndDate ? new Date(customEndDate) : today,
+        };
+    }
+
+    return { start, end };
+  };
+
+  const filteredTransactions = useMemo(() => {
+    const { start, end } = getDateRange(selectedPeriod);
+    return mockTransactions.filter((t) => {
+      const tDate = new Date(t.date);
+      return tDate >= start && tDate <= end;
+    });
+  }, [selectedPeriod, customStartDate, customEndDate]);
+
+  const spendingChartData = useMemo((): ChartDataPoint[] => {
+    const dailyData: Record<string, { spending: number; income: number }> = {};
+
+    filteredTransactions.forEach((t) => {
+      if (!dailyData[t.date]) {
+        dailyData[t.date] = { spending: 0, income: 0 };
+      }
+
+      if (t.type === 'expense') {
+        dailyData[t.date].spending += Math.abs(t.amount);
+      } else {
+        dailyData[t.date].income += t.amount;
+      }
+    });
+
+    return Object.entries(dailyData)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([date, data]) => ({
+        date: new Date(date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
+        spending: Math.round(data.spending * 100) / 100,
+        income: Math.round(data.income * 100) / 100,
+        budget: 150,
+      }));
+  }, [filteredTransactions]);
+
+  const categoryData = useMemo((): CategoryData[] => {
+    const categoryTotals: Record<string, number> = {};
+    let totalSpending = 0;
+
+    filteredTransactions.forEach((t) => {
+      if (t.type === 'expense') {
+        if (!categoryTotals[t.category]) {
+          categoryTotals[t.category] = 0;
+        }
+        categoryTotals[t.category] += Math.abs(t.amount);
+        totalSpending += Math.abs(t.amount);
+      }
+    });
+
+    return Object.entries(categoryTotals)
+      .map(([name, value]) => ({
+        name,
+        value: Math.round(value * 100) / 100,
+        percentage: totalSpending > 0 ? (value / totalSpending) * 100 : 0,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredTransactions]);
+
+  const monthlyComparison = useMemo((): ChartDataPoint[] => {
+    const monthlyData: Record<string, { spending: number; income: number }> = {};
+
+    mockTransactions.forEach((t) => {
+      const month = t.date.substring(0, 7);
+      if (!monthlyData[month]) {
+        monthlyData[month] = { spending: 0, income: 0 };
+      }
+
+      if (t.type === 'expense') {
+        monthlyData[month].spending += Math.abs(t.amount);
+      } else {
+        monthlyData[month].income += t.amount;
+      }
+    });
+
+    return Object.entries(monthlyData)
+      .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+      .map(([date, data]) => ({
+        date: new Date(date + '-01').toLocaleDateString('en-US', {
+          month: 'short',
+          year: '2-digit',
+        }),
+        spending: Math.round(data.spending * 100) / 100,
+        income: Math.round(data.income * 100) / 100,
+        budget: 5000,
+      }));
+  }, []);
+
+  const totalSpending = filteredTransactions
+    .filter((t) => t.type === 'expense')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const totalIncome = filteredTransactions
+    .filter((t) => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const averageDailySpending =
+    spendingChartData.length > 0
+      ? totalSpending / spendingChartData.length
+      : 0;
+
+  const handleExportPDF = () => {
+    const content = `
+Spending Report
+Period: ${selectedPeriod}
+
+Summary:
+- Total Spending: $${totalSpending.toFixed(2)}
+- Total Income: $${totalIncome.toFixed(2)}
+- Net: $${(totalIncome - totalSpending).toFixed(2)}
+- Average Daily Spending: $${averageDailySpending.toFixed(2)}
+
+Categories:
+${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.percentage.toFixed(1)}%)`).join('\n')}
+    `.trim();
+
+    const element = document.createElement('a');
+    element.setAttribute(
+      'href',
+      'data:text/plain;charset=utf-8,' + encodeURIComponent(content)
+    );
+    element.setAttribute('download', `report-${selectedPeriod}.txt`);
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900 dark:text-white">Reports & Analytics</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-slate-50 mb-1">Reports</h1>
+        <p className="text-slate-400">Financial analysis and insights</p>
+      </div>
 
-      {downloadMessage && (
-        <div
-          className={`mb-6 p-4 rounded ${
-            downloadMessage.includes('successfully')
-              ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-              : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-          }`}
+      {/* Export button */}
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={handleExportPDF}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-50 font-medium transition-colors"
         >
-          {downloadMessage}
-        </div>
-      )}
+          <Download className="w-4 h-4" />
+          Export Report
+        </button>
+      </div>
 
-      <div className="space-y-8">
-        {/* Monthly Report Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Monthly Report</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Download a detailed report of your spending for a specific month.
+      {/* Time period selector */}
+      <TimeSelector
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        customStartDate={customStartDate}
+        customEndDate={customEndDate}
+        onCustomDateChange={(start, end) => {
+          setCustomStartDate(start);
+          setCustomEndDate(end);
+        }}
+      />
+
+      {/* Report type tabs */}
+      <ReportTabs activeReport={activeReport} onReportChange={setActiveReport} />
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+          <p className="text-slate-400 text-sm font-medium mb-2">Total Spending</p>
+          <p className="text-3xl font-bold text-red-400 mb-1">
+            ${totalSpending.toFixed(2)}
           </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Month</label>
-              <select
-                value={selectedMonth || ''}
-                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {months.map((month, index) => (
-                  <option key={index} value={index + 1}>
-                    {month}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year</label>
-              <select
-                value={selectedYear || ''}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {metadata?.availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <button
-              onClick={handleDownloadMonthlyPDF}
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 transition"
-            >
-              {loading ? 'Downloading...' : 'Download PDF'}
-            </button>
-            <button
-              onClick={handleDownloadMonthlyCSV}
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition"
-            >
-              {loading ? 'Downloading...' : 'Download CSV'}
-            </button>
-          </div>
+          <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
         </div>
 
-        {/* Annual Report Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Annual Report</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Download a comprehensive report covering all 12 months of a year.
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+          <p className="text-slate-400 text-sm font-medium mb-2">Total Income</p>
+          <p className="text-3xl font-bold text-green-400 mb-1">
+            ${totalIncome.toFixed(2)}
           </p>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Year</label>
-            <select
-              value={selectedYear || ''}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {metadata?.availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={handleDownloadAnnualCSV}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 transition"
-          >
-            {loading ? 'Downloading...' : 'Download Annual Report (CSV)'}
-          </button>
+          <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
         </div>
 
-        {/* Spending Trends Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Spending Trends</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Analyze your spending patterns over multiple months.
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+          <p className="text-slate-400 text-sm font-medium mb-2">Net Change</p>
+          <p className={`text-3xl font-bold mb-1 ${
+            totalIncome - totalSpending >= 0 ? 'text-green-400' : 'text-red-400'
+          }`}>
+            ${(totalIncome - totalSpending).toFixed(2)}
           </p>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
-            <select
-              value={selectedTrendMonths}
-              onChange={(e) => setSelectedTrendMonths(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {metadata?.trendMonths.map((months) => (
-                <option key={months} value={months}>
-                  Last {months} months
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={handleDownloadSpendingTrends}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 transition"
-          >
-            {loading ? 'Downloading...' : 'Download Spending Trends (CSV)'}
-          </button>
+          <p className="text-xs text-slate-500">Income - Expenses</p>
         </div>
 
-        {/* Excel Export Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">📊 Export to Excel</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Export your spending data to Excel for detailed analysis and record-keeping. Perfect for use in spreadsheets or data analysis tools.
+        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+          <p className="text-slate-400 text-sm font-medium mb-2">Daily Average</p>
+          <p className="text-3xl font-bold text-slate-50 mb-1">
+            ${averageDailySpending.toFixed(2)}
           </p>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Period</label>
-            <select
-              value={selectedTrendMonths}
-              onChange={(e) => setSelectedTrendMonths(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {metadata?.trendMonths.map((months) => (
-                <option key={months} value={months}>
-                  Last {months} months
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            onClick={handleExportToExcel}
-            disabled={loading}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium"
-          >
-            {loading ? 'Exporting...' : '📥 Export to Excel (.xlsx)'}
-          </button>
-
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-            Excel files include multiple sheets for different report views (Summary, Category Details, etc.)
-          </p>
-        </div>
-
-        {/* Information Section */}
-        <div className="bg-blue-50 dark:bg-blue-900 rounded-lg p-6 border-l-4 border-blue-500">
-          <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Report Information</h3>
-          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-            <li>• PDF reports include formatted summaries and charts</li>
-            <li>• CSV files can be imported into spreadsheets for further analysis</li>
-            <li>• Reports include all transactions and budget information</li>
-            <li>• Generated reports are based on your current data</li>
-          </ul>
+          <p className="text-xs text-slate-500">Per day</p>
         </div>
       </div>
+
+      {/* Report content */}
+      {activeReport === 'spending-trend' && (
+        <SpendingChart
+          data={spendingChartData}
+          title="Daily Spending Trend"
+          subtitle="Your spending over time"
+          chartType="line"
+          showBudget={true}
+          showIncome={true}
+          height={350}
+        />
+      )}
+
+      {activeReport === 'category-breakdown' && (
+        <CategoryBreakdown
+          data={categoryData}
+          title="Spending by Category"
+          subtitle="Where your money goes"
+        />
+      )}
+
+      {activeReport === 'monthly-comparison' && (
+        <SpendingChart
+          data={monthlyComparison}
+          title="Monthly Comparison"
+          subtitle="Month-over-month spending trends"
+          chartType="bar"
+          showBudget={true}
+          height={350}
+        />
+      )}
+
+      {activeReport === 'summary' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CategoryBreakdown
+              data={categoryData.slice(0, 5)}
+              title="Top 5 Categories"
+              subtitle="Your biggest spending areas"
+            />
+
+            <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
+              <h3 className="text-lg font-semibold text-slate-50 mb-4">Key Insights</h3>
+              <div className="space-y-4">
+                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                  <p className="text-sm font-medium text-slate-50 mb-1">Highest Category</p>
+                  <p className="text-sm text-slate-400">
+                    {categoryData.length > 0
+                      ? `${categoryData[0].name} at $${categoryData[0].value.toFixed(2)}`
+                      : 'No data'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                  <p className="text-sm font-medium text-slate-50 mb-1">Average Transaction</p>
+                  <p className="text-sm text-slate-400">
+                    $
+                    {filteredTransactions.filter(t => t.type === 'expense').length > 0
+                      ? (totalSpending / filteredTransactions.filter(t => t.type === 'expense').length).toFixed(2)
+                      : '0.00'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                  <p className="text-sm font-medium text-slate-50 mb-1">Categories</p>
+                  <p className="text-sm text-slate-400">
+                    {categoryData.length} spending categor{categoryData.length === 1 ? 'y' : 'ies'}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                  <p className="text-sm font-medium text-slate-50 mb-1">Savings Rate</p>
+                  <p className="text-sm text-slate-400">
+                    {totalIncome > 0
+                      ? (((totalIncome - totalSpending) / totalIncome) * 100).toFixed(1)
+                      : '0'}
+                    %
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <SpendingChart
+            data={monthlyComparison}
+            title="6-Month Trend"
+            subtitle="Historical spending patterns"
+            chartType="bar"
+            showBudget={true}
+            height={300}
+          />
+        </div>
+      )}
     </div>
   );
 };
