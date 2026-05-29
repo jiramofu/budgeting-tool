@@ -5,6 +5,59 @@ All notable changes to the Budgeting Tool project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0 Android] - 2026-05-29
+
+### Added
+
+#### Native Android App Features
+- Complete Jetpack Compose Material Design 3 UI
+- 7 fully functional screens (auth, dashboard, budgets, transactions, analytics, settings)
+- Offline-first architecture with Room database
+- JWT authentication with secure token storage
+- Budget management (create, edit, delete, progress tracking)
+- Transaction tracking (add, edit, delete, search, filter)
+- Analytics dashboard with spending insights
+- Dark/light mode toggle (persistent)
+- Multi-currency support
+- 5-tab bottom navigation
+- Loading skeleton screens with shimmer animation
+- Error dialog components
+- ProGuard R8 optimization
+- Comprehensive unit tests
+
+#### Technical Stack (Android)
+- Kotlin 1.9+
+- Jetpack Compose 1.5.4
+- Retrofit 2.9.0
+- Room 2.5.2
+- DataStore 1.0.0
+- Hilt 2.47
+- Coroutines 1.7.3
+- Material Design 3
+
+#### Architecture
+- MVVM pattern
+- 4 ViewModels with reactive StateFlow
+- 4 Repositories with offline-first pattern
+- Type-safe navigation
+- Proper dependency injection
+
+#### Build & Release
+- Signed APK/AAB builds
+- ProGuard optimization (5 passes)
+- Resource shrinking
+- Release configuration
+- GitHub Actions CI/CD
+- Version management (1.0.0)
+
+#### Documentation
+- RELEASE_NOTES.md
+- WEEK1_PROGRESS.md through WEEK4_PROGRESS.md
+- GitHub Actions workflow
+- Production deployment guide
+
+---
+
 ## [1.0.0] - 2026-05-27
 
 ### Added
