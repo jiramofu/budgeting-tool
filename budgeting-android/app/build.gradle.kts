@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.budgetapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
@@ -20,16 +20,33 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3001/api\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            // To use this, set up signing keys or use CI/CD environment variables
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "budgetapp"
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD") ?: "changeme"
+            storeFile = file(System.getenv("ANDROID_KEYSTORE_PATH") ?: "keystore.jks")
+            storePassword = System.getenv("ANDROID_STORE_PASSWORD") ?: "changeme"
+        }
     }
 
     buildTypes {
         release {
+            isDebuggable = false
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
+            buildConfigField("boolean", "DEBUG_LOGGING", "false")
         }
         debug {
+            isDebuggable = true
             isMinifyEnabled = false
             applicationIdSuffix = ".debug"
+            buildConfigField("boolean", "DEBUG_LOGGING", "true")
         }
     }
 
