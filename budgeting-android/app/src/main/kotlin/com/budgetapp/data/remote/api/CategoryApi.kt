@@ -6,26 +6,9 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
-interface BudgetApi {
-    @GET("budgets")
-    suspend fun getBudgets(): List<BudgetResponse>
-
-    @GET("budgets/{id}")
-    suspend fun getBudgetById(@Path("id") budgetId: Int): BudgetResponse
-
-    @POST("budgets")
-    suspend fun createBudget(@Body request: CreateBudgetRequest): BudgetResponse
-
-    @PUT("budgets/{id}")
-    suspend fun updateBudget(
-        @Path("id") budgetId: Int,
-        @Body request: UpdateBudgetRequest
-    ): BudgetResponse
-
-    @DELETE("budgets/{id}")
-    suspend fun deleteBudget(@Path("id") budgetId: Int)
-
+interface CategoryApi {
     @GET("categories")
     suspend fun getCategories(): List<CategoryResponse>
 
@@ -43,4 +26,9 @@ interface BudgetApi {
 
     @DELETE("categories/{id}")
     suspend fun deleteCategory(@Path("id") categoryId: Int)
+
+    @GET("categories/search")
+    suspend fun searchCategories(
+        @Query("query") query: String
+    ): List<CategoryResponse>
 }
