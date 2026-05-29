@@ -30,6 +30,7 @@ import com.budgetapp.presentation.ui.screens.SignupScreen
 import com.budgetapp.presentation.ui.screens.BudgetsScreen
 import com.budgetapp.presentation.ui.screens.TransactionsScreen
 import com.budgetapp.presentation.ui.screens.SettingsScreen
+import com.budgetapp.presentation.ui.screens.AnalyticsScreen
 
 sealed class Route(val path: String) {
     object Login : Route("login")
@@ -153,7 +154,7 @@ fun MainAppScreen(navController: NavController) {
                 0 -> DashboardScreen()
                 1 -> BudgetsScreenWrapper(navController)
                 2 -> TransactionsScreenWrapper(navController)
-                3 -> AnalyticsScreenPlaceholder()
+                3 -> AnalyticsScreenWrapper(navController)
                 4 -> SettingsScreenWrapper(
                     onLogout = {
                         navController.navigate(Route.Login.path) {
@@ -178,15 +179,8 @@ fun TransactionsScreenWrapper(navController: NavController = rememberNavControll
 }
 
 @Composable
-fun AnalyticsScreenPlaceholder() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center
-    ) {
-        androidx.compose.material3.Text("Analytics Screen - Coming Soon")
-    }
+fun AnalyticsScreenWrapper(navController: NavController = rememberNavController()) {
+    AnalyticsScreen()
 }
 
 @Composable
