@@ -1,19 +1,20 @@
 import { Router, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import NotificationService from '../services/notification-service';
 
 const router = Router();
 
+// Apply auth middleware to all routes
+router.use(authenticate, loadUserOrganizations, requireOrganization);
+
 console.log('[Notification Routes] Loading notification routes...');
 
 // Get user notifications
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: PermissionRequest, res: Response) => {
   console.log('[Notification] GET all notifications');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const notifications = await NotificationService.getNotifications(req.userId);
     res.json(notifications);
   } catch (error: any) {
@@ -23,13 +24,9 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Get unread notification count
-router.get('/unread/count', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/unread/count', async (req: PermissionRequest, res: Response) => {
   console.log('[Notification] GET unread count');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const notifications = await NotificationService.getNotifications(req.userId);
     const unreadCount = notifications.filter((n: any) => !n.read_at).length;
     res.json({ unreadCount });
@@ -40,15 +37,11 @@ router.get('/unread/count', authenticate, async (req: AuthRequest, res: Response
 });
 
 // Mark notification as read
-router.put('/:notificationId/read', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/:notificationId/read', async (req: PermissionRequest, res: Response) => {
   console.log('[Notification] PUT mark as read:', req.params.notificationId);
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const notificationId = parseInt(req.params.notificationId);
-    await NotificationService.markNotificationAsRead(notificationId);
+    await NotificationService.markNotificationAsRead(notificationId, req.userId);
     res.json({ success: true });
   } catch (error: any) {
     console.error('[Notification] Error marking as read:', error);
@@ -57,17 +50,13 @@ router.put('/:notificationId/read', authenticate, async (req: AuthRequest, res: 
 });
 
 // Mark all notifications as read
-router.put('/read-all', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/read-all', async (req: PermissionRequest, res: Response) => {
   console.log('[Notification] PUT mark all as read');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const notifications = await NotificationService.getNotifications(req.userId);
     for (const notification of (notifications as any[])) {
       if (!notification.read) {
-        await NotificationService.markNotificationAsRead(notification.id);
+        await NotificationService.markNotificationAsRead(notification.id, req.userId);
       }
     }
 
@@ -79,13 +68,9 @@ router.put('/read-all', authenticate, async (req: AuthRequest, res: Response) =>
 });
 
 // Delete notification
-router.delete('/:notificationId', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/:notificationId', async (req: PermissionRequest, res: Response) => {
   console.log('[Notification] DELETE notification:', req.params.notificationId);
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const notificationId = parseInt(req.params.notificationId);
 
     // Verify ownership and delete

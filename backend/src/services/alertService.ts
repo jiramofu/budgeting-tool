@@ -12,6 +12,7 @@ interface SpendingAlert {
   message: string;
   isActive: boolean;
   triggeredAt: string;
+  organization_id: number;
 }
 
 interface AlertPreference {
@@ -40,7 +41,8 @@ interface AlertCheckResult {
  */
 export const checkSpendingAlerts = async (
   userId: number,
-  budgetId: number
+  budgetId: number,
+  organizationId: number
 ): Promise<AlertCheckResult[]> => {
   try {
     // Get all budget targets and current spending for this budget
@@ -58,17 +60,17 @@ export const checkSpendingAlerts = async (
         AND t.user_id = $1
         AND EXTRACT(YEAR FROM t.transaction_date) = (SELECT year FROM budgets WHERE id = $2)
         AND EXTRACT(MONTH FROM t.transaction_date) = (SELECT month FROM budgets WHERE id = $2)
-      WHERE bt.budget_id = $2
+      WHERE bt.budget_id = $2 ${organizationId ? 'AND bt.organization_id = $3' : ''}
       GROUP BY bt.category_id, c.name, bt.target_amount
       `,
-      [userId, budgetId]
+      organizationId ? [userId, budgetId, organizationId] : [userId, budgetId]
     );
 
     const alerts: AlertCheckResult[] = [];
 
     // Check each category against user's alert preferences
     for (const row of result.rows) {
-      const preferences = await getAlertPreferences(userId, row.category_id);
+      const preferences = await getAlertPreferences(userId, row.category_id, organizationId);
 
       const percentageOfBudget = parseFloat(row.percentage_of_budget) || 0;
       const alertThreshold = preferences?.alertThresholdPercentage || 80;
@@ -189,15 +191,16 @@ export const createOrUpdateAlert = async (
  */
 export const resolveAlert = async (
   userId: number,
-  alertId: number
+  alertId: number,
+  organizationId: number
 ): Promise<void> => {
   try {
     // Get alert details before resolving
     const alertResult = await pool.query(
       `
-      SELECT * FROM spending_alerts WHERE id = $1 AND user_id = $2
+      SELECT * FROM spending_alerts WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
       `,
-      [alertId, userId]
+      organizationId ? [alertId, userId, organizationId] : [alertId, userId]
     );
 
     if (alertResult.rows.length === 0) {
@@ -245,15 +248,15 @@ export const resolveAlert = async (
 /**
  * Get active alerts for a user
  */
-export const getActiveAlerts = async (userId: number): Promise<SpendingAlert[]> => {
+export const getActiveAlerts = async (userId: number, organizationId?: number): Promise<SpendingAlert[]> => {
   try {
     const result = await pool.query(
       `
       SELECT * FROM spending_alerts
-      WHERE user_id = $1 AND is_active = TRUE
+      WHERE user_id = $1 AND is_active = TRUE ${organizationId ? 'AND organization_id = $2' : ''}
       ORDER BY triggered_at DESC
       `,
-      [userId]
+      organizationId ? [userId, organizationId] : [userId]
     );
 
     return result.rows.map(mapAlertRow);
@@ -268,15 +271,16 @@ export const getActiveAlerts = async (userId: number): Promise<SpendingAlert[]> 
  */
 export const getAlertPreferences = async (
   userId: number,
-  categoryId: number
+  categoryId: number,
+  organizationId: number
 ): Promise<AlertPreference | null> => {
   try {
     const result = await pool.query(
       `
       SELECT * FROM alert_preferences
-      WHERE user_id = $1 AND category_id = $2
+      WHERE user_id = $1 AND category_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
       `,
-      [userId, categoryId]
+      organizationId ? [userId, categoryId, organizationId] : [userId, categoryId]
     );
 
     if (result.rows.length === 0) {
@@ -305,15 +309,16 @@ export const getAlertPreferences = async (
 export const updateAlertPreferences = async (
   userId: number,
   categoryId: number,
-  preferences: Partial<AlertPreference>
+  preferences: Partial<AlertPreference>,
+  organizationId: number
 ): Promise<AlertPreference> => {
   try {
     const existingPref = await pool.query(
       `
       SELECT id FROM alert_preferences
-      WHERE user_id = $1 AND category_id = $2
+      WHERE user_id = $1 AND category_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
       `,
-      [userId, categoryId]
+      organizationId ? [userId, categoryId, organizationId] : [userId, categoryId]
     );
 
     if (existingPref.rows.length > 0) {
@@ -326,17 +331,27 @@ export const updateAlertPreferences = async (
             enable_email_alerts = COALESCE($3, enable_email_alerts),
             enable_app_alerts = COALESCE($4, enable_app_alerts),
             updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $5 AND category_id = $6
+        WHERE user_id = $5 AND category_id = $6 ${organizationId ? 'AND organization_id = $7' : ''}
         RETURNING *
         `,
-        [
-          preferences.alertThresholdPercentage,
-          preferences.criticalThresholdPercentage,
-          preferences.enableEmailAlerts,
-          preferences.enableAppAlerts,
-          userId,
-          categoryId,
-        ]
+        organizationId
+          ? [
+              preferences.alertThresholdPercentage,
+              preferences.criticalThresholdPercentage,
+              preferences.enableEmailAlerts,
+              preferences.enableAppAlerts,
+              userId,
+              categoryId,
+              organizationId,
+            ]
+          : [
+              preferences.alertThresholdPercentage,
+              preferences.criticalThresholdPercentage,
+              preferences.enableEmailAlerts,
+              preferences.enableAppAlerts,
+              userId,
+              categoryId,
+            ]
       );
       return mapAlertPreferenceRow(result.rows[0]);
     } else {
@@ -345,18 +360,28 @@ export const updateAlertPreferences = async (
         `
         INSERT INTO alert_preferences
         (user_id, category_id, alert_threshold_percentage, critical_threshold_percentage,
-         enable_email_alerts, enable_app_alerts)
-        VALUES ($1, $2, $3, $4, $5, $6)
+         enable_email_alerts, enable_app_alerts ${organizationId ? ', organization_id' : ''})
+        VALUES ($1, $2, $3, $4, $5, $6 ${organizationId ? ', $7' : ''})
         RETURNING *
         `,
-        [
-          userId,
-          categoryId,
-          preferences.alertThresholdPercentage || 80,
-          preferences.criticalThresholdPercentage || 100,
-          preferences.enableEmailAlerts !== false,
-          preferences.enableAppAlerts !== false,
-        ]
+        organizationId
+          ? [
+              userId,
+              categoryId,
+              preferences.alertThresholdPercentage || 80,
+              preferences.criticalThresholdPercentage || 100,
+              preferences.enableEmailAlerts !== false,
+              preferences.enableAppAlerts !== false,
+              organizationId,
+            ]
+          : [
+              userId,
+              categoryId,
+              preferences.alertThresholdPercentage || 80,
+              preferences.criticalThresholdPercentage || 100,
+              preferences.enableEmailAlerts !== false,
+              preferences.enableAppAlerts !== false,
+            ]
       );
       return mapAlertPreferenceRow(result.rows[0]);
     }
@@ -369,16 +394,16 @@ export const updateAlertPreferences = async (
 /**
  * Get all alerts for a user (including resolved)
  */
-export const getAllAnomalies = async (userId: number): Promise<SpendingAlert[]> => {
+export const getAllAnomalies = async (userId: number, organizationId?: number): Promise<SpendingAlert[]> => {
   try {
     const result = await pool.query(
       `
       SELECT * FROM spending_alerts
-      WHERE user_id = $1
+      WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
       ORDER BY triggered_at DESC
       LIMIT 100
       `,
-      [userId]
+      organizationId ? [userId, organizationId] : [userId]
     );
 
     return result.rows.map(mapAlertRow);
@@ -423,6 +448,7 @@ function mapAlertRow(row: any): SpendingAlert {
     message: row.message,
     isActive: row.is_active,
     triggeredAt: row.triggered_at,
+    organization_id: row.organization_id,
   };
 }
 

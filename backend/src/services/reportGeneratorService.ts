@@ -22,9 +22,9 @@ interface ReportContent {
 /**
  * Generate weekly summary report
  */
-export const generateWeeklySummary = async (userId: number): Promise<string> => {
+export const generateWeeklySummary = async (userId: number, organizationId?: number): Promise<string> => {
   try {
-    const reportContent = await getWeeklyReportContent(userId);
+    const reportContent = await getWeeklyReportContent(userId, organizationId);
     return formatReportAsHtml(reportContent, 'weekly');
   } catch (error: any) {
     console.error('Error generating weekly summary:', error);
@@ -35,9 +35,9 @@ export const generateWeeklySummary = async (userId: number): Promise<string> => 
 /**
  * Generate monthly summary report
  */
-export const generateMonthlySummary = async (userId: number): Promise<string> => {
+export const generateMonthlySummary = async (userId: number, organizationId?: number): Promise<string> => {
   try {
-    const reportContent = await getMonthlyReportContent(userId);
+    const reportContent = await getMonthlyReportContent(userId, organizationId);
     return formatReportAsHtml(reportContent, 'monthly');
   } catch (error: any) {
     console.error('Error generating monthly summary:', error);
@@ -48,9 +48,9 @@ export const generateMonthlySummary = async (userId: number): Promise<string> =>
 /**
  * Generate spending analysis report
  */
-export const generateSpendingAnalysis = async (userId: number): Promise<string> => {
+export const generateSpendingAnalysis = async (userId: number, organizationId?: number): Promise<string> => {
   try {
-    const reportContent = await getSpendingAnalysisContent(userId);
+    const reportContent = await getSpendingAnalysisContent(userId, organizationId);
     return formatReportAsHtml(reportContent, 'analysis');
   } catch (error: any) {
     console.error('Error generating spending analysis:', error);
@@ -60,7 +60,7 @@ export const generateSpendingAnalysis = async (userId: number): Promise<string> 
 
 // Helper functions
 
-async function getWeeklyReportContent(userId: number): Promise<ReportContent> {
+async function getWeeklyReportContent(userId: number, organizationId?: number): Promise<ReportContent> {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
@@ -70,31 +70,32 @@ async function getWeeklyReportContent(userId: number): Promise<ReportContent> {
   endOfWeek.setDate(startOfWeek.getDate() + 6);
   endOfWeek.setHours(23, 59, 59, 999);
 
-  return getTransactionSummary(userId, startOfWeek, endOfWeek);
+  return getTransactionSummary(userId, startOfWeek, endOfWeek, organizationId);
 }
 
-async function getMonthlyReportContent(userId: number): Promise<ReportContent> {
+async function getMonthlyReportContent(userId: number, organizationId?: number): Promise<ReportContent> {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   endOfMonth.setHours(23, 59, 59, 999);
 
-  return getTransactionSummary(userId, startOfMonth, endOfMonth);
+  return getTransactionSummary(userId, startOfMonth, endOfMonth, organizationId);
 }
 
-async function getSpendingAnalysisContent(userId: number): Promise<ReportContent> {
+async function getSpendingAnalysisContent(userId: number, organizationId?: number): Promise<ReportContent> {
   const now = new Date();
   const threeMonthsAgo = new Date(now);
   threeMonthsAgo.setMonth(now.getMonth() - 3);
   threeMonthsAgo.setHours(0, 0, 0, 0);
 
-  return getTransactionSummary(userId, threeMonthsAgo, now);
+  return getTransactionSummary(userId, threeMonthsAgo, now, organizationId);
 }
 
 async function getTransactionSummary(
   userId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  organizationId: number
 ): Promise<ReportContent> {
   // Get spending by category
   const spendingResult = await pool.query(
@@ -109,12 +110,12 @@ async function getTransactionSummary(
       AND t.user_id = $1
       AND t.transaction_date >= $2
       AND t.transaction_date <= $3
-      AND t.transaction_type = 'expense'
-    WHERE c.user_id = $1
+      AND t.transaction_type = 'expense' ${organizationId ? 'AND t.organization_id = $4' : ''}
+    WHERE c.user_id = $1 ${organizationId ? 'AND c.organization_id = $4' : ''}
     GROUP BY c.id, c.name
     ORDER BY spent DESC
     `,
-    [userId, startDate, endDate]
+    organizationId ? [userId, startDate, endDate, organizationId] : [userId, startDate, endDate]
   );
 
   // Get budget targets for the period (use current month's budget)
@@ -127,9 +128,9 @@ async function getTransactionSummary(
     JOIN budgets b ON bt.budget_id = b.id
     WHERE b.user_id = $1
       AND EXTRACT(YEAR FROM CURRENT_DATE) = b.year
-      AND EXTRACT(MONTH FROM CURRENT_DATE) = b.month
+      AND EXTRACT(MONTH FROM CURRENT_DATE) = b.month ${organizationId ? 'AND b.organization_id = $2' : ''}
     `,
-    [userId]
+    organizationId ? [userId, organizationId] : [userId]
   );
 
   const budgetMap = new Map();

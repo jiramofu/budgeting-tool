@@ -16,7 +16,7 @@ router.get(
   loadUserOrganizations,
   requireOrganization,
   async (req: PermissionRequest, res: Response) => {
-    console.log('[Category] GET all for user:', req.userId, 'org:', req.organizationId);
+    console.log('[Category] GET all for user:', req.userId, 'org:', req.organizationId!);
     try {
       const result = await query(
         'SELECT * FROM categories WHERE user_id = $1 AND organization_id = $2 ORDER BY type, name',
@@ -88,7 +88,8 @@ router.post(
       const suggestion = await TransactionCategorizer.suggestCategory(
         req.userId,
         description,
-        amount
+        amount,
+        req.organizationId!
       );
 
       if (suggestion) {

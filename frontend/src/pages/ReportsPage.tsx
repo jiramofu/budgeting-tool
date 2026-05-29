@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Download, AlertCircle } from 'lucide-react';
+import { formatCurrency } from '../utils/currencyFormatter';
+import { useUserSettings } from '../hooks/useUserSettings';
 import {
   ReportTabs,
   ReportType,
@@ -34,6 +36,7 @@ interface CategoryData {
 
 const ReportsPage: React.FC = () => {
   const { success, error: showError } = useToast();
+  const { currency } = useUserSettings();
   const [activeReport, setActiveReport] = useState<ReportType>('spending-trend');
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [customStartDate, setCustomStartDate] = useState('');
@@ -202,13 +205,13 @@ Spending Report
 Period: ${selectedPeriod}
 
 Summary:
-- Total Spending: $${totalSpending.toFixed(2)}
-- Total Income: $${totalIncome.toFixed(2)}
-- Net: $${(totalIncome - totalSpending).toFixed(2)}
-- Average Daily Spending: $${averageDailySpending.toFixed(2)}
+- Total Spending: ${formatCurrency(totalSpending, currency)}
+- Total Income: ${formatCurrency(totalIncome, currency)}
+- Net: ${formatCurrency(totalIncome - totalSpending, currency)}
+- Average Daily Spending: ${formatCurrency(averageDailySpending, currency)}
 
 Categories:
-${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.percentage.toFixed(1)}%)`).join('\n')}
+${categoryData.map((cat) => `- ${cat.name}: ${formatCurrency(cat.value, currency)} (${cat.percentage.toFixed(1)}%)`).join('\n')}
     `.trim();
 
       const element = document.createElement('a');
@@ -267,7 +270,7 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
             <p className="text-slate-400 text-sm font-medium mb-2">Total Spending</p>
             <p className="text-3xl font-bold text-red-400 mb-1">
-              ${totalSpending.toFixed(2)}
+              {formatCurrency(totalSpending, currency)}
             </p>
             <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
           </div>
@@ -277,7 +280,7 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
             <p className="text-slate-400 text-sm font-medium mb-2">Total Income</p>
             <p className="text-3xl font-bold text-green-400 mb-1">
-              ${totalIncome.toFixed(2)}
+              {formatCurrency(totalIncome, currency)}
             </p>
             <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
           </div>
@@ -289,7 +292,7 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
             <p className={`text-3xl font-bold mb-1 ${
               totalIncome - totalSpending >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
-              ${(totalIncome - totalSpending).toFixed(2)}
+              {formatCurrency(totalIncome - totalSpending, currency)}
             </p>
             <p className="text-xs text-slate-500">Income - Expenses</p>
           </div>
@@ -299,7 +302,7 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
           <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
             <p className="text-slate-400 text-sm font-medium mb-2">Daily Average</p>
             <p className="text-3xl font-bold text-slate-50 mb-1">
-              ${averageDailySpending.toFixed(2)}
+              {formatCurrency(averageDailySpending, currency)}
             </p>
             <p className="text-xs text-slate-500">Per day</p>
           </div>
@@ -354,7 +357,7 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
                   <p className="text-sm font-medium text-slate-50 mb-1">Highest Category</p>
                   <p className="text-sm text-slate-400">
                     {categoryData.length > 0
-                      ? `${categoryData[0].name} at $${categoryData[0].value.toFixed(2)}`
+                      ? `${categoryData[0].name} at ${formatCurrency(categoryData[0].value, currency)}`
                       : 'No data'}
                   </p>
                 </div>
@@ -362,10 +365,9 @@ ${categoryData.map((cat) => `- ${cat.name}: $${cat.value.toFixed(2)} (${cat.perc
                 <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
                   <p className="text-sm font-medium text-slate-50 mb-1">Average Transaction</p>
                   <p className="text-sm text-slate-400">
-                    $
                     {filteredTransactions.filter(t => t.type === 'expense').length > 0
-                      ? (totalSpending / filteredTransactions.filter(t => t.type === 'expense').length).toFixed(2)
-                      : '0.00'}
+                      ? formatCurrency(totalSpending / filteredTransactions.filter(t => t.type === 'expense').length, currency)
+                      : formatCurrency(0, currency)}
                   </p>
                 </div>
 

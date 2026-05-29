@@ -33,7 +33,7 @@ export class Phase4ProjectionService {
    * Calculate cash flow projections for next 90 days
    * Uses projection_inputs table for recurring items
    */
-  static async projectCashFlow(userId: number, days: number = 90): Promise<ProjectedDay[]> {
+  static async projectCashFlow(userId: number, days: number = 90, organizationId?: number): Promise<ProjectedDay[]> {
     try {
       console.log(`[Phase4 Projection] Starting 90-day cash flow projection for user ${userId}`);
 
@@ -41,8 +41,8 @@ export class Phase4ProjectionService {
       const balanceResult = await query(
         `SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as balance
          FROM transactions
-         WHERE user_id = $1`,
-        [userId]
+         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       let currentBalance = balanceResult.rows[0]?.balance || 0;
@@ -60,8 +60,8 @@ export class Phase4ProjectionService {
           day_of_week,
           is_income
          FROM projection_inputs
-         WHERE user_id = $1 AND is_active = true`,
-        [userId]
+         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''} AND is_active = true`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const recurringItems = recurringResult.rows;
@@ -155,9 +155,9 @@ export class Phase4ProjectionService {
   /**
    * Get comprehensive projection summary
    */
-  static async getProjectionSummary(userId: number): Promise<ProjectionSummary> {
+  static async getProjectionSummary(userId: number, organizationId?: number): Promise<ProjectionSummary> {
     try {
-      const projection = await this.projectCashFlow(userId, 90);
+      const projection = await this.projectCashFlow(userId, 90, organizationId);
 
       const balances = projection.map((p) => p.closingBalance);
       const lowestBalance = Math.min(...balances);
@@ -188,21 +188,25 @@ export class Phase4ProjectionService {
   /**
    * Save projections to database for performance
    */
-  static async saveProjectionsToDB(userId: number): Promise<void> {
+  static async saveProjectionsToDB(userId: number, organizationId?: number): Promise<void> {
     try {
-      const projection = await this.projectCashFlow(userId, 90);
+      const projection = await this.projectCashFlow(userId, 90, organizationId);
 
       // Clear old projections
-      await query('DELETE FROM cash_flow_projections WHERE user_id = $1', [userId]);
+      await query(
+        `DELETE FROM cash_flow_projections WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
+      );
 
       // Insert new projections
       for (const day of projection) {
         await query(
           `INSERT INTO cash_flow_projections
-           (user_id, projection_date, projected_balance, confidence_level, period_start, period_end)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           (user_id, organization_id, projection_date, projected_balance, confidence_level, period_start, period_end)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
             userId,
+            organizationId || null,
             day.date,
             day.closingBalance,
             day.riskLevel === 'safe' ? 'high' : day.riskLevel === 'warning' ? 'medium' : 'low',
@@ -232,15 +236,16 @@ export class Phase4ProjectionService {
     day_of_week?: number;
     category_id?: number;
     is_income: boolean;
-  }): Promise<any> {
+  }, organizationId?: number): Promise<any> {
     try {
       const result = await query(
         `INSERT INTO projection_inputs
-         (user_id, description, amount, frequency, start_date, end_date, day_of_month, day_of_week, category_id, is_income, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+         (user_id, organization_id, description, amount, frequency, start_date, end_date, day_of_month, day_of_week, category_id, is_income, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, true)
          RETURNING *`,
         [
           userId,
+          organizationId || null,
           item.description,
           item.amount,
           item.frequency,
@@ -264,11 +269,11 @@ export class Phase4ProjectionService {
   /**
    * Get all recurring items for a user
    */
-  static async getRecurringItems(userId: number): Promise<any[]> {
+  static async getRecurringItems(userId: number, organizationId?: number): Promise<any[]> {
     try {
       const result = await query(
-        `SELECT * FROM projection_inputs WHERE user_id = $1 ORDER BY start_date DESC`,
-        [userId]
+        `SELECT * FROM projection_inputs WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''} ORDER BY start_date DESC`,
+        organizationId ? [userId, organizationId] : [userId]
       );
       return result.rows;
     } catch (error) {

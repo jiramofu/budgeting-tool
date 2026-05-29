@@ -1,13 +1,18 @@
 import { Router, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import { TemplatesService } from '../services/templates-service';
 
 const router = Router();
 
+// Apply auth middleware to all routes
+router.use(authenticate, loadUserOrganizations, requireOrganization);
+
 console.log('[Templates Routes] Loading templates routes...');
 
 // Get all budget templates
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', async (req: PermissionRequest, res: Response) => {
   console.log('[Templates] GET all templates');
   try {
     const templates = TemplatesService.getTemplates();
@@ -19,7 +24,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Get single template
-router.get('/:templateId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/:templateId', async (req: PermissionRequest, res: Response) => {
   console.log('[Templates] GET template by id');
   try {
     const { templateId } = req.params;
@@ -37,12 +42,9 @@ router.get('/:templateId', authenticate, async (req: AuthRequest, res: Response)
 });
 
 // Apply template to budget
-router.post('/:templateId/apply', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/:templateId/apply', async (req: PermissionRequest, res: Response) => {
   console.log('[Templates] POST apply template');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     const { templateId } = req.params;
     const { budgetId } = req.body;
@@ -51,7 +53,7 @@ router.post('/:templateId/apply', authenticate, async (req: AuthRequest, res: Re
       return res.status(400).json({ error: 'Budget ID is required' });
     }
 
-    const result = await TemplatesService.applyTemplate(req.userId, templateId, budgetId);
+    const result = await TemplatesService.applyTemplate(req.userId, templateId, budgetId, req.organizationId!);
     res.status(201).json({ success: true, categories: result });
   } catch (error: any) {
     console.error('[Templates] Error applying template:', error);
@@ -60,15 +62,12 @@ router.post('/:templateId/apply', authenticate, async (req: AuthRequest, res: Re
 });
 
 // Get suggested categories based on transaction history
-router.get('/suggestions/categories', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/suggestions/categories', async (req: PermissionRequest, res: Response) => {
   console.log('[Templates] GET category suggestions');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
 
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-    const suggestions = await TemplatesService.suggestCategories(req.userId, Math.min(limit, 50));
+    const suggestions = await TemplatesService.suggestCategories(req.userId, Math.min(limit, 50), req.organizationId!);
 
     res.json(suggestions);
   } catch (error: any) {
@@ -78,14 +77,11 @@ router.get('/suggestions/categories', authenticate, async (req: AuthRequest, res
 });
 
 // Get category statistics
-router.get('/stats/categories', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/stats/categories', async (req: PermissionRequest, res: Response) => {
   console.log('[Templates] GET category stats');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
 
-    const stats = await TemplatesService.getCategoryStats(req.userId);
+    const stats = await TemplatesService.getCategoryStats(req.userId, req.organizationId!);
     res.json(stats);
   } catch (error: any) {
     console.error('[Templates] Error getting stats:', error);

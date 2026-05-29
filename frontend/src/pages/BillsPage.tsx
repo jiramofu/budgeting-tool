@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { formatCurrency } from '../utils/currencyFormatter';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { Tooltip, HelpIcon } from '../components/ui/tooltip';
@@ -26,6 +28,7 @@ interface BillSummary {
 
 const BillsPage: React.FC = () => {
   const { success, error: showError } = useToast();
+  const { currency } = useUserSettings();
   const [summary, setSummary] = useState<BillSummary | null>(null);
   const [bills, setBills] = useState<Bill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -202,7 +205,7 @@ const BillsPage: React.FC = () => {
           <Tooltip content="All bills due within the next 30 days from today">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow cursor-help">
               <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Upcoming (30 days)</div>
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">${Number(summary.totalUpcoming).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">{formatCurrency(Number(summary.totalUpcoming), currency)}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{bills.length} bills tracked</div>
             </div>
           </Tooltip>
@@ -210,7 +213,7 @@ const BillsPage: React.FC = () => {
           <Tooltip content="Bills that are scheduled to be due during the current month">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow cursor-help">
               <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Due This Month</div>
-              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">${Number(summary.billsDueThisMonth).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-2">{formatCurrency(Number(summary.billsDueThisMonth), currency)}</div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Bills to pay soon</div>
             </div>
           </Tooltip>
@@ -347,7 +350,7 @@ const BillsPage: React.FC = () => {
                       <div className="font-medium text-gray-900 dark:text-white">{bill.name}</div>
                       {bill.categoryName && <div className="text-sm text-gray-500 dark:text-gray-400">{bill.categoryName}</div>}
                     </td>
-                    <td className="text-right px-6 py-4 font-semibold text-gray-900 dark:text-white">${Number(bill.amount).toFixed(2)}</td>
+                    <td className="text-right px-6 py-4 font-semibold text-gray-900 dark:text-white">{formatCurrency(Number(bill.amount), currency)}</td>
                     <td className="px-6 py-4 capitalize text-gray-900 dark:text-white">{bill.frequency}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">Day {bill.due_date_day}</td>
                     <td className="px-6 py-4 text-gray-900 dark:text-white">

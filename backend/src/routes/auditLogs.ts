@@ -22,7 +22,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -61,7 +61,7 @@ router.get(
         filters.endDate = new Date(endDate as string);
       }
 
-      const logs = await getAuditLogs(req.organizationId, filters);
+      const logs = await getAuditLogs(req.organizationId!, filters);
 
       res.json({
         logs,
@@ -89,13 +89,13 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       const { id } = req.params;
 
-      const logs = await getAuditLogs(req.organizationId, {
+      const logs = await getAuditLogs(req.organizationId!, {
         limit: 1,
       });
 
@@ -124,11 +124,11 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const logs = await getAuditLogs(req.organizationId, { limit: 10000 });
+      const logs = await getAuditLogs(req.organizationId!, { limit: 10000 });
 
       // Aggregate statistics
       const stats = {
@@ -181,7 +181,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -191,7 +191,7 @@ router.get(
         return res.status(400).json({ error: 'Invalid export format. Use json or csv' });
       }
 
-      const data = await exportAuditLogs(req.organizationId, format as 'json' | 'csv');
+      const data = await exportAuditLogs(req.organizationId!, format as 'json' | 'csv');
 
       if (format === 'csv') {
         res.setHeader('Content-Type', 'text/csv');
@@ -220,13 +220,13 @@ router.get(
   requireRole(['owner', 'admin', 'manager']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       const { resourceType, resourceId } = req.params;
 
-      const logs = await getAuditLogs(req.organizationId, {
+      const logs = await getAuditLogs(req.organizationId!, {
         resourceType,
         limit: 1000,
       });

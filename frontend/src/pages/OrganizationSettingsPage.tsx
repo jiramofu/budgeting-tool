@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { apiClient } from '../services/api';
 
 interface Organization {
   id: number;
@@ -46,8 +46,8 @@ export const OrganizationSettingsPage: React.FC = () => {
     try {
       setLoading(true);
       const [orgResponse, limitsResponse] = await Promise.all([
-        api.get('/admin/dashboard/summary'),
-        api.get('/admin/dashboard/rate-limits'),
+        apiClient.get('/admin/dashboard/summary'),
+        apiClient.get('/admin/dashboard/rate-limits'),
       ]);
 
       setOrganization(orgResponse.data.organization);

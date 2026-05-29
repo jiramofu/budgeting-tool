@@ -61,6 +61,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // Phase 8: Enterprise Features Middleware (with feature flag)
 if (config.enableOrganizations) {
   console.log('Enterprise Features enabled - initializing RBAC, audit logging, and rate limiting middleware');

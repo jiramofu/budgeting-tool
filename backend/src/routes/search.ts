@@ -1,20 +1,22 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import { searchService } from '../services/searchService';
 
 const router = Router();
 
 // Middleware
-router.use(authenticate);
+router.use(authenticate, loadUserOrganizations, requireOrganization);
 
 /**
  * POST /api/search
  * Advanced transaction search with filters
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: PermissionRequest, res: Response) => {
   console.log('[Search] POST /search called');
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     console.log('[Search] userId:', userId);
     const { filters, limit = 50, offset = 0 } = req.body;
 
@@ -22,7 +24,7 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Invalid filters provided' });
     }
 
-    const result = await searchService.searchTransactions(userId, filters, limit, offset);
+    const result = await searchService.searchTransactions(userId, filters, limit, offset, req.organizationId!);
 
     res.json({
       success: true,
@@ -42,9 +44,9 @@ router.post('/', async (req: Request, res: Response) => {
  * GET /api/search/suggestions
  * Get autocomplete suggestions for search
  */
-router.get('/suggestions', async (req: Request, res: Response) => {
+router.get('/suggestions', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { term, limit = 10 } = req.query;
 
     if (!term || typeof term !== 'string') {
@@ -54,7 +56,8 @@ router.get('/suggestions', async (req: Request, res: Response) => {
     const suggestions = await searchService.getSearchSuggestions(
       userId,
       term,
-      parseInt(limit as string) || 10
+      parseInt(limit as string) || 10,
+      req.organizationId
     );
 
     res.json({
@@ -71,16 +74,16 @@ router.get('/suggestions', async (req: Request, res: Response) => {
  * POST /api/search/saved
  * Save a search query
  */
-router.post('/saved', async (req: Request, res: Response) => {
+router.post('/saved', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { name, filters, description } = req.body;
 
     if (!name || !filters) {
       return res.status(400).json({ success: false, error: 'Name and filters required' });
     }
 
-    const saved = await searchService.saveSearch(userId, name, filters, description);
+    const saved = await searchService.saveSearch(userId, name, filters, req.organizationId!, description);
 
     res.json({
       success: true,
@@ -96,11 +99,11 @@ router.post('/saved', async (req: Request, res: Response) => {
  * GET /api/search/saved
  * Get user's saved searches
  */
-router.get('/saved', async (req: Request, res: Response) => {
+router.get('/saved', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
-    const searches = await searchService.getSavedSearches(userId);
+    const searches = await searchService.getSavedSearches(userId, req.organizationId!);
 
     res.json({
       success: true,
@@ -116,12 +119,12 @@ router.get('/saved', async (req: Request, res: Response) => {
  * DELETE /api/search/saved/:searchId
  * Delete a saved search
  */
-router.delete('/saved/:searchId', async (req: Request, res: Response) => {
+router.delete('/saved/:searchId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { searchId } = req.params;
 
-    const deleted = await searchService.deleteSearch(userId, parseInt(searchId));
+    const deleted = await searchService.deleteSearch(userId, parseInt(searchId), req.organizationId!);
 
     if (!deleted) {
       return res.status(404).json({ success: false, error: 'Search not found' });
@@ -141,12 +144,12 @@ router.delete('/saved/:searchId', async (req: Request, res: Response) => {
  * PUT /api/search/saved/:searchId/favorite
  * Toggle search as favorite
  */
-router.put('/saved/:searchId/favorite', async (req: Request, res: Response) => {
+router.put('/saved/:searchId/favorite', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { searchId } = req.params;
 
-    const toggled = await searchService.toggleSearchFavorite(userId, parseInt(searchId));
+    const toggled = await searchService.toggleSearchFavorite(userId, parseInt(searchId), req.organizationId!);
 
     if (!toggled) {
       return res.status(404).json({ success: false, error: 'Search not found' });
@@ -166,9 +169,9 @@ router.put('/saved/:searchId/favorite', async (req: Request, res: Response) => {
  * GET /api/search/popular
  * Get popular search terms (anonymous)
  */
-router.get('/popular', async (req: Request, res: Response) => {
+router.get('/popular', async (req: PermissionRequest, res: Response) => {
   try {
-    const { limit = 10 } = req.query;
+    const limit = (req.query?.limit as string) || '10';
 
     const terms = await searchService.getPopularSearchTerms(parseInt(limit as string) || 10);
 

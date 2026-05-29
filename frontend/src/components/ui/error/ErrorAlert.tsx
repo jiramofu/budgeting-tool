@@ -28,13 +28,13 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    if (autoClose) {
-      const timer = setTimeout(() => {
-        handleDismiss();
-      }, autoCloseDuration);
+    if (!autoClose) return;
 
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      handleDismiss();
+    }, autoCloseDuration);
+
+    return () => clearTimeout(timer);
   }, [autoClose, autoCloseDuration]);
 
   const handleDismiss = () => {

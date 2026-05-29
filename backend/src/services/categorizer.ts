@@ -42,20 +42,21 @@ export class TransactionCategorizer {
   static async suggestCategory(
     userId: number,
     description: string,
-    amount: number
+    amount: number,
+    organizationId: number
   ): Promise<CategoryMatch | null> {
     try {
       // First, try keyword matching
       const keywordMatch = this.matchKeywords(description);
       if (keywordMatch) {
-        const categoryId = await this.getCategoryIdByName(userId, keywordMatch);
+        const categoryId = await this.getCategoryIdByName(userId, keywordMatch, organizationId);
         if (categoryId) {
           return { categoryId, confidence: 0.85 };
         }
       }
 
       // If no keyword match, try learning from user's history
-      const historicalMatch = await this.matchFromHistory(userId, description, amount);
+      const historicalMatch = await this.matchFromHistory(userId, description, amount, organizationId);
       if (historicalMatch) {
         return historicalMatch;
       }
@@ -136,12 +137,13 @@ export class TransactionCategorizer {
 
   private static async getCategoryIdByName(
     userId: number,
-    categoryName: string
+    categoryName: string,
+    organizationId: number
   ): Promise<number | null> {
     try {
       const result = await query(
-        'SELECT id FROM categories WHERE user_id = $1 AND name = $2 LIMIT 1',
-        [userId, categoryName]
+        `SELECT id FROM categories WHERE user_id = $1 AND name = $2 ${organizationId ? 'AND organization_id = $3' : ''} LIMIT 1`,
+        organizationId ? [userId, categoryName, organizationId] : [userId, categoryName]
       );
       return result.rows.length > 0 ? result.rows[0].id : null;
     } catch (error) {
@@ -153,7 +155,8 @@ export class TransactionCategorizer {
   private static async matchFromHistory(
     userId: number,
     description: string,
-    amount: number
+    amount: number,
+    organizationId: number
   ): Promise<CategoryMatch | null> {
     try {
       // Find similar transactions from user history
@@ -167,11 +170,11 @@ export class TransactionCategorizer {
          FROM transactions
          WHERE user_id = $1
          AND description ILIKE $2
-         AND category_id IS NOT NULL
+         AND category_id IS NOT NULL ${organizationId ? 'AND organization_id = $3' : ''}
          GROUP BY category_id
          ORDER BY count DESC
          LIMIT 1`,
-        [userId, `%${searchTerm}%`]
+        organizationId ? [userId, `%${searchTerm}%`, organizationId] : [userId, `%${searchTerm}%`]
       );
 
       if (result.rows.length > 0) {
@@ -188,12 +191,12 @@ export class TransactionCategorizer {
          FROM transactions
          WHERE user_id = $1
          AND category_id IS NOT NULL
-         AND amount BETWEEN $2 * 0.8 AND $2 * 1.2
+         AND amount BETWEEN $2 * 0.8 AND $2 * 1.2 ${organizationId ? 'AND organization_id = $3' : ''}
          GROUP BY category_id
          HAVING COUNT(*) > 2
          ORDER BY amount_diff ASC, count DESC
          LIMIT 1`,
-        [userId, amount]
+        organizationId ? [userId, amount, organizationId] : [userId, amount]
       );
 
       if (amountMatch.rows.length > 0) {
@@ -213,12 +216,13 @@ export class TransactionCategorizer {
   static async recordFeedback(
     userId: number,
     transactionId: number,
-    categoryId: number
+    categoryId: number,
+    organizationId: number
   ): Promise<void> {
     try {
       await query(
-        'UPDATE transactions SET category_id = $1 WHERE id = $2 AND user_id = $3',
-        [categoryId, transactionId, userId]
+        `UPDATE transactions SET category_id = $1 WHERE id = $2 AND user_id = $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+        organizationId ? [categoryId, transactionId, userId, organizationId] : [categoryId, transactionId, userId]
       );
       console.log('[Categorizer] Recorded user feedback for categorization');
     } catch (error) {

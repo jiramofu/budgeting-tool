@@ -71,7 +71,7 @@ async function processAlerts() {
           const categoryName = categoryResult.rows[0]?.name || 'Unknown';
 
           // Check if this alert should trigger email
-          const preferences = await getAlertPreferences(userId, alert.categoryId);
+          const preferences = await getAlertPreferences(userId, alert.categoryId, alert.organization_id);
 
           if (preferences?.enableEmailAlerts) {
             const result = await sendAlertEmail(userEmail, {
@@ -117,6 +117,7 @@ async function processReports() {
         er.report_type,
         er.recipient_email,
         er.frequency,
+        er.organization_id,
         ep.weekly_summary_enabled,
         ep.monthly_summary_enabled,
         ep.spending_analysis_enabled,
@@ -173,19 +174,19 @@ async function processReports() {
           );
 
           // Mark as sent and schedule next send
-          await markReportAsSent(report.id, true);
+          await markReportAsSent(report.id, true, report.organization_id);
         } else {
           console.error(
             `[Scheduler] Failed to send report: ${emailResult.error}`
           );
-          await markReportAsSent(report.id, false, emailResult.error);
+          await markReportAsSent(report.id, false, report.organization_id, emailResult.error);
         }
       } catch (error: any) {
         console.error(
           `[Scheduler] Error processing report ${report.id}:`,
           error
         );
-        await markReportAsSent(report.id, false, String(error)).catch(
+        await markReportAsSent(report.id, false, report.organization_id, String(error)).catch(
           (e: any) => console.error('Error marking report as failed:', e)
         );
       }

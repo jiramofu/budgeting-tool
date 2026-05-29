@@ -1,5 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import {
   checkSpendingAlerts,
   getActiveAlerts,
@@ -12,18 +14,18 @@ import {
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authenticate);
+router.use(authenticate, loadUserOrganizations, requireOrganization);
 
 /**
  * Check for spending alerts in a specific budget
  * GET /api/alerts/check/:budgetId
  */
-router.get('/check/:budgetId', async (req: Request, res: Response) => {
+router.get('/check/:budgetId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { budgetId } = req.params;
 
-    const alerts = await checkSpendingAlerts(userId, parseInt(budgetId));
+    const alerts = await checkSpendingAlerts(userId, parseInt(budgetId), req.organizationId!);
 
     res.json({
       success: true,
@@ -43,11 +45,11 @@ router.get('/check/:budgetId', async (req: Request, res: Response) => {
  * Get active alerts for the user
  * GET /api/alerts/active
  */
-router.get('/active', async (req: Request, res: Response) => {
+router.get('/active', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
-    const alerts = await getActiveAlerts(userId);
+    const alerts = await getActiveAlerts(userId, req.organizationId!);
 
     res.json({
       success: true,
@@ -67,11 +69,11 @@ router.get('/active', async (req: Request, res: Response) => {
  * Get all alerts and anomalies (including resolved)
  * GET /api/alerts/all
  */
-router.get('/all', async (req: Request, res: Response) => {
+router.get('/all', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
 
-    const alerts = await getAllAnomalies(userId);
+    const alerts = await getAllAnomalies(userId, req.organizationId!);
 
     res.json({
       success: true,
@@ -91,12 +93,12 @@ router.get('/all', async (req: Request, res: Response) => {
  * Resolve an active alert
  * PUT /api/alerts/:alertId/resolve
  */
-router.put('/:alertId/resolve', async (req: Request, res: Response) => {
+router.put('/:alertId/resolve', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { alertId } = req.params;
 
-    await resolveAlert(userId, parseInt(alertId));
+    await resolveAlert(userId, parseInt(alertId), req.organizationId!);
 
     res.json({
       success: true,
@@ -115,12 +117,12 @@ router.put('/:alertId/resolve', async (req: Request, res: Response) => {
  * Get alert preferences for a category
  * GET /api/alerts/preferences/:categoryId
  */
-router.get('/preferences/:categoryId', async (req: Request, res: Response) => {
+router.get('/preferences/:categoryId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { categoryId } = req.params;
 
-    const preferences = await getAlertPreferences(userId, parseInt(categoryId));
+    const preferences = await getAlertPreferences(userId, parseInt(categoryId), req.organizationId!);
 
     res.json({
       success: true,
@@ -139,9 +141,9 @@ router.get('/preferences/:categoryId', async (req: Request, res: Response) => {
  * Update alert preferences for a category
  * PUT /api/alerts/preferences/:categoryId
  */
-router.put('/preferences/:categoryId', async (req: Request, res: Response) => {
+router.put('/preferences/:categoryId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { categoryId } = req.params;
     const {
       alertThresholdPercentage,
@@ -176,7 +178,7 @@ router.put('/preferences/:categoryId', async (req: Request, res: Response) => {
       criticalThresholdPercentage,
       enableEmailAlerts,
       enableAppAlerts,
-    });
+    }, req.organizationId!);
 
     res.json({
       success: true,

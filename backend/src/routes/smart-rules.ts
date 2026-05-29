@@ -1,10 +1,13 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
+import { query as dbQuery } from '../config/database';
 import SmartRulesEngine from '../services/smart-rules-engine';
 
 const router = Router();
 
-router.get('/recommendations', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/recommendations', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -13,7 +16,8 @@ router.get('/recommendations', authenticate, async (req: AuthRequest, res: Respo
     const recommendations = await SmartRulesEngine.analyzeBudgetAndGetRecommendations(
       req.userId,
       parseInt(month as string),
-      parseInt(year as string)
+      parseInt(year as string),
+      req.organizationId
     );
 
     res.json({ recommendations });
@@ -23,12 +27,12 @@ router.get('/recommendations', authenticate, async (req: AuthRequest, res: Respo
   }
 });
 
-router.get('/anomalies/:categoryId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/anomalies/:categoryId', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
 
     const categoryId = parseInt(req.params.categoryId);
-    const alert = await SmartRulesEngine.detectSpendingAnomalies(req.userId, categoryId);
+    const alert = await SmartRulesEngine.detectSpendingAnomalies(req.userId, categoryId, req.organizationId!);
 
     res.json({ alert });
   } catch (error: any) {
@@ -37,7 +41,7 @@ router.get('/anomalies/:categoryId', authenticate, async (req: AuthRequest, res:
   }
 });
 
-router.get('/forecast/:categoryId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/forecast/:categoryId', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -47,7 +51,8 @@ router.get('/forecast/:categoryId', authenticate, async (req: AuthRequest, res: 
     const forecast = await SmartRulesEngine.getSpendingForecast(
       req.userId,
       categoryId,
-      parseInt(daysAhead as string)
+      parseInt(daysAhead as string),
+      req.organizationId
     );
 
     res.json(forecast);
@@ -57,19 +62,19 @@ router.get('/forecast/:categoryId', authenticate, async (req: AuthRequest, res: 
   }
 });
 
-router.get('/all-anomalies', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/all-anomalies', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   try {
     if (!req.userId) return res.status(401).json({ error: 'Unauthorized' });
 
-    const categoriesResult = await (require('../config/database')).pool.query(
+    const categoriesResult = await dbQuery(
       `SELECT DISTINCT c.id FROM categories c
-       WHERE c.user_id = $1`,
-      [req.userId]
+       WHERE c.user_id = $1 AND c.organization_id = $2`,
+      [req.userId, req.organizationId]
     );
 
     const alerts = [];
     for (const category of categoriesResult.rows) {
-      const alert = await SmartRulesEngine.detectSpendingAnomalies(req.userId, category.id);
+      const alert = await SmartRulesEngine.detectSpendingAnomalies(req.userId, category.id, req.organizationId!);
       if (alert) alerts.push(alert);
     }
 

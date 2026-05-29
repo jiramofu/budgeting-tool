@@ -1,5 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import { InvestmentService } from '../services/investment-service';
 
 const router = Router();
@@ -7,14 +9,14 @@ const router = Router();
 console.log('[Investment Routes] Loading investment routes...');
 
 // Get portfolio summary
-router.get('/portfolio', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/portfolio', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Investment] GET portfolio');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const summary = await InvestmentService.getPortfolioSummary(req.userId);
+    const summary = await InvestmentService.getPortfolioSummary(req.userId, req.organizationId!);
     res.json(summary);
   } catch (error: any) {
     console.error('[Investment] Error getting portfolio:', error);
@@ -23,7 +25,7 @@ router.get('/portfolio', authenticate, async (req: AuthRequest, res: Response) =
 });
 
 // Add investment
-router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Investment] POST investment');
   try {
     if (!req.userId) {
@@ -32,6 +34,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 
     const investment = await InvestmentService.addInvestment(req.userId, {
       userId: req.userId,
+      organizationId: req.organizationId!,
       ...req.body,
     });
 
@@ -43,7 +46,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Update investment price
-router.put('/:id/price', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/:id/price', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Investment] PUT investment price');
   try {
     if (!req.userId) {
@@ -55,7 +58,7 @@ router.put('/:id/price', authenticate, async (req: AuthRequest, res: Response) =
       return res.status(400).json({ error: 'Missing currentPrice' });
     }
 
-    const investment = await InvestmentService.updateInvestmentPrice(parseInt(req.params.id), currentPrice);
+    const investment = await InvestmentService.updateInvestmentPrice(parseInt(req.params.id), currentPrice, req.organizationId!);
     res.json(investment);
   } catch (error: any) {
     console.error('[Investment] Error updating investment:', error);
@@ -64,14 +67,14 @@ router.put('/:id/price', authenticate, async (req: AuthRequest, res: Response) =
 });
 
 // Delete investment
-router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Investment] DELETE investment');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    await InvestmentService.deleteInvestment(parseInt(req.params.id));
+    await InvestmentService.deleteInvestment(parseInt(req.params.id), req.organizationId!);
     res.json({ success: true });
   } catch (error: any) {
     console.error('[Investment] Error deleting investment:', error);

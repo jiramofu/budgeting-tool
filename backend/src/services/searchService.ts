@@ -38,7 +38,8 @@ export class SearchService {
     userId: number,
     filters: SearchFilter,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    organizationId: number
   ): Promise<{ results: SearchResult[]; total: number }> {
     try {
       let query = `
@@ -51,11 +52,12 @@ export class SearchService {
           c.id as categoryId
         FROM transactions t
         LEFT JOIN categories c ON t.category_id = c.id
-        WHERE t.user_id = $1
+        WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $2' : ''}
       `;
 
       const params: any[] = [userId];
-      let paramIndex = 2;
+      let paramIndex = organizationId ? 3 : 2;
+      if (organizationId) params.push(organizationId);
 
       // Amount range filter
       if (filters.minAmount !== undefined) {
@@ -111,7 +113,7 @@ export class SearchService {
       const result = await pool.query(query, params);
 
       // Record search analytics
-      await this.recordSearchAnalytics(userId, filters, result.rows.length);
+      await this.recordSearchAnalytics(userId, filters, result.rows.length, organizationId);
 
       return {
         results: result.rows,
@@ -129,21 +131,22 @@ export class SearchService {
   async getSearchSuggestions(
     userId: number,
     searchTerm: string,
-    limit: number = 10
+    limit: number = 10,
+    organizationId: number
   ): Promise<string[]> {
     try {
       const result = await pool.query(
         `
         SELECT DISTINCT LOWER(description) as suggestion
         FROM transactions
-        WHERE user_id = $1 AND LOWER(description) LIKE LOWER($2)
+        WHERE user_id = $1 AND LOWER(description) LIKE LOWER($2) ${organizationId ? 'AND organization_id = $4' : ''}
         ORDER BY (
           SELECT COUNT(*) FROM transactions t2
-          WHERE t2.user_id = $1 AND LOWER(t2.description) = LOWER(transactions.description)
+          WHERE t2.user_id = $1 AND LOWER(t2.description) = LOWER(transactions.description) ${organizationId ? 'AND t2.organization_id = $4' : ''}
         ) DESC
         LIMIT $3
         `,
-        [userId, `${searchTerm}%`, limit]
+        organizationId ? [userId, `${searchTerm}%`, limit, organizationId] : [userId, `${searchTerm}%`, limit]
       );
 
       return result.rows.map(r => r.suggestion);
@@ -160,19 +163,20 @@ export class SearchService {
     userId: number,
     name: string,
     filters: SearchFilter,
+    organizationId: number,
     description?: string
   ): Promise<SavedSearch> {
     try {
       const result = await pool.query(
         `
-        INSERT INTO search_queries (user_id, name, description, filters_json)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (user_id, name) DO UPDATE
-        SET filters_json = $4, updated_at = CURRENT_TIMESTAMP
+        INSERT INTO search_queries (user_id, organization_id, name, description, filters_json)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id, organization_id, name) DO UPDATE
+        SET filters_json = $5, updated_at = CURRENT_TIMESTAMP
         RETURNING id, name, description, filters_json as filters, search_count as "searchCount",
                   last_used_at as "lastUsedAt", is_favorite as "isFavorite"
         `,
-        [userId, name, description || null, JSON.stringify(filters)]
+        [userId, organizationId || null, name, description || null, JSON.stringify(filters)]
       );
 
       return result.rows[0];
@@ -185,7 +189,7 @@ export class SearchService {
   /**
    * Get saved searches for a user
    */
-  async getSavedSearches(userId: number): Promise<SavedSearch[]> {
+  async getSavedSearches(userId: number, organizationId?: number): Promise<SavedSearch[]> {
     try {
       const result = await pool.query(
         `
@@ -193,10 +197,10 @@ export class SearchService {
           id, name, description, filters_json as filters, search_count as "searchCount",
           last_used_at as "lastUsedAt", is_favorite as "isFavorite"
         FROM search_queries
-        WHERE user_id = $1
+        WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
         ORDER BY is_favorite DESC, last_used_at DESC NULLS LAST
         `,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       return result.rows.map(row => ({
@@ -212,11 +216,11 @@ export class SearchService {
   /**
    * Delete a saved search
    */
-  async deleteSearch(userId: number, searchId: number): Promise<boolean> {
+  async deleteSearch(userId: number, searchId: number, organizationId?: number): Promise<boolean> {
     try {
       const result = await pool.query(
-        `DELETE FROM search_queries WHERE id = $1 AND user_id = $2`,
-        [searchId, userId]
+        `DELETE FROM search_queries WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
+        organizationId ? [searchId, userId, organizationId] : [searchId, userId]
       );
 
       return (result.rowCount ?? 0) > 0;
@@ -229,16 +233,16 @@ export class SearchService {
   /**
    * Toggle search as favorite
    */
-  async toggleSearchFavorite(userId: number, searchId: number): Promise<boolean> {
+  async toggleSearchFavorite(userId: number, searchId: number, organizationId?: number): Promise<boolean> {
     try {
       const result = await pool.query(
         `
         UPDATE search_queries
         SET is_favorite = NOT is_favorite, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $1 AND user_id = $2
+        WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
         RETURNING is_favorite
         `,
-        [searchId, userId]
+        organizationId ? [searchId, userId, organizationId] : [searchId, userId]
       );
 
       return (result.rowCount ?? 0) > 0;
@@ -254,15 +258,16 @@ export class SearchService {
   private async recordSearchAnalytics(
     userId: number,
     filters: SearchFilter,
-    resultsCount: number
+    resultsCount: number,
+    organizationId: number
   ): Promise<void> {
     try {
       await pool.query(
         `
-        INSERT INTO search_analytics (user_id, search_term, filters_used, results_count)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO search_analytics (user_id, organization_id, search_term, filters_used, results_count)
+        VALUES ($1, $2, $3, $4, $5)
         `,
-        [userId, filters.description || null, JSON.stringify(filters), resultsCount]
+        [userId, organizationId || null, filters.description || null, JSON.stringify(filters), resultsCount]
       );
     } catch (error: any) {
       console.error('Error recording search analytics:', error);
@@ -273,7 +278,7 @@ export class SearchService {
   /**
    * Get popular search terms across all users (anonymized)
    */
-  async getPopularSearchTerms(limit: number = 10): Promise<
+  async getPopularSearchTerms(limit: number = 10, organizationId?: number): Promise<
     { term: string; count: number }[]
   > {
     try {
@@ -281,12 +286,12 @@ export class SearchService {
         `
         SELECT search_term as term, COUNT(*) as count
         FROM search_analytics
-        WHERE search_term IS NOT NULL
+        WHERE search_term IS NOT NULL ${organizationId ? 'AND organization_id = $2' : ''}
         GROUP BY search_term
         ORDER BY count DESC
         LIMIT $1
         `,
-        [limit]
+        organizationId ? [limit, organizationId] : [limit]
       );
 
       return result.rows;

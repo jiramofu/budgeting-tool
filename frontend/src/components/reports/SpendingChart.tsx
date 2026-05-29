@@ -68,7 +68,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
                 borderRadius: '8px',
               }}
               labelStyle={{ color: '#f8fafc' }}
-              formatter={(value) => `$${value.toFixed(2)}`}
+              formatter={(value) => `$${typeof value === 'number' ? value.toFixed(2) : value}`}
             />
             <Legend />
             <Line
@@ -113,7 +113,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
                 borderRadius: '8px',
               }}
               labelStyle={{ color: '#f8fafc' }}
-              formatter={(value) => `$${value.toFixed(2)}`}
+              formatter={(value) => `$${typeof value === 'number' ? value.toFixed(2) : value}`}
             />
             <Legend />
             <Bar dataKey="spending" fill="#ef4444" name="Spending" />

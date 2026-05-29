@@ -33,12 +33,12 @@ interface EmailReport {
 /**
  * Get email preferences for a user
  */
-export async function getEmailPreferences(userId: number): Promise<EmailPreferences> {
+export async function getEmailPreferences(userId: number, organizationId?: number): Promise<EmailPreferences> {
   try {
     // Get or create preferences
     let result = await pool.query(
-      `SELECT * FROM email_preferences WHERE user_id = $1`,
-      [userId]
+      `SELECT * FROM email_preferences WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+      organizationId ? [userId, organizationId] : [userId]
     );
 
     if (result.rows.length === 0) {
@@ -47,6 +47,7 @@ export async function getEmailPreferences(userId: number): Promise<EmailPreferen
         `
         INSERT INTO email_preferences (
           user_id,
+          organization_id,
           weekly_summary_enabled,
           monthly_summary_enabled,
           spending_analysis_enabled,
@@ -57,7 +58,7 @@ export async function getEmailPreferences(userId: number): Promise<EmailPreferen
           include_bill_reminders,
           unsubscribe_token
         )
-        VALUES ($1, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, $2)
+        VALUES ($1, $2, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, $3)
         RETURNING
           id,
           user_id as "userId",
@@ -71,7 +72,7 @@ export async function getEmailPreferences(userId: number): Promise<EmailPreferen
           include_bill_reminders as "includeBillReminders",
           is_unsubscribed as "isUnsubscribed"
         `,
-        [userId, randomBytes(16).toString('hex')]
+        [userId, organizationId || null, randomBytes(16).toString('hex')]
       );
     }
 
@@ -100,7 +101,8 @@ export async function getEmailPreferences(userId: number): Promise<EmailPreferen
  */
 export async function updateEmailPreferences(
   userId: number,
-  updates: Partial<EmailPreferences>
+  updates: Partial<EmailPreferences>,
+  organizationId: number
 ): Promise<EmailPreferences> {
   try {
     const setClauses: string[] = [];
@@ -127,17 +129,20 @@ export async function updateEmailPreferences(
     }
 
     if (setClauses.length === 0) {
-      return getEmailPreferences(userId);
+      return getEmailPreferences(userId, organizationId);
     }
 
     setClauses.push('updated_at = CURRENT_TIMESTAMP');
     values.push(userId);
+    if (organizationId) values.push(organizationId);
+
+    const whereClause = organizationId ? `WHERE user_id = $${paramIndex} AND organization_id = $${paramIndex + 1}` : `WHERE user_id = $${paramIndex}`;
 
     const result = await pool.query(
       `
       UPDATE email_preferences
       SET ${setClauses.join(', ')}
-      WHERE user_id = $${paramIndex}
+      ${whereClause}
       RETURNING
         id,
         user_id as "userId",
@@ -155,7 +160,7 @@ export async function updateEmailPreferences(
     );
 
     if (result.rows.length === 0) {
-      return getEmailPreferences(userId);
+      return getEmailPreferences(userId, organizationId);
     }
 
     const row = result.rows[0];
@@ -181,7 +186,7 @@ export async function updateEmailPreferences(
 /**
  * Get all email reports for a user
  */
-export async function getUserEmailReports(userId: number): Promise<EmailReport[]> {
+export async function getUserEmailReports(userId: number, organizationId?: number): Promise<EmailReport[]> {
   try {
     const result = await pool.query(
       `
@@ -199,10 +204,10 @@ export async function getUserEmailReports(userId: number): Promise<EmailReport[]
         next_send_at as "nextSendAt",
         created_at as "createdAt"
       FROM email_reports
-      WHERE user_id = $1 AND is_active = TRUE
+      WHERE user_id = $1 AND is_active = TRUE ${organizationId ? 'AND organization_id = $2' : ''}
       ORDER BY created_at DESC
       `,
-      [userId]
+      organizationId ? [userId, organizationId] : [userId]
     );
 
     return result.rows;
@@ -224,7 +229,8 @@ export async function createEmailReport(
     scheduledDayOfWeek?: number;
     scheduledDayOfMonth?: number;
     scheduledTime: string;
-  }
+  },
+  organizationId: number
 ): Promise<EmailReport> {
   try {
     // Calculate next send time
@@ -239,6 +245,7 @@ export async function createEmailReport(
       `
       INSERT INTO email_reports (
         user_id,
+        organization_id,
         report_type,
         recipient_email,
         frequency,
@@ -247,7 +254,7 @@ export async function createEmailReport(
         scheduled_time,
         next_send_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING
         id,
         user_id as "userId",
@@ -264,6 +271,7 @@ export async function createEmailReport(
       `,
       [
         userId,
+        organizationId || null,
         report.reportType,
         report.recipientEmail,
         report.frequency,
@@ -287,13 +295,14 @@ export async function createEmailReport(
 export async function updateEmailReport(
   userId: number,
   reportId: number,
-  updates: Partial<EmailReport>
+  updates: Partial<EmailReport>,
+  organizationId: number
 ): Promise<EmailReport> {
   try {
     // Verify user owns this report
     const ownerCheck = await pool.query(
-      `SELECT id FROM email_reports WHERE id = $1 AND user_id = $2`,
-      [reportId, userId]
+      `SELECT id FROM email_reports WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
+      organizationId ? [reportId, userId, organizationId] : [reportId, userId]
     );
 
     if (ownerCheck.rows.length === 0) {
@@ -323,12 +332,15 @@ export async function updateEmailReport(
 
     setClauses.push('updated_at = CURRENT_TIMESTAMP');
     values.push(reportId);
+    if (organizationId) values.push(organizationId);
+
+    const whereClause = organizationId ? `WHERE id = $${paramIndex} AND organization_id = $${paramIndex + 1}` : `WHERE id = $${paramIndex}`;
 
     const result = await pool.query(
       `
       UPDATE email_reports
       SET ${setClauses.join(', ')}
-      WHERE id = $${paramIndex}
+      ${whereClause}
       RETURNING
         id,
         user_id as "userId",
@@ -358,16 +370,17 @@ export async function updateEmailReport(
  */
 export async function deleteEmailReport(
   userId: number,
-  reportId: number
+  reportId: number,
+  organizationId: number
 ): Promise<void> {
   try {
     const result = await pool.query(
       `
       UPDATE email_reports
       SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1 AND user_id = $2
+      WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
       `,
-      [reportId, userId]
+      organizationId ? [reportId, userId, organizationId] : [reportId, userId]
     );
 
     if (result.rowCount === 0) {
@@ -385,6 +398,7 @@ export async function deleteEmailReport(
 export async function markReportAsSent(
   reportId: number,
   success: boolean,
+  organizationId: number,
   errorMessage?: string
 ): Promise<void> {
   try {
@@ -521,7 +535,7 @@ function calculateNextSendTime(
 /**
  * Send a test email to verify email service is working
  */
-export async function sendTestEmail(recipientEmail: string): Promise<{ success: boolean; message: string }> {
+export async function sendTestEmail(recipientEmail: string, organizationId?: number): Promise<{ success: boolean; message: string }> {
   try {
     // Import email service
     const { sendEmail } = await import('./emailService');

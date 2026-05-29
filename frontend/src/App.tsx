@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, ToastContainer } from './components/ui/toast';
 import { DashboardSkeleton } from './components/SkeletonLoader';
@@ -31,7 +32,11 @@ import EmailPreferencesPage from './pages/EmailPreferencesPage';
 import AdvancedSearchPage from './pages/AdvancedSearchPage';
 import ProjectionsPage from './pages/ProjectionsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
-import Layout from './components/Layout';
+import AuditLogsPage from './pages/AuditLogsPage';
+import MembersPage from './pages/MembersPage';
+import OrganizationSettingsPage from './pages/OrganizationSettingsPage';
+import { MobileRoutes } from './routes/MobileRoutes';
+import { SettingsSync } from './components/SettingsSync';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -53,11 +58,31 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   return <NavigationLayout>{children}</NavigationLayout>;
 };
 
+const MobileProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+};
+
 function AppContent() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
+    <>
+      {isAuthenticated && <SettingsSync />}
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route
@@ -72,9 +97,7 @@ function AppContent() {
         path="/import"
         element={
           <ProtectedRoute>
-            <Layout>
-              <ImportCSVPage />
-            </Layout>
+            <ImportCSVPage />
           </ProtectedRoute>
         }
       />
@@ -82,9 +105,7 @@ function AppContent() {
         path="/analytics"
         element={
           <ProtectedRoute>
-            <Layout>
-              <Analytics />
-            </Layout>
+            <Analytics />
           </ProtectedRoute>
         }
       />
@@ -92,9 +113,7 @@ function AppContent() {
         path="/bills"
         element={
           <ProtectedRoute>
-            <Layout>
-              <BillsPage />
-            </Layout>
+            <BillsPage />
           </ProtectedRoute>
         }
       />
@@ -102,9 +121,7 @@ function AppContent() {
         path="/goals"
         element={
           <ProtectedRoute>
-            <Layout>
-              <GoalsPage />
-            </Layout>
+            <GoalsPage />
           </ProtectedRoute>
         }
       />
@@ -112,9 +129,7 @@ function AppContent() {
         path="/templates"
         element={
           <ProtectedRoute>
-            <Layout>
-              <TemplatesPage />
-            </Layout>
+            <TemplatesPage />
           </ProtectedRoute>
         }
       />
@@ -122,9 +137,7 @@ function AppContent() {
         path="/households"
         element={
           <ProtectedRoute>
-            <Layout>
-              <HouseholdPage />
-            </Layout>
+            <HouseholdPage />
           </ProtectedRoute>
         }
       />
@@ -132,9 +145,7 @@ function AppContent() {
         path="/wellness"
         element={
           <ProtectedRoute>
-            <Layout>
-              <WellnessPage />
-            </Layout>
+            <WellnessPage />
           </ProtectedRoute>
         }
       />
@@ -142,9 +153,7 @@ function AppContent() {
         path="/insights"
         element={
           <ProtectedRoute>
-            <Layout>
-              <InsightsPage />
-            </Layout>
+            <InsightsPage />
           </ProtectedRoute>
         }
       />
@@ -152,9 +161,7 @@ function AppContent() {
         path="/budgeting"
         element={
           <ProtectedRoute>
-            <Layout>
-              <AdvancedBudgetingPage />
-            </Layout>
+            <AdvancedBudgetingPage />
           </ProtectedRoute>
         }
       />
@@ -162,9 +169,7 @@ function AppContent() {
         path="/investments"
         element={
           <ProtectedRoute>
-            <Layout>
-              <InvestmentsPage />
-            </Layout>
+            <InvestmentsPage />
           </ProtectedRoute>
         }
       />
@@ -172,9 +177,7 @@ function AppContent() {
         path="/subscriptions"
         element={
           <ProtectedRoute>
-            <Layout>
-              <SubscriptionsPage />
-            </Layout>
+            <SubscriptionsPage />
           </ProtectedRoute>
         }
       />
@@ -182,9 +185,7 @@ function AppContent() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <Layout>
-              <SettingsPage />
-            </Layout>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />
@@ -192,9 +193,7 @@ function AppContent() {
         path="/notifications"
         element={
           <ProtectedRoute>
-            <Layout>
-              <NotificationsPage />
-            </Layout>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />
@@ -202,9 +201,7 @@ function AppContent() {
         path="/reports"
         element={
           <ProtectedRoute>
-            <Layout>
-              <ReportsPage />
-            </Layout>
+            <ReportsPage />
           </ProtectedRoute>
         }
       />
@@ -212,9 +209,7 @@ function AppContent() {
         path="/smart-rules"
         element={
           <ProtectedRoute>
-            <Layout>
-              <SmartRulesPage />
-            </Layout>
+            <SmartRulesPage />
           </ProtectedRoute>
         }
       />
@@ -222,9 +217,7 @@ function AppContent() {
         path="/alerts"
         element={
           <ProtectedRoute>
-            <Layout>
-              <AlertsPage />
-            </Layout>
+            <AlertsPage />
           </ProtectedRoute>
         }
       />
@@ -232,9 +225,7 @@ function AppContent() {
         path="/email-preferences"
         element={
           <ProtectedRoute>
-            <Layout>
-              <EmailPreferencesPage />
-            </Layout>
+            <EmailPreferencesPage />
           </ProtectedRoute>
         }
       />
@@ -242,9 +233,7 @@ function AppContent() {
         path="/search"
         element={
           <ProtectedRoute>
-            <Layout>
-              <AdvancedSearchPage />
-            </Layout>
+            <AdvancedSearchPage />
           </ProtectedRoute>
         }
       />
@@ -252,9 +241,7 @@ function AppContent() {
         path="/projections"
         element={
           <ProtectedRoute>
-            <Layout>
-              <ProjectionsPage />
-            </Layout>
+            <ProjectionsPage />
           </ProtectedRoute>
         }
       />
@@ -262,14 +249,50 @@ function AppContent() {
         path="/phase4-analytics"
         element={
           <ProtectedRoute>
-            <Layout>
-              <AnalyticsPage />
-            </Layout>
+            <AnalyticsPage />
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/admin/organization"
+        element={
+          <ProtectedRoute>
+            <OrganizationSettingsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/members"
+        element={
+          <ProtectedRoute>
+            <MembersPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/audit-logs"
+        element={
+          <ProtectedRoute>
+            <AuditLogsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Mobile Experience - Optimized for phones/tablets */}
+      <Route
+        path="/mobile/*"
+        element={
+          <MobileProtectedRoute>
+            <MobileRoutes />
+          </MobileProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </>
   );
 }
 
@@ -278,13 +301,15 @@ function App() {
     <ErrorBoundary>
       <ToastProvider>
         <ThemeProvider>
-          <Router>
-            <AuthProvider>
-              <OfflineDetector />
-              <AppContent />
-              <ToastContainer />
-            </AuthProvider>
-          </Router>
+          <CurrencyProvider>
+            <Router>
+              <AuthProvider>
+                <OfflineDetector />
+                <AppContent />
+                <ToastContainer />
+              </AuthProvider>
+            </Router>
+          </CurrencyProvider>
         </ThemeProvider>
       </ToastProvider>
     </ErrorBoundary>

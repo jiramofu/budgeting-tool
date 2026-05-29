@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { apiClient } from '../../services/api';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 interface CategorySpending {
   category_id: number;
@@ -11,6 +12,7 @@ interface CategorySpending {
 
 interface SpendingByCategoryProps {
   budgetId?: number;
+  currency?: string;
 }
 
 const COLORS = [
@@ -24,7 +26,7 @@ const COLORS = [
   '#06b6d4', // Cyan 500
 ];
 
-const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => {
+const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId, currency = 'USD' }) => {
   const [data, setData] = useState<CategorySpending[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -79,10 +81,10 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 backdrop-blur-sm">
-        <h3 className="text-lg font-semibold text-slate-50 mb-4">Spending by Category</h3>
+      <div className="rounded-lg border border-primary bg-secondary p-6 backdrop-blur-sm">
+        <h3 className="text-lg font-semibold text-primary mb-4">Spending by Category</h3>
         <div className="h-64 flex items-center justify-center">
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-secondary">Loading...</p>
         </div>
       </div>
     );
@@ -90,10 +92,10 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
 
   if (error || data.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 backdrop-blur-sm">
-        <h3 className="text-lg font-semibold text-slate-50 mb-4">Spending by Category</h3>
+      <div className="rounded-lg border border-primary bg-secondary p-6 backdrop-blur-sm">
+        <h3 className="text-lg font-semibold text-primary mb-4">Spending by Category</h3>
         <div className="h-64 flex items-center justify-center">
-          <p className="text-slate-400">No spending data available</p>
+          <p className="text-secondary">No spending data available</p>
         </div>
       </div>
     );
@@ -106,8 +108,8 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
   }));
 
   return (
-    <div className="rounded-lg border border-slate-700 bg-slate-800 p-6 backdrop-blur-sm">
-      <h3 className="text-lg font-semibold text-slate-50 mb-4">Spending by Category</h3>
+    <div className="rounded-lg border border-primary bg-secondary p-6 backdrop-blur-sm">
+      <h3 className="text-lg font-semibold text-primary mb-4">Spending by Category</h3>
 
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
@@ -116,7 +118,7 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, value, percent }) => `${name}: $${value.toFixed(0)} (${(percent * 100).toFixed(0)}%)`}
+            label={({ name, value, percent }) => `${name}: ${formatCurrency(value, currency, 0)} (${(percent * 100).toFixed(0)}%)`}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
@@ -126,20 +128,20 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
             ))}
           </Pie>
           <Tooltip
-            formatter={(value: number) => `$${value.toFixed(2)}`}
+            formatter={(value: number) => formatCurrency(value, currency)}
             contentStyle={{
-              backgroundColor: '#0f172a',
-              border: '1px solid #334155',
+              backgroundColor: 'var(--color-bg-secondary)',
+              border: '1px solid var(--color-border-primary)',
               borderRadius: '8px',
             }}
-            labelStyle={{ color: '#f8fafc' }}
+            labelStyle={{ color: 'var(--color-text-primary)' }}
           />
         </PieChart>
       </ResponsiveContainer>
 
       {/* Category breakdown table */}
       <div className="mt-6 space-y-2">
-        <h4 className="text-sm font-semibold text-slate-300 mb-3">Category Breakdown</h4>
+        <h4 className="text-sm font-semibold text-secondary mb-3">Category Breakdown</h4>
         {data.map((item, idx) => (
           <div key={item.category_id || idx} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -147,11 +149,11 @@ const SpendingByCategory: React.FC<SpendingByCategoryProps> = ({ budgetId }) => 
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: COLORS[idx % COLORS.length] }}
               />
-              <span className="text-sm text-slate-300">{item.category_name}</span>
+              <span className="text-sm text-secondary">{item.category_name}</span>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium text-slate-50">${item.total_amount.toFixed(2)}</p>
-              <p className="text-xs text-slate-400">{item.percentage}%</p>
+              <p className="text-sm font-medium text-primary">{formatCurrency(item.total_amount, currency)}</p>
+              <p className="text-xs text-secondary">{item.percentage}%</p>
             </div>
           </div>
         ))}

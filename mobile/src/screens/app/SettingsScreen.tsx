@@ -1,346 +1,210 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Switch,
-  TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../services/api';
-
-interface UserSettings {
-  theme: 'light' | 'dark';
-  currency: string;
-  dateFormat: string;
-  language: string;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  twoFactorEnabled: boolean;
-}
+import { UserSettings } from '../../types';
+import { Colors } from '../../constants/colors';
+import Button from '../../components/Button';
 
 const SettingsScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const [settings, setSettings] = useState<UserSettings | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const loadSettings = async () => {
+  const load = async () => {
     try {
-      setLoading(true);
-      const response = await apiClient.get('/settings');
-      setSettings(response.data);
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    } finally {
-      setLoading(false);
+      const res = await apiClient.get('/user/settings');
+      setSettings(res.data);
+    } catch {
+      setSettings({ theme: 'light', currency: 'USD', dateFormat: 'MM/DD/YYYY', language: 'en', emailNotifications: true, pushNotifications: true, twoFactorEnabled: false });
     }
   };
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
+  useFocusEffect(useCallback(() => { load(); }, []));
 
-  const updateSetting = async (key: string, value: any) => {
+  const update = async <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
     if (!settings) return;
-
-    const updatedSettings = { ...settings, [key]: value };
-    setSettings(updatedSettings);
-
+    const prev = settings;
+    const updated = { ...settings, [key]: value };
+    setSettings(updated);
     try {
       setSaving(true);
-      await apiClient.put('/settings', updatedSettings);
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      Alert.alert('Error', 'Failed to save settings');
-      await loadSettings();
-    } finally {
-      setSaving(false);
-    }
+      await apiClient.put('/user/settings', updated);
+    } catch {
+      Alert.alert('Error', 'Failed to save setting.');
+      setSettings(prev);
+    } finally { setSaving(false); }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to log out?', [
-      { text: 'Cancel', onPress: () => {} },
-      {
-        text: 'Logout',
-        onPress: () => {
-          logout();
-        },
-        style: 'destructive',
-      },
+  const confirmLogout = () =>
+    Alert.alert('Sign Out', 'Sign out of your account?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: () => logout() },
     ]);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
-  }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Account Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Account</Text>
-        <View style={styles.card}>
-          <View style={styles.settingRow}>
-            <View>
-              <Text style={styles.settingLabel}>Email</Text>
-              <Text style={styles.settingValue}>{user?.email}</Text>
-            </View>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+      <ScrollView style={styles.screen} contentContainerStyle={styles.container}>
+        {/* Profile card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarChar}>{(user?.email?.[0] ?? '?').toUpperCase()}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileEmail}>{user?.email}</Text>
+            <Text style={styles.profileRole}>Personal account</Text>
+          </View>
+          <View style={[styles.planBadge]}>
+            <Text style={styles.planText}>Free</Text>
           </View>
         </View>
-      </View>
 
-      {/* Appearance Section */}
-      {settings && (
-        <>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Appearance</Text>
-            <View style={styles.card}>
-              <View style={styles.settingRow}>
-                <Text style={styles.settingLabel}>Theme</Text>
-                <View style={styles.themeOptions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.themeButton,
-                      settings.theme === 'light' && styles.themeButtonActive,
-                    ]}
-                    onPress={() => updateSetting('theme', 'light')}
-                  >
-                    <Text
-                      style={[
-                        styles.themeButtonText,
-                        settings.theme === 'light' && styles.themeButtonTextActive,
-                      ]}
-                    >
-                      Light
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.themeButton,
-                      settings.theme === 'dark' && styles.themeButtonActive,
-                    ]}
-                    onPress={() => updateSetting('theme', 'dark')}
-                  >
-                    <Text
-                      style={[
-                        styles.themeButtonText,
-                        settings.theme === 'dark' && styles.themeButtonTextActive,
-                      ]}
-                    >
-                      Dark
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View style={[styles.settingRow, styles.settingDivider]}>
-                <Text style={styles.settingLabel}>Currency</Text>
-                <Text style={styles.settingValue}>{settings.currency}</Text>
-              </View>
-
-              <View style={[styles.settingRow, styles.settingDivider]}>
-                <Text style={styles.settingLabel}>Date Format</Text>
-                <Text style={styles.settingValue}>{settings.dateFormat}</Text>
-              </View>
-
-              <View style={styles.settingRow}>
-                <Text style={styles.settingLabel}>Language</Text>
-                <Text style={styles.settingValue}>{settings.language}</Text>
-              </View>
+        {settings && (
+          <>
+            <SectionLabel label="Preferences" />
+            <View style={styles.group}>
+              <Row label="Currency" value={settings.currency} />
+              <Sep />
+              <Row label="Date Format" value={settings.dateFormat} />
+              <Sep />
+              <Row label="Language" value={settings.language.toUpperCase()} />
             </View>
-          </View>
 
-          {/* Notifications Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notifications</Text>
-            <View style={styles.card}>
-              <View style={[styles.settingRow, styles.settingDivider]}>
-                <Text style={styles.settingLabel}>Email Notifications</Text>
-                <Switch
-                  value={settings.emailNotifications}
-                  onValueChange={(value) => updateSetting('emailNotifications', value)}
-                  trackColor={{ false: '#d1d5db', true: '#86efac' }}
-                  thumbColor={settings.emailNotifications ? '#10b981' : '#6b7280'}
-                />
-              </View>
-
-              <View style={styles.settingRow}>
-                <Text style={styles.settingLabel}>Push Notifications</Text>
-                <Switch
-                  value={settings.pushNotifications}
-                  onValueChange={(value) => updateSetting('pushNotifications', value)}
-                  trackColor={{ false: '#d1d5db', true: '#86efac' }}
-                  thumbColor={settings.pushNotifications ? '#10b981' : '#6b7280'}
-                />
-              </View>
+            <SectionLabel label="Notifications" />
+            <View style={styles.group}>
+              <SwitchRow label="Email Notifications" value={settings.emailNotifications} onChange={(v) => update('emailNotifications', v)} disabled={saving} />
+              <Sep />
+              <SwitchRow label="Push Notifications" value={settings.pushNotifications} onChange={(v) => update('pushNotifications', v)} disabled={saving} />
             </View>
-          </View>
 
-          {/* Security Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Security</Text>
-            <View style={styles.card}>
-              <View style={styles.settingRow}>
-                <Text style={styles.settingLabel}>Two-Factor Authentication</Text>
-                <Switch
-                  value={settings.twoFactorEnabled}
-                  onValueChange={(value) => updateSetting('twoFactorEnabled', value)}
-                  trackColor={{ false: '#d1d5db', true: '#86efac' }}
-                  thumbColor={settings.twoFactorEnabled ? '#10b981' : '#6b7280'}
-                />
-              </View>
+            <SectionLabel label="Security" />
+            <View style={styles.group}>
+              <SwitchRow label="Two-Factor Auth" value={settings.twoFactorEnabled} onChange={(v) => update('twoFactorEnabled', v)} disabled={saving} />
             </View>
-          </View>
+          </>
+        )}
 
-          {/* Actions Section */}
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={[styles.button, styles.logoutButton]}
-              onPress={handleLogout}
-              disabled={saving}
-            >
-              <Text style={styles.logoutButtonText}>Logout</Text>
-            </TouchableOpacity>
-          </View>
+        <SectionLabel label="" />
+        <Button label="Sign Out" variant="danger" onPress={confirmLogout} />
 
-          {/* About Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
-            <View style={styles.card}>
-              <View style={styles.aboutItem}>
-                <Text style={styles.aboutLabel}>App Version</Text>
-                <Text style={styles.aboutValue}>1.0.0</Text>
-              </View>
-              <View style={[styles.aboutItem, styles.settingDivider]}>
-                <Text style={styles.aboutLabel}>Built with</Text>
-                <Text style={styles.aboutValue}>React Native</Text>
-              </View>
-              <View style={styles.aboutItem}>
-                <Text style={styles.aboutLabel}>© 2026 Budgeting Tool</Text>
-              </View>
-            </View>
-          </View>
-        </>
-      )}
-    </ScrollView>
+        <SectionLabel label="About" />
+        <View style={styles.group}>
+          <Row label="App Version" value="1.0.0" />
+          <Sep />
+          <Row label="Built with" value="React Native" />
+        </View>
+
+        <Text style={styles.copy}>© 2026 BudgetIQ · All rights reserved</Text>
+      </ScrollView>
+    </>
   );
 };
 
+const SectionLabel = ({ label }: { label: string }) =>
+  label ? <Text style={styles.sectionLabel}>{label}</Text> : <View style={{ height: 16 }} />;
+
+const Row = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.row}>
+    <Text style={styles.rowLabel}>{label}</Text>
+    <Text style={styles.rowValue}>{value}</Text>
+  </View>
+);
+
+const SwitchRow = ({ label, value, onChange, disabled }: { label: string; value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) => (
+  <View style={styles.row}>
+    <Text style={styles.rowLabel}>{label}</Text>
+    <Switch
+      value={value}
+      onValueChange={onChange}
+      disabled={disabled}
+      trackColor={{ false: Colors.border, true: Colors.accentGlow }}
+      thumbColor={value ? Colors.accent : Colors.textMuted}
+    />
+  </View>
+);
+
+const Sep = () => <View style={styles.sep} />;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 16,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  screen: { flex: 1, backgroundColor: Colors.bg },
+  container: { padding: 16, paddingBottom: 40 },
+  profileCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6b7280',
+    backgroundColor: Colors.bgCard,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.borderAccent,
     marginBottom: 8,
-    textTransform: 'uppercase',
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 5,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  settingDivider: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1f2937',
-  },
-  settingValue: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  themeOptions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  themeButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: '#fff',
-  },
-  themeButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  themeButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  themeButtonTextActive: {
-    color: '#fff',
-  },
-  button: {
-    borderRadius: 12,
-    paddingVertical: 12,
+  avatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    backgroundColor: Colors.accentGlow,
+    borderWidth: 2,
+    borderColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 14,
   },
-  logoutButton: {
-    backgroundColor: '#fee2e2',
+  avatarChar: { fontSize: 22, fontWeight: '800', color: Colors.accent },
+  profileInfo: { flex: 1 },
+  profileEmail: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  profileRole: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  planBadge: {
+    backgroundColor: Colors.accentSubtle,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: Colors.borderAccent,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#dc2626',
+  planText: { fontSize: 12, fontWeight: '700', color: Colors.accent },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 20,
+    marginBottom: 8,
+    marginLeft: 4,
   },
-  aboutItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  group: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  aboutLabel: {
-    fontSize: 14,
-    color: '#1f2937',
-  },
-  aboutValue: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
+  rowLabel: { fontSize: 15, color: Colors.text, fontWeight: '500' },
+  rowValue: { fontSize: 14, color: Colors.textSecondary },
+  sep: { height: 1, backgroundColor: Colors.borderSubtle, marginHorizontal: 16 },
+  copy: { fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 28 },
 });
 
 export default SettingsScreen;

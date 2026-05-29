@@ -1,48 +1,67 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, View, Text } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { Colors } from './constants/colors';
 
-// Auth Screens
 import LoginScreen from './screens/auth/LoginScreen';
 import SignupScreen from './screens/auth/SignupScreen';
 
-// App Screens
 import DashboardScreen from './screens/app/DashboardScreen';
 import BudgetsScreen from './screens/app/BudgetsScreen';
 import TransactionsScreen from './screens/app/TransactionsScreen';
 import AnalyticsScreen from './screens/app/AnalyticsScreen';
 import SettingsScreen from './screens/app/SettingsScreen';
+import AddTransactionScreen from './screens/app/AddTransactionScreen';
+import AddBudgetScreen from './screens/app/AddBudgetScreen';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+import { AuthStackParamList, AppTabParamList, AppStackParamList } from './types';
 
-function AuthStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Signup" component={SignupScreen} />
-    </Stack.Navigator>
-  );
-}
+const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const AppStack = createNativeStackNavigator<AppStackParamList>();
+const Tab = createBottomTabNavigator<AppTabParamList>();
+
+const NavTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: Colors.accent,
+    background: Colors.bg,
+    card: Colors.bgSurface,
+    text: Colors.text,
+    border: Colors.border,
+    notification: Colors.expense,
+  },
+};
+
+const TAB_ICONS: Record<string, string> = {
+  Dashboard: '🏠',
+  Budgets: '📊',
+  Transactions: '💳',
+  Analytics: '📈',
+  Settings: '⚙️',
+};
 
 function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: true,
-        headerTitle: getTabTitle(route.name),
-        tabBarLabel: getTabLabel(route.name),
-        tabBarIcon: ({ color, size }) => getTabIcon(route.name, color, size),
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#9ca3af',
+        headerStyle: { backgroundColor: Colors.bgSurface },
+        headerTitleStyle: { color: Colors.text, fontSize: 18, fontWeight: '700' },
+        headerShadowVisible: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: Colors.accent,
+        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarLabelStyle: styles.tabLabel,
+        tabBarIcon: ({ focused, color, size }) => (
+          <View style={[styles.tabIconWrap, focused && styles.tabIconActive]}>
+            <Text style={{ fontSize: size - 2 }}>{TAB_ICONS[route.name]}</Text>
+          </View>
+        ),
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
@@ -54,15 +73,30 @@ function AppTabs() {
   );
 }
 
-function AppStack() {
+function AppNavigator() {
   return (
-    <Stack.Navigator
+    <AppStack.Navigator
       screenOptions={{
-        headerShown: false,
+        headerStyle: { backgroundColor: Colors.bgSurface },
+        headerTitleStyle: { color: Colors.text, fontSize: 17, fontWeight: '700' },
+        headerTintColor: Colors.accent,
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: Colors.bg },
       }}
     >
-      <Stack.Screen name="MainApp" component={AppTabs} options={{ headerShown: false }} />
-    </Stack.Navigator>
+      <AppStack.Screen name="MainTabs" component={AppTabs} options={{ headerShown: false }} />
+      <AppStack.Screen name="AddTransaction" component={AddTransactionScreen} options={{ title: 'New Transaction', presentation: 'modal' }} />
+      <AppStack.Screen name="AddBudget" component={AddBudgetScreen} options={{ title: 'Set Budget', presentation: 'modal' }} />
+    </AppStack.Navigator>
+  );
+}
+
+function AuthNavigator() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.bg } }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Signup" component={SignupScreen} />
+    </AuthStack.Navigator>
   );
 }
 
@@ -71,15 +105,15 @@ function RootNavigator() {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={Colors.accent} />
       </View>
     );
   }
 
   return (
-    <NavigationContainer>
-      {isAuthenticated ? <AppStack /> : <AuthStack />}
+    <NavigationContainer theme={NavTheme}>
+      {isAuthenticated ? <AppNavigator /> : <AuthNavigator />}
     </NavigationContainer>
   );
 }
@@ -92,35 +126,33 @@ export default function App() {
   );
 }
 
-function getTabTitle(routeName: string): string {
-  const titles: Record<string, string> = {
-    Dashboard: '💰 Dashboard',
-    Budgets: '📊 Budgets',
-    Transactions: '💳 Transactions',
-    Analytics: '📈 Analytics',
-    Settings: '⚙️ Settings',
-  };
-  return titles[routeName] || 'Budgeting Tool';
-}
-
-function getTabLabel(routeName: string): string {
-  const labels: Record<string, string> = {
-    Dashboard: 'Dashboard',
-    Budgets: 'Budgets',
-    Transactions: 'Transactions',
-    Analytics: 'Analytics',
-    Settings: 'Settings',
-  };
-  return labels[routeName] || '';
-}
-
-function getTabIcon(routeName: string, color: string, size: number): React.ReactNode {
-  const icons: Record<string, string> = {
-    Dashboard: '💰',
-    Budgets: '📊',
-    Transactions: '💳',
-    Analytics: '📈',
-    Settings: '⚙️',
-  };
-  return <Text style={{ fontSize: size, color }}>{icons[routeName]}</Text>;
-}
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.bg,
+  },
+  tabBar: {
+    backgroundColor: Colors.bgSurface,
+    borderTopColor: Colors.border,
+    borderTopWidth: 1,
+    paddingBottom: 6,
+    paddingTop: 6,
+    height: 62,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  tabIconWrap: {
+    width: 36,
+    height: 28,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconActive: {
+    backgroundColor: Colors.accentSubtle,
+  },
+});

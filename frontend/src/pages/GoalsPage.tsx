@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { formatCurrency } from '../utils/currencyFormatter';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { exportGoalsToExcel } from '../services/excelExport';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useToast } from '../hooks/useToast';
@@ -46,6 +48,7 @@ const GoalTypeIcon: React.FC<{ type: string }> = ({ type }) => {
 
 const GoalsPage: React.FC = () => {
   const { success, error: showError } = useToast();
+  const { currency } = useUserSettings();
   const [summary, setSummary] = useState<GoalSummary | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -286,8 +289,8 @@ const GoalsPage: React.FC = () => {
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <div className="text-gray-600 dark:text-gray-400 text-sm font-medium">Total Saved</div>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">${Number(summary.totalProgress).toFixed(0)}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">of ${Number(summary.totalTargeted).toFixed(0)}</div>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">{formatCurrency(Number(summary.totalProgress), currency, 0)}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">of {formatCurrency(Number(summary.totalTargeted), currency, 0)}</div>
           </div>
         </div>
       )}
@@ -419,11 +422,11 @@ const GoalsPage: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Progress</p>
-                <p className="font-bold text-gray-900 dark:text-white">${Number(goal.current_amount).toFixed(2)}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(Number(goal.current_amount), currency)}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600 dark:text-gray-400">Target</p>
-                <p className="font-bold text-gray-900 dark:text-white">${Number(goal.target_amount).toFixed(2)}</p>
+                <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(Number(goal.target_amount), currency)}</p>
               </div>
             </div>
 

@@ -10,7 +10,7 @@ export interface ProjectedDay {
 }
 
 export class ProjectionService {
-  static async projectCashFlow(userId: number, days: number = 90): Promise<ProjectedDay[]> {
+  static async projectCashFlow(userId: number, days: number = 90, organizationId?: number): Promise<ProjectedDay[]> {
     try {
       const projection: ProjectedDay[] = [];
 
@@ -18,8 +18,8 @@ export class ProjectionService {
       const balanceResult = await query(
         `SELECT COALESCE(SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END), 0) as balance
          FROM transactions
-         WHERE user_id = $1`,
-        [userId]
+         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       let currentBalance = balanceResult.rows[0]?.balance || 0;
@@ -36,10 +36,10 @@ export class ProjectionService {
          WHERE t.user_id = $1
          AND t.transaction_date > NOW() - INTERVAL '90 days'
          AND c.type IN ('recurring', 'fixed')
-         AND t.category_id IS NOT NULL
+         AND t.category_id IS NOT NULL ${organizationId ? 'AND t.organization_id = $2' : ''}
          GROUP BY c.name, c.type
          ORDER BY frequency DESC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const recurringTransactions = recurringResult.rows;
@@ -99,9 +99,9 @@ export class ProjectionService {
     }
   }
 
-  static async getProjectionSummary(userId: number) {
+  static async getProjectionSummary(userId: number, organizationId?: number) {
     try {
-      const projection = await this.projectCashFlow(userId, 90);
+      const projection = await this.projectCashFlow(userId, 90, organizationId);
 
       const lowestBalance = Math.min(...projection.map((p) => p.closingBalance));
       const averageBalance =

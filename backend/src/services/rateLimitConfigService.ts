@@ -78,9 +78,9 @@ const ENDPOINT_DEFAULTS: {
  * Returns custom limit or organization tier default
  */
 export async function getEndpointRateLimit(
-  organizationId: number,
   endpoint: string,
-  method: string
+  method: string,
+  organizationId?: number
 ): Promise<EndpointRateLimit | null> {
   try {
     // Exact match first
@@ -130,7 +130,6 @@ export async function getEndpointRateLimit(
  * Admin only operation
  */
 export async function setEndpointRateLimit(
-  organizationId: number,
   endpointPattern: string,
   method: string,
   limits: {
@@ -138,7 +137,8 @@ export async function setEndpointRateLimit(
     limit_per_hour?: number;
     limit_per_day?: number;
     alert_threshold_percent?: number;
-  }
+  },
+  organizationId?: number
 ): Promise<EndpointRateLimit> {
   try {
     const result = await pool.query(
@@ -200,9 +200,9 @@ export async function getOrgRateLimitTier(
  * Returns detailed status
  */
 export async function checkRateLimit(
-  organizationId: number,
   endpoint: string,
-  method: string
+  method: string,
+  organizationId?: number
 ): Promise<RateLimitStatus | null> {
   try {
     // Get org tier and limits
@@ -221,9 +221,9 @@ export async function checkRateLimit(
 
     // Check for endpoint-specific overrides
     const customLimit = await getEndpointRateLimit(
-      organizationId,
       endpoint,
-      method
+      method,
+      organizationId
     );
 
     // Use custom limits if set, otherwise use org defaults
@@ -309,9 +309,9 @@ export async function getQuotaAlerts(
 
     for (const row of endpointResult.rows) {
       const customLimit = await getEndpointRateLimit(
-        organizationId,
         row.endpoint,
-        row.method
+        row.method,
+        organizationId
       );
 
       if (!customLimit?.is_active) continue;
@@ -402,7 +402,7 @@ export async function getQuotaAlerts(
  * Get rate limit usage for organization
  */
 export async function getRateLimitUsage(
-  organizationId: number,
+  organizationId?: number,
   period: 'today' | 'week' | 'month' = 'today'
 ): Promise<{
   total_requests: number;

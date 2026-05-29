@@ -127,7 +127,7 @@ router.post(
            AND description = $4
            AND amount = $5
            LIMIT 1`,
-          [req.userId, req.organizationId, txn.date, txn.description, txn.amount]
+          [req.userId, req.organizationId!, txn.date, txn.description, txn.amount]
         );
 
         if (dupCheck.rows.length > 0) {
@@ -141,7 +141,8 @@ router.post(
           const suggestion = await TransactionCategorizer.suggestCategory(
             req.userId,
             txn.description,
-            txn.amount
+            txn.amount,
+            req.organizationId!
           );
           if (suggestion && suggestion.confidence > 0.6) {
             finalCategoryId = suggestion.categoryId.toString();
@@ -162,7 +163,7 @@ router.post(
             txn.date,
             'expense',
             'csv',
-            req.organizationId,
+            req.organizationId!,
           ]
         );
         successCount++;

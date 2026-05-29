@@ -3,6 +3,7 @@ import { PermissionRequest } from './permissions';
 
 /**
  * Helper to validate organization context is set
+ * If organizationId is not explicitly set, extracts it from userOrganizations
  * Used as first check in protected routes
  */
 export const requireOrganization = (
@@ -10,6 +11,11 @@ export const requireOrganization = (
   res: Response,
   next: NextFunction
 ) => {
+  // If organizationId is not already set, extract from userOrganizations
+  if (!req.organizationId && req.userOrganizations && req.userOrganizations.length > 0) {
+    req.organizationId = req.userOrganizations[0].organizationId;
+  }
+
   if (!req.organizationId) {
     return res.status(401).json({ error: 'Organization context required' });
   }

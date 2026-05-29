@@ -2,151 +2,135 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
+import { Colors } from '../../constants/colors';
 
 const LoginScreen: React.FC<any> = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const { login } = useAuth();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!email.trim()) e.email = 'Email is required';
+    if (!password) e.password = 'Password is required';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
+  const handleLogin = async () => {
+    if (!validate()) return;
     try {
       setLoading(true);
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (error: any) {
-      Alert.alert('Login Failed', error.response?.data?.error || 'Invalid credentials');
+      Alert.alert('Login Failed', error.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>💰 Budgeting Tool</Text>
-        <Text style={styles.subtitle}>Take Control of Your Finances</Text>
-      </View>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          {/* Logo area */}
+          <View style={styles.hero}>
+            <View style={styles.logoRing}>
+              <Text style={styles.logoEmoji}>💰</Text>
+            </View>
+            <Text style={styles.appName}>BudgetIQ</Text>
+            <Text style={styles.tagline}>Smart money. Clear future.</Text>
+          </View>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          editable={!loading}
-        />
+          {/* Form card */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Welcome back</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
+            <Input
+              label="Email"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="you@example.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+              error={errors.email}
+            />
+            <Input
+              label="Password"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry
+              editable={!loading}
+              error={errors.password}
+            />
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Login</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+            <Button label="Sign In" onPress={handleLogin} loading={loading} style={styles.btn} />
+          </View>
 
-      <View style={styles.footerContainer}>
-        <Text style={styles.footerText}>Don't have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Signup')} disabled={loading}>
-          <Text style={styles.signupLink}>Sign up</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>New here? </Text>
+            <Text style={styles.link} onPress={() => !loading && navigation.navigate('Signup')}>
+              Create an account
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 20,
-    justifyContent: 'space-between',
-  },
-  headerContainer: {
-    marginTop: 60,
+  flex: { flex: 1, backgroundColor: Colors.bg },
+  container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  hero: { alignItems: 'center', marginBottom: 36 },
+  logoRing: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.accentSubtle,
+    borderWidth: 2,
+    borderColor: Colors.borderAccent,
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  formContainer: {
-    marginVertical: 40,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#000',
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footerContainer: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginBottom: 16,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    elevation: 12,
   },
-  footerText: {
-    fontSize: 14,
-    color: '#6b7280',
+  logoEmoji: { fontSize: 36 },
+  appName: { fontSize: 28, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
+  tagline: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
+  card: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 24,
   },
-  signupLink: {
-    fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '600',
-  },
+  cardTitle: { fontSize: 22, fontWeight: '700', color: Colors.text, marginBottom: 24 },
+  btn: { marginTop: 4 },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
+  footerText: { fontSize: 14, color: Colors.textSecondary },
+  link: { fontSize: 14, color: Colors.accent, fontWeight: '700' },
 });
 
 export default LoginScreen;

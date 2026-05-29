@@ -271,8 +271,8 @@ async function auditArchivalJob(): Promise<number> {
       beforeDate.setDate(beforeDate.getDate() - policy.active_days);
 
       const archivedCount = await auditRetention.archiveAuditLogs(
-        org.organization_id,
-        beforeDate
+        beforeDate,
+        org.organization_id
       );
       totalArchived += archivedCount;
     }
@@ -304,8 +304,8 @@ async function auditDeletionJob(): Promise<number> {
         beforeDate.setDate(beforeDate.getDate() - policy.archive_days);
 
         const deletedCount = await auditRetention.deleteArchivedLogs(
-          org.organization_id,
-          beforeDate
+          beforeDate,
+          org.organization_id
         );
         totalDeleted += deletedCount;
       }
@@ -335,7 +335,7 @@ async function usageSummaryJob(): Promise<number> {
 
     for (const org of organizations.rows) {
       try {
-        await usageAnalytics.saveDailyUsageSummary(org.organization_id, yesterday);
+        await usageAnalytics.saveDailyUsageSummary(yesterday, org.organization_id);
         processedCount++;
       } catch (error) {
         console.error(
@@ -451,7 +451,7 @@ async function storageMetricsJob(): Promise<number> {
       try {
         const metricDate = new Date();
         metricDate.setDate(metricDate.getDate() - 1); // Yesterday
-        await usageAnalytics.calculateStorageMetrics(org.id, metricDate);
+        await usageAnalytics.calculateStorageMetrics(metricDate, org.id);
         processedCount++;
       } catch (error) {
         console.error(

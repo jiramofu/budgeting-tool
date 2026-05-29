@@ -30,7 +30,7 @@ export interface SpendingAnalysis {
 }
 
 export class AnalyticsService {
-  static async getMonthlyAnalysis(userId: number, month: number, year: number): Promise<SpendingAnalysis> {
+  static async getMonthlyAnalysis(userId: number, month: number, year: number, organizationId?: number): Promise<SpendingAnalysis> {
     try {
       // Get transactions for the month
       const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
@@ -46,11 +46,11 @@ export class AnalyticsService {
           COUNT(*) as count
          FROM transactions t
          LEFT JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1
+         WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $4' : ''}
          AND DATE(t.transaction_date) >= $2
          AND DATE(t.transaction_date) <= $3
          GROUP BY c.id, c.name, c.type`,
-        [userId, startDate, endDate]
+        organizationId ? [userId, startDate, endDate, organizationId] : [userId, startDate, endDate]
       );
 
       const transactions = result.rows;
@@ -80,12 +80,12 @@ export class AnalyticsService {
           SUM(CASE WHEN t.transaction_type = 'income' THEN t.amount ELSE 0 END) as total_income,
           SUM(CASE WHEN t.transaction_type = 'expense' THEN t.amount ELSE 0 END) as total_expenses
          FROM transactions t
-         WHERE t.user_id = $1
+         WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $2' : ''}
          AND DATE(t.transaction_date) >= DATE '2020-01-01'
          GROUP BY year, month
          ORDER BY year DESC, month DESC
          LIMIT 12`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const monthlyTrends: MonthlyTrend[] = trendsResult.rows
@@ -120,7 +120,7 @@ export class AnalyticsService {
     }
   }
 
-  static async getYearlyAnalysis(userId: number, year: number): Promise<SpendingAnalysis> {
+  static async getYearlyAnalysis(userId: number, year: number, organizationId?: number): Promise<SpendingAnalysis> {
     try {
       const startDate = new Date(year, 0, 1).toISOString().split('T')[0];
       const endDate = new Date(year, 11, 31).toISOString().split('T')[0];
@@ -135,11 +135,11 @@ export class AnalyticsService {
           COUNT(*) as count
          FROM transactions t
          LEFT JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1
+         WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $4' : ''}
          AND DATE(t.transaction_date) >= $2
          AND DATE(t.transaction_date) <= $3
          GROUP BY c.id, c.name, c.type`,
-        [userId, startDate, endDate]
+        organizationId ? [userId, startDate, endDate, organizationId] : [userId, startDate, endDate]
       );
 
       const transactions = result.rows;
@@ -168,12 +168,12 @@ export class AnalyticsService {
           SUM(CASE WHEN t.transaction_type = 'income' THEN t.amount ELSE 0 END) as total_income,
           SUM(CASE WHEN t.transaction_type = 'expense' THEN t.amount ELSE 0 END) as total_expenses
          FROM transactions t
-         WHERE t.user_id = $1
+         WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $4' : ''}
          AND DATE(t.transaction_date) >= $2
          AND DATE(t.transaction_date) <= $3
          GROUP BY month
          ORDER BY month`,
-        [userId, startDate, endDate]
+        organizationId ? [userId, startDate, endDate, organizationId] : [userId, startDate, endDate]
       );
 
       const monthlyTrends: MonthlyTrend[] = trendsResult.rows.map((t: any) => ({

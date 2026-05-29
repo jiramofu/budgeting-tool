@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
+import { formatCurrency } from '../utils/currencyFormatter';
+import { useUserSettings } from '../hooks/useUserSettings';
 import {
   BudgetBar,
   BudgetInput,
@@ -26,6 +28,7 @@ interface BudgetMetrics {
 }
 
 const BudgetManagementPage: React.FC = () => {
+  const { currency } = useUserSettings();
   const [categories, setCategories] = useState<Category[]>([]);
   const [metrics, setMetrics] = useState<BudgetMetrics>({
     totalBudget: 0,
@@ -208,7 +211,7 @@ const BudgetManagementPage: React.FC = () => {
         <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
           <p className="text-slate-400 text-sm font-medium mb-2">Total Budget</p>
           <p className="text-3xl font-bold text-slate-50 mb-1">
-            ${metrics.totalBudget.toFixed(2)}
+            {formatCurrency(metrics.totalBudget, currency)}
           </p>
           <p className="text-xs text-slate-500">All categories</p>
         </div>
@@ -217,7 +220,7 @@ const BudgetManagementPage: React.FC = () => {
         <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
           <p className="text-slate-400 text-sm font-medium mb-2">Total Spent</p>
           <p className="text-3xl font-bold text-slate-50 mb-1">
-            ${metrics.totalSpent.toFixed(2)}
+            {formatCurrency(metrics.totalSpent, currency)}
           </p>
           <p className="text-xs text-slate-500">{metrics.percentageUsed}% used</p>
         </div>
@@ -236,7 +239,7 @@ const BudgetManagementPage: React.FC = () => {
           <p className={`text-3xl font-bold mb-1 ${
             metrics.totalRemaining > 0 ? 'text-emerald-300' : 'text-red-300'
           }`}>
-            ${metrics.totalRemaining.toFixed(2)}
+            {formatCurrency(metrics.totalRemaining, currency)}
           </p>
           <p className="text-xs text-slate-500">
             {metrics.totalRemaining > 0 ? 'Under budget' : 'Over budget'}

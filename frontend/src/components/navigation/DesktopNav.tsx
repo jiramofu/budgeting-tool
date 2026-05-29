@@ -9,6 +9,19 @@ import {
   Menu,
   X,
   ChevronDown,
+  Target,
+  AlertCircle,
+  FileText,
+  Search,
+  Home,
+  Bell,
+  Mail,
+  Upload,
+  Zap,
+  Heart,
+  BarChart3,
+  Clock,
+  DollarSign,
 } from 'lucide-react';
 
 interface DesktopNavProps {
@@ -22,6 +35,12 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
   description: string;
+}
+
+interface SectionItem {
+  label: string;
+  path: string;
+  icon: React.ReactNode;
 }
 
 interface AdminItem {
@@ -38,6 +57,19 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<{ [key: string]: boolean }>({
+    planning: false,
+    analysis: false,
+    management: false,
+    tools: false,
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const mainNavItems: NavItem[] = [
     {
@@ -64,6 +96,31 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
       icon: <TrendingUp size={20} />,
       description: 'Insights & trends',
     },
+  ];
+
+  const planningItems: SectionItem[] = [
+    { label: 'Goals', path: '/goals', icon: <Target size={18} /> },
+    { label: 'Projections', path: '/projections', icon: <Clock size={18} /> },
+    { label: 'Investments', path: '/investments', icon: <DollarSign size={18} /> },
+    { label: 'Subscriptions', path: '/subscriptions', icon: <Wallet size={18} /> },
+    { label: 'Templates', path: '/templates', icon: <FileText size={18} /> },
+  ];
+
+  const analysisItems: SectionItem[] = [
+    { label: 'Analytics', path: '/analytics', icon: <BarChart3 size={18} /> },
+    { label: 'Insights', path: '/insights', icon: <TrendingUp size={18} /> },
+    { label: 'Smart Rules', path: '/smart-rules', icon: <Zap size={18} /> },
+  ];
+
+  const managementItems: SectionItem[] = [
+    { label: 'Bills', path: '/bills', icon: <Receipt size={18} /> },
+    { label: 'Alerts', path: '/alerts', icon: <AlertCircle size={18} /> },
+    { label: 'Wellness', path: '/wellness', icon: <Heart size={18} /> },
+    { label: 'Households', path: '/households', icon: <Home size={18} /> },
+  ];
+
+  const toolsItems: SectionItem[] = [
+    { label: 'Import CSV', path: '/import', icon: <Upload size={18} /> },
   ];
 
   const adminItems: AdminItem[] = [
@@ -130,6 +187,150 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
             </button>
           ))}
         </nav>
+
+        {/* Planning Section */}
+        {!isSidebarCollapsed && (
+          <div className="mt-6 pt-6 border-t border-color-border-primary px-2">
+            <button
+              onClick={() => toggleSection('planning')}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-color-text-secondary hover:bg-color-bg-secondary transition-colors"
+            >
+              <span>Planning</span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${expandedSections.planning ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {expandedSections.planning && (
+              <div className="mt-2 space-y-1">
+                {planningItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                      ${isActive(item.path)
+                        ? 'bg-primary text-white'
+                        : 'text-color-text-tertiary hover:bg-color-bg-secondary'
+                      }
+                    `}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Analysis Section */}
+        {!isSidebarCollapsed && (
+          <div className="mt-6 pt-6 border-t border-color-border-primary px-2">
+            <button
+              onClick={() => toggleSection('analysis')}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-color-text-secondary hover:bg-color-bg-secondary transition-colors"
+            >
+              <span>Analysis</span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${expandedSections.analysis ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {expandedSections.analysis && (
+              <div className="mt-2 space-y-1">
+                {analysisItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                      ${isActive(item.path)
+                        ? 'bg-primary text-white'
+                        : 'text-color-text-tertiary hover:bg-color-bg-secondary'
+                      }
+                    `}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Management Section */}
+        {!isSidebarCollapsed && (
+          <div className="mt-6 pt-6 border-t border-color-border-primary px-2">
+            <button
+              onClick={() => toggleSection('management')}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-color-text-secondary hover:bg-color-bg-secondary transition-colors"
+            >
+              <span>Management</span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${expandedSections.management ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {expandedSections.management && (
+              <div className="mt-2 space-y-1">
+                {managementItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                      ${isActive(item.path)
+                        ? 'bg-primary text-white'
+                        : 'text-color-text-tertiary hover:bg-color-bg-secondary'
+                      }
+                    `}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tools Section */}
+        {!isSidebarCollapsed && (
+          <div className="mt-6 pt-6 border-t border-color-border-primary px-2">
+            <button
+              onClick={() => toggleSection('tools')}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium text-color-text-secondary hover:bg-color-bg-secondary transition-colors"
+            >
+              <span>Tools</span>
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${expandedSections.tools ? 'rotate-180' : ''}`}
+              />
+            </button>
+            {expandedSections.tools && (
+              <div className="mt-2 space-y-1">
+                {toolsItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={`
+                      w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors
+                      ${isActive(item.path)
+                        ? 'bg-primary text-white'
+                        : 'text-color-text-tertiary hover:bg-color-bg-secondary'
+                      }
+                    `}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Admin Section */}
         {isAdmin && (

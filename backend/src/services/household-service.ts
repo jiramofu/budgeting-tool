@@ -47,7 +47,8 @@ class HouseholdService {
   static async inviteUserToHousehold(
     householdId: number,
     email: string,
-    invitedBy: number
+    invitedBy: number,
+    organizationId: number
   ): Promise<number> {
     try {
       const userResult = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
@@ -107,7 +108,7 @@ class HouseholdService {
     }
   }
 
-  static async getHouseholdMembers(householdId: number): Promise<HouseholdMember[]> {
+  static async getHouseholdMembers(householdId: number, organizationId?: number): Promise<HouseholdMember[]> {
     try {
       const result = await pool.query(
         `SELECT hm.user_id as id, u.email, hm.role, hm.joined_at
@@ -125,7 +126,7 @@ class HouseholdService {
     }
   }
 
-  static async getHouseholdInvitations(householdId: number): Promise<HouseholdInvitation[]> {
+  static async getHouseholdInvitations(householdId: number, organizationId?: number): Promise<HouseholdInvitation[]> {
     try {
       const result = await pool.query(
         `SELECT id, household_id, email, status, created_at
@@ -142,7 +143,7 @@ class HouseholdService {
     }
   }
 
-  static async getUserHouseholds(userId: number): Promise<any[]> {
+  static async getUserHouseholds(userId: number, organizationId?: number): Promise<any[]> {
     try {
       const result = await pool.query(
         `SELECT h.id, h.name, h.currency, h.owner_id, hm.role
@@ -160,7 +161,7 @@ class HouseholdService {
     }
   }
 
-  static async removeMember(householdId: number, userId: number, removedBy: number): Promise<void> {
+  static async removeMember(householdId: number, userId: number, removedBy: number, organizationId?: number): Promise<void> {
     try {
       const household = await pool.query("SELECT owner_id FROM households WHERE id = $1", [householdId]);
 
@@ -189,7 +190,8 @@ class HouseholdService {
   static async shareHouseholdBudget(
     householdId: number,
     budgetId: number,
-    shared: boolean
+    shared: boolean,
+    organizationId: number
   ): Promise<void> {
     try {
       await pool.query(
@@ -202,7 +204,7 @@ class HouseholdService {
     }
   }
 
-  static async getHouseholdBudgets(householdId: number): Promise<any[]> {
+  static async getHouseholdBudgets(householdId: number, organizationId?: number): Promise<any[]> {
     try {
       const result = await pool.query(
         `SELECT b.id, b.month, b.year, b.total_budgeted, u.email as created_by
@@ -224,7 +226,8 @@ class HouseholdService {
   static async getHouseholdSpendingSummary(
     householdId: number,
     month: number,
-    year: number
+    year: number,
+    organizationId: number
   ): Promise<any> {
     try {
       const membersResult = await pool.query(
@@ -239,7 +242,7 @@ class HouseholdService {
       }
 
       const result = await pool.query(
-        `SELECT 
+        `SELECT
           u.email,
           SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as spent,
           SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as income,

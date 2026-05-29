@@ -1,5 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import ReportService from '../services/report-service';
 
 const router = Router();
@@ -7,7 +9,7 @@ const router = Router();
 console.log('[Report Routes] Loading report routes...');
 
 // Generate monthly PDF report
-router.get('/monthly/pdf', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/monthly/pdf', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Report] GET monthly PDF');
   try {
     if (!req.userId) {
@@ -21,7 +23,8 @@ router.get('/monthly/pdf', authenticate, async (req: AuthRequest, res: Response)
     const pdfBuffer = await ReportService.generateMonthlyPDFReport(
       req.userId,
       reportMonth,
-      reportYear
+      reportYear,
+      req.organizationId
     );
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -37,7 +40,7 @@ router.get('/monthly/pdf', authenticate, async (req: AuthRequest, res: Response)
 });
 
 // Generate monthly CSV report
-router.get('/monthly/csv', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/monthly/csv', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Report] GET monthly CSV');
   try {
     if (!req.userId) {
@@ -51,7 +54,8 @@ router.get('/monthly/csv', authenticate, async (req: AuthRequest, res: Response)
     const csvContent = await ReportService.generateMonthlyCSVReport(
       req.userId,
       reportMonth,
-      reportYear
+      reportYear,
+      req.organizationId
     );
 
     res.setHeader('Content-Type', 'text/csv');
@@ -67,7 +71,7 @@ router.get('/monthly/csv', authenticate, async (req: AuthRequest, res: Response)
 });
 
 // Generate annual CSV report
-router.get('/annual/csv', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/annual/csv', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Report] GET annual CSV');
   try {
     if (!req.userId) {
@@ -77,7 +81,7 @@ router.get('/annual/csv', authenticate, async (req: AuthRequest, res: Response) 
     const { year } = req.query;
     const reportYear = year ? parseInt(year as string) : new Date().getFullYear();
 
-    const csvContent = await ReportService.generateAnnualCSVReport(req.userId, reportYear);
+    const csvContent = await ReportService.generateAnnualCSVReport(req.userId, reportYear, req.organizationId!);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="annual-report-${reportYear}.csv"`);
@@ -89,7 +93,7 @@ router.get('/annual/csv', authenticate, async (req: AuthRequest, res: Response) 
 });
 
 // Generate spending trends CSV
-router.get('/spending-trends/csv', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/spending-trends/csv', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Report] GET spending trends CSV');
   try {
     if (!req.userId) {
@@ -99,7 +103,7 @@ router.get('/spending-trends/csv', authenticate, async (req: AuthRequest, res: R
     const { months = '12' } = req.query;
     const monthsBack = parseInt(months as string);
 
-    const csvContent = await ReportService.generateSpendingTrendCSV(req.userId, monthsBack);
+    const csvContent = await ReportService.generateSpendingTrendCSV(req.userId, monthsBack, req.organizationId!);
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="spending-trends-${monthsBack}m.csv"`);
@@ -111,7 +115,7 @@ router.get('/spending-trends/csv', authenticate, async (req: AuthRequest, res: R
 });
 
 // Get report metadata
-router.get('/metadata', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/metadata', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Report] GET metadata');
   try {
     if (!req.userId) {

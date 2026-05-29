@@ -31,7 +31,7 @@ export class Phase4TrendsService {
   /**
    * Calculate seasonal spending trends for a category
    */
-  static async getCategoryTrends(userId: number, categoryId: number): Promise<TrendData[]> {
+  static async getCategoryTrends(userId: number, categoryId: number, organizationId?: number): Promise<TrendData[]> {
     try {
       const trends: TrendData[] = [];
 
@@ -46,11 +46,11 @@ export class Phase4TrendsService {
             COUNT(DISTINCT EXTRACT(YEAR FROM transaction_date)) as year_count,
             SUM(amount) as total_amount
            FROM transactions
-           WHERE user_id = $1 AND category_id = $2
+           WHERE user_id = $1 AND category_id = $2 ${organizationId ? 'AND organization_id = $4' : ''}
            AND EXTRACT(MONTH FROM transaction_date) = $3
            AND transaction_type = 'expense'
            GROUP BY month`,
-          [userId, categoryId, month]
+          organizationId ? [userId, categoryId, month, organizationId] : [userId, categoryId, month]
         );
 
         if (result.rows.length > 0) {
@@ -67,10 +67,10 @@ export class Phase4TrendsService {
               SUM(CASE WHEN EXTRACT(YEAR FROM transaction_date)::INT = EXTRACT(YEAR FROM NOW())::INT - 2 THEN amount ELSE 0 END) as year2,
               SUM(CASE WHEN EXTRACT(YEAR FROM transaction_date)::INT = EXTRACT(YEAR FROM NOW())::INT - 1 THEN amount ELSE 0 END) as year1
              FROM transactions
-             WHERE user_id = $1 AND category_id = $2
+             WHERE user_id = $1 AND category_id = $2 ${organizationId ? 'AND organization_id = $4' : ''}
              AND EXTRACT(MONTH FROM transaction_date) = $3
              AND transaction_type = 'expense'`,
-            [userId, categoryId, month]
+            organizationId ? [userId, categoryId, month, organizationId] : [userId, categoryId, month]
           );
 
           const yearData = lastYearResult.rows[0];
@@ -138,22 +138,22 @@ export class Phase4TrendsService {
   /**
    * Get seasonal insights for all categories
    */
-  static async getSeasonalInsights(userId: number): Promise<SeasonalInsight[]> {
+  static async getSeasonalInsights(userId: number, organizationId?: number): Promise<SeasonalInsight[]> {
     try {
       // Get all categories for the user
       const categoriesResult = await query(
         `SELECT DISTINCT c.id, c.name
          FROM categories c
          JOIN transactions t ON c.id = t.category_id
-         WHERE c.user_id = $1 AND t.transaction_type = 'expense'
+         WHERE c.user_id = $1 AND t.transaction_type = 'expense' ${organizationId ? 'AND c.organization_id = $2' : ''}
          ORDER BY c.name`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const insights: SeasonalInsight[] = [];
 
       for (const { id: categoryId, name: categoryName } of categoriesResult.rows) {
-        const trends = await this.getCategoryTrends(userId, categoryId);
+        const trends = await this.getCategoryTrends(userId, categoryId, organizationId);
 
         if (trends.length > 0) {
           const highestMonth = trends.reduce((max, t) => (t.avgSpending > max.avgSpending ? t : max));
@@ -208,28 +208,29 @@ export class Phase4TrendsService {
   /**
    * Save trend data to database for performance
    */
-  static async saveTrendsToDB(userId: number): Promise<void> {
+  static async saveTrendsToDB(userId: number, organizationId?: number): Promise<void> {
     try {
       // Get all categories
       const categoriesResult = await query(
         `SELECT DISTINCT c.id FROM categories c
          JOIN transactions t ON c.id = t.category_id
-         WHERE c.user_id = $1 AND t.transaction_type = 'expense'`,
-        [userId]
+         WHERE c.user_id = $1 AND t.transaction_type = 'expense' ${organizationId ? 'AND c.organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       // Clear old trends
-      await query('DELETE FROM spending_trends WHERE user_id = $1', [userId]);
+      await query(`DELETE FROM spending_trends WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]);
 
       // Calculate and save trends for each category
       for (const { id: categoryId } of categoriesResult.rows) {
-        const trends = await this.getCategoryTrends(userId, categoryId);
+        const trends = await this.getCategoryTrends(userId, categoryId, organizationId);
 
         for (const trend of trends) {
           await query(
             `INSERT INTO spending_trends
-             (user_id, category_id, month, avg_spending_across_years, min_spending, max_spending, sample_size, trend_direction, volatility)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+             (user_id, category_id, month, avg_spending_across_years, min_spending, max_spending, sample_size, trend_direction, volatility, organization_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
             [
               userId,
               categoryId,
@@ -240,6 +241,7 @@ export class Phase4TrendsService {
               trend.sampleSize,
               trend.trend,
               trend.volatility,
+              organizationId || null,
             ]
           );
         }

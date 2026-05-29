@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Check, X } from 'lucide-react';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 interface BudgetInputProps {
   categoryName: string;
@@ -8,6 +9,7 @@ interface BudgetInputProps {
   onCancel?: () => void;
   isLoading?: boolean;
   error?: string;
+  currency?: string;
 }
 
 const BudgetInput: React.FC<BudgetInputProps> = ({
@@ -17,6 +19,7 @@ const BudgetInput: React.FC<BudgetInputProps> = ({
   onCancel,
   isLoading = false,
   error,
+  currency = 'USD',
 }) => {
   const [value, setValue] = useState(currentBudget.toString());
   const [isSaving, setIsSaving] = useState(false);
@@ -86,7 +89,7 @@ const BudgetInput: React.FC<BudgetInputProps> = ({
           />
         </div>
         <p className="text-xs text-slate-400 mt-2">
-          Current: ${currentBudget.toFixed(2)}
+          Current: {formatCurrency(currentBudget, currency)}
         </p>
       </div>
 

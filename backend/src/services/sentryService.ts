@@ -1,5 +1,4 @@
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 /**
  * Sentry Configuration for Backend Error Tracking
@@ -13,12 +12,10 @@ export const initSentry = (app: any) => {
       new Sentry.Integrations.Http({ tracing: true }),
       new Sentry.Integrations.OnUncaughtException(),
       new Sentry.Integrations.OnUnhandledRejection(),
-      nodeProfilingIntegration(),
     ],
     tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
     environment: process.env.NODE_ENV || 'development',
-    beforeSend(event, hint) {
+    beforeSend(event: any, hint: any) {
       // Filter out certain errors if needed
       if (event.exception) {
         const error = hint.originalException;
@@ -42,7 +39,7 @@ export const attachErrorHandler = (app: any) => {
   // Error handler middleware
   app.use(
     Sentry.Handlers.errorHandler({
-      shouldHandleError(error) {
+      shouldHandleError(error: any) {
         // Only handle 5xx errors
         if (error.status === 500) {
           return true;

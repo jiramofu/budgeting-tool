@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 interface BudgetBarProps {
   categoryName: string;
@@ -8,6 +9,7 @@ interface BudgetBarProps {
   icon?: string;
   onClick?: () => void;
   isExpanded?: boolean;
+  currency?: string;
 }
 
 const BudgetBar: React.FC<BudgetBarProps> = ({
@@ -17,6 +19,7 @@ const BudgetBar: React.FC<BudgetBarProps> = ({
   icon,
   onClick,
   isExpanded = false,
+  currency = 'USD',
 }) => {
   const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   const isOverBudget = spent > budget;
@@ -36,8 +39,8 @@ const BudgetBar: React.FC<BudgetBarProps> = ({
 
   const remaining = budget - spent;
   const remainingText = isOverBudget
-    ? `Over by $${Math.abs(remaining).toFixed(2)}`
-    : `$${remaining.toFixed(2)} left`;
+    ? `Over by ${formatCurrency(Math.abs(remaining), currency)}`
+    : `${formatCurrency(remaining, currency)} left`;
 
   return (
     <div
@@ -79,11 +82,11 @@ const BudgetBar: React.FC<BudgetBarProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-400">
-            ${spent.toFixed(2)}
+            {formatCurrency(spent, currency)}
           </span>
           <span className="text-xs text-slate-600">/</span>
           <span className="text-xs font-medium text-slate-50">
-            ${budget.toFixed(2)}
+            {formatCurrency(budget, currency)}
           </span>
         </div>
         <div className="text-right">

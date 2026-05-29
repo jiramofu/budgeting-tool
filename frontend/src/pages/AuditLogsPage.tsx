@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { apiClient } from '../services/api';
 
 interface AuditEvent {
   id: number;
@@ -57,7 +57,7 @@ export const AuditLogsPage: React.FC = () => {
   const loadAuditLogs = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/admin/dashboard/audit-summary?days=${selectedDays}`);
+      const response = await apiClient.get(`/admin/dashboard/audit-summary?days=${selectedDays}`);
       setAuditData(response.data);
       setError(null);
     } catch (err: any) {

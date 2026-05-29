@@ -1,16 +1,17 @@
 import axios, { AxiosInstance } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://localhost:5001/api';
+// 10.0.2.2 is the host machine address when using Android Emulator.
+// For a physical device, replace with your computer's local IP (e.g. 192.168.1.x).
+const API_URL = 'http://10.0.2.2:3001/api';
 
 class APIClient {
   private client: AxiosInstance;
-  private token: string | null = null;
 
   constructor() {
     this.client = axios.create({
       baseURL: API_URL,
-      timeout: 10000,
+      timeout: 15000,
     });
 
     this.client.interceptors.request.use(async (config) => {
@@ -25,8 +26,7 @@ class APIClient {
       (response) => response,
       async (error) => {
         if (error.response?.status === 401) {
-          await AsyncStorage.removeItem('authToken');
-          await AsyncStorage.removeItem('user');
+          await AsyncStorage.multiRemove(['authToken', 'user']);
         }
         return Promise.reject(error);
       }
@@ -34,17 +34,15 @@ class APIClient {
   }
 
   async setToken(token: string) {
-    this.token = token;
     await AsyncStorage.setItem('authToken', token);
   }
 
   async getToken(): Promise<string | null> {
-    return await AsyncStorage.getItem('authToken');
+    return AsyncStorage.getItem('authToken');
   }
 
   async clearToken() {
-    this.token = null;
-    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.multiRemove(['authToken', 'user']);
   }
 
   get(url: string, config?: any) {

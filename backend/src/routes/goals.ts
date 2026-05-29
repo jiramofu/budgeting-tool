@@ -1,5 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import { GoalsService } from '../services/goals-service';
 
 const router = Router();
@@ -7,7 +9,7 @@ const router = Router();
 console.log('[Goals Routes] Loading goals routes...');
 
 // Get all goals
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] GET all goals');
   try {
     if (!req.userId) {
@@ -15,7 +17,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     }
 
     const activeOnly = req.query.active === 'true';
-    const goals = await GoalsService.getGoals(req.userId, activeOnly);
+    const goals = await GoalsService.getGoals(req.userId, activeOnly, req.organizationId!);
     res.json(goals);
   } catch (error: any) {
     console.error('[Goals] Error getting goals:', error);
@@ -24,14 +26,14 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Get goal summary
-router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/summary', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] GET summary');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const summary = await GoalsService.getGoalSummary(req.userId);
+    const summary = await GoalsService.getGoalSummary(req.userId, req.organizationId!);
     res.json(summary);
   } catch (error: any) {
     console.error('[Goals] Error getting summary:', error);
@@ -40,14 +42,14 @@ router.get('/summary', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Get goal alerts
-router.get('/alerts', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/alerts', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] GET alerts');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const alerts = await GoalsService.checkGoalAlerts(req.userId);
+    const alerts = await GoalsService.checkGoalAlerts(req.userId, req.organizationId!);
     res.json(alerts);
   } catch (error: any) {
     console.error('[Goals] Error getting alerts:', error);
@@ -56,7 +58,7 @@ router.get('/alerts', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Get single goal
-router.get('/:goalId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/:goalId', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] GET goal by id');
   try {
     if (!req.userId) {
@@ -64,7 +66,7 @@ router.get('/:goalId', authenticate, async (req: AuthRequest, res: Response) => 
     }
 
     const goalId = parseInt(req.params.goalId);
-    const goal = await GoalsService.getGoal(req.userId, goalId);
+    const goal = await GoalsService.getGoal(req.userId, goalId, req.organizationId!);
 
     if (!goal) {
       return res.status(404).json({ error: 'Goal not found' });
@@ -78,7 +80,7 @@ router.get('/:goalId', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Get goal progress
-router.get('/:goalId/progress', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/:goalId/progress', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] GET goal progress');
   try {
     if (!req.userId) {
@@ -87,7 +89,7 @@ router.get('/:goalId/progress', authenticate, async (req: AuthRequest, res: Resp
 
     const goalId = parseInt(req.params.goalId);
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 30;
-    const progress = await GoalsService.getGoalProgress(req.userId, goalId, Math.min(limit, 365));
+    const progress = await GoalsService.getGoalProgress(req.userId, goalId, Math.min(limit, 365), req.organizationId!);
 
     res.json(progress);
   } catch (error: any) {
@@ -97,7 +99,7 @@ router.get('/:goalId/progress', authenticate, async (req: AuthRequest, res: Resp
 });
 
 // Create goal
-router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] POST create goal');
   try {
     if (!req.userId) {
@@ -115,6 +117,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
       name,
       goalType,
       targetAmount,
+      req.organizationId!,
       targetDate,
       categoryId,
       description
@@ -128,7 +131,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Update goal
-router.put('/:goalId', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/:goalId', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] PUT update goal');
   try {
     if (!req.userId) {
@@ -136,7 +139,7 @@ router.put('/:goalId', authenticate, async (req: AuthRequest, res: Response) => 
     }
 
     const goalId = parseInt(req.params.goalId);
-    const goal = await GoalsService.updateGoal(req.userId, goalId, req.body);
+    const goal = await GoalsService.updateGoal(req.userId, goalId, req.body, req.organizationId!);
 
     res.json(goal);
   } catch (error: any) {
@@ -146,7 +149,7 @@ router.put('/:goalId', authenticate, async (req: AuthRequest, res: Response) => 
 });
 
 // Add progress to goal
-router.post('/:goalId/progress', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/:goalId/progress', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] POST add progress');
   try {
     if (!req.userId) {
@@ -159,7 +162,7 @@ router.post('/:goalId/progress', authenticate, async (req: AuthRequest, res: Res
     }
 
     const goalId = parseInt(req.params.goalId);
-    const progress = await GoalsService.addProgress(req.userId, goalId, amount, notes);
+    const progress = await GoalsService.addProgress(req.userId, goalId, amount, notes, req.organizationId!);
 
     res.status(201).json(progress);
   } catch (error: any) {
@@ -169,7 +172,7 @@ router.post('/:goalId/progress', authenticate, async (req: AuthRequest, res: Res
 });
 
 // Delete goal
-router.delete('/:goalId', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/:goalId', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
   console.log('[Goals] DELETE goal');
   try {
     if (!req.userId) {
@@ -177,7 +180,7 @@ router.delete('/:goalId', authenticate, async (req: AuthRequest, res: Response) 
     }
 
     const goalId = parseInt(req.params.goalId);
-    const success = await GoalsService.deleteGoal(req.userId, goalId);
+    const success = await GoalsService.deleteGoal(req.userId, goalId, req.organizationId!);
 
     if (!success) {
       return res.status(404).json({ error: 'Goal not found' });

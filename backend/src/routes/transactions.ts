@@ -15,7 +15,7 @@ router.get(
   loadUserOrganizations,
   requireOrganization,
   async (req: PermissionRequest, res: Response) => {
-    console.log('[Transaction] GET all for user:', req.userId, 'org:', req.organizationId);
+    console.log('[Transaction] GET all for user:', req.userId, 'org:', req.organizationId!);
     try {
       const { budgetId, categoryId, startDate, endDate } = req.query;
       let queryStr = 'SELECT * FROM transactions WHERE user_id = $1 AND organization_id = $2';
@@ -88,7 +88,7 @@ router.post(
           transactionDate,
           transactionType,
           'manual',
-          req.organizationId,
+          req.organizationId!,
         ]
       );
 
@@ -96,6 +96,42 @@ router.post(
     } catch (error: any) {
       console.error('[Transaction] Error creating:', error);
       res.status(500).json({ error: 'Failed to create transaction: ' + error.message });
+    }
+  }
+);
+
+// Delete transaction
+router.delete(
+  '/:transactionId',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Transaction] DELETE:', req.params.transactionId);
+    try {
+      const { transactionId } = req.params;
+
+      if (!transactionId) {
+        return res.status(400).json({ error: 'Transaction ID required' });
+      }
+
+      // Verify the transaction belongs to the user
+      const checkResult = await query(
+        'SELECT * FROM transactions WHERE id = $1 AND user_id = $2',
+        [transactionId, req.userId]
+      );
+
+      if (checkResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+
+      // Delete the transaction
+      await query('DELETE FROM transactions WHERE id = $1', [transactionId]);
+
+      res.json({ message: 'Transaction deleted successfully' });
+    } catch (error: any) {
+      console.error('[Transaction] Error deleting:', error);
+      res.status(500).json({ error: 'Failed to delete transaction: ' + error.message });
     }
   }
 );

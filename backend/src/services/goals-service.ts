@@ -40,16 +40,17 @@ export class GoalsService {
     name: string,
     goalType: 'savings' | 'debt-payoff' | 'expense-reduction' | 'investment',
     targetAmount: number,
+    organizationId: number,
     targetDate?: string,
     categoryId?: number,
     description?: string
   ): Promise<Goal> {
     try {
       const result = await query(
-        `INSERT INTO goals (user_id, name, description, goal_type, target_amount, target_date, category_id, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)
+        `INSERT INTO goals (user_id, name, description, goal_type, target_amount, target_date, category_id, organization_id, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
          RETURNING *`,
-        [userId, name, description || null, goalType, targetAmount, targetDate || null, categoryId || null]
+        [userId, name, description || null, goalType, targetAmount, targetDate || null, categoryId || null, organizationId || null]
       );
 
       return result.rows[0];
@@ -59,14 +60,15 @@ export class GoalsService {
     }
   }
 
-  static async getGoal(userId: number, goalId: number): Promise<Goal | null> {
+  static async getGoal(userId: number, goalId: number, organizationId?: number): Promise<Goal | null> {
     try {
+      const orgFilter = organizationId ? 'AND g.organization_id = $3' : '';
       const result = await query(
         `SELECT g.*, c.name as categoryName
          FROM goals g
          LEFT JOIN categories c ON g.category_id = c.id
-         WHERE g.id = $1 AND g.user_id = $2`,
-        [goalId, userId]
+         WHERE g.id = $1 AND g.user_id = $2 ${orgFilter}`,
+        organizationId ? [goalId, userId, organizationId] : [goalId, userId]
       );
 
       return result.rows[0] || null;
@@ -76,18 +78,31 @@ export class GoalsService {
     }
   }
 
-  static async getGoals(userId: number, activeOnly: boolean = false): Promise<Goal[]> {
+  static async getGoals(userId: number, activeOnly: boolean = false, organizationId?: number): Promise<Goal[]> {
     try {
-      const whereClause = activeOnly ? 'AND g.is_active = TRUE' : '';
-      const result = await query(
-        `SELECT g.*, c.name as categoryName
+      const activeFilter = activeOnly ? 'AND g.is_active = TRUE' : '';
+      const orgFilter = organizationId ? 'AND g.organization_id = $2' : '';
+
+      let query_str: string;
+      let params: any[];
+
+      if (organizationId) {
+        query_str = `SELECT g.*, c.name as categoryName
          FROM goals g
          LEFT JOIN categories c ON g.category_id = c.id
-         WHERE g.user_id = $1 ${whereClause}
-         ORDER BY g.target_date ASC, g.created_at DESC`,
-        [userId]
-      );
+         WHERE g.user_id = $1 ${orgFilter} ${activeFilter}
+         ORDER BY g.target_date ASC, g.created_at DESC`;
+        params = [userId, organizationId];
+      } else {
+        query_str = `SELECT g.*, c.name as categoryName
+         FROM goals g
+         LEFT JOIN categories c ON g.category_id = c.id
+         WHERE g.user_id = $1 ${activeFilter}
+         ORDER BY g.target_date ASC, g.created_at DESC`;
+        params = [userId];
+      }
 
+      const result = await query(query_str, params);
       return result.rows;
     } catch (error) {
       console.error('[Goals] Error getting goals:', error);
@@ -106,7 +121,8 @@ export class GoalsService {
       target_date: string;
       category_id: number;
       is_active: boolean;
-    }>
+    }>,
+    organizationId: number
   ): Promise<Goal> {
     try {
       const fields: string[] = [];
@@ -143,7 +159,7 @@ export class GoalsService {
       }
 
       if (fields.length === 0) {
-        const goal = await this.getGoal(userId, goalId);
+        const goal = await this.getGoal(userId, goalId, organizationId);
         if (!goal) throw new Error('Goal not found');
         return goal;
       }
@@ -152,11 +168,15 @@ export class GoalsService {
 
       values.push(goalId);
       values.push(userId);
+      if (organizationId) {
+        values.push(organizationId);
+      }
 
+      const orgFilter = organizationId ? `AND organization_id = $${paramIndex + 2}` : '';
       const result = await query(
         `UPDATE goals
          SET ${fields.join(', ')}
-         WHERE id = $${paramIndex++} AND user_id = $${paramIndex++}
+         WHERE id = $${paramIndex++} AND user_id = $${paramIndex++} ${orgFilter}
          RETURNING *`,
         values
       );
@@ -168,9 +188,9 @@ export class GoalsService {
     }
   }
 
-  static async addProgress(userId: number, goalId: number, amount: number, notes?: string): Promise<GoalProgress> {
+  static async addProgress(userId: number, goalId: number, amount: number, notes?: string, organizationId?: number): Promise<GoalProgress> {
     try {
-      const goal = await this.getGoal(userId, goalId);
+      const goal = await this.getGoal(userId, goalId, organizationId);
       if (!goal) {
         throw new Error('Goal not found');
       }
@@ -181,8 +201,8 @@ export class GoalsService {
       await query(
         `UPDATE goals
          SET current_amount = $1, progress_percentage = $2, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $3`,
-        [newAmount, progressPercentage, goalId]
+         WHERE id = $3 AND user_id = $4 ${organizationId ? 'AND organization_id = $5' : ''}`,
+        organizationId ? [newAmount, progressPercentage, goalId, userId, organizationId] : [newAmount, progressPercentage, goalId, userId]
       );
 
       const progressResult = await query(
@@ -199,15 +219,16 @@ export class GoalsService {
     }
   }
 
-  static async getGoalProgress(userId: number, goalId: number, limit: number = 30): Promise<GoalProgress[]> {
+  static async getGoalProgress(userId: number, goalId: number, limit: number = 30, organizationId?: number): Promise<GoalProgress[]> {
     try {
+      const orgFilter = organizationId ? 'AND g.organization_id = $3' : '';
       const result = await query(
         `SELECT gp.* FROM goal_progress gp
          JOIN goals g ON gp.goal_id = g.id
-         WHERE g.user_id = $1 AND gp.goal_id = $2
+         WHERE g.user_id = $1 AND gp.goal_id = $2 ${orgFilter}
          ORDER BY gp.progress_date DESC
-         LIMIT $3`,
-        [userId, goalId, limit]
+         LIMIT ${organizationId ? '$4' : '$3'}`,
+        organizationId ? [userId, goalId, organizationId, limit] : [userId, goalId, limit]
       );
 
       return result.rows;
@@ -217,9 +238,9 @@ export class GoalsService {
     }
   }
 
-  static async getGoalSummary(userId: number): Promise<GoalSummary> {
+  static async getGoalSummary(userId: number, organizationId?: number): Promise<GoalSummary> {
     try {
-      const goals = await this.getGoals(userId);
+      const goals = await this.getGoals(userId, false, organizationId);
 
       const totalGoals = goals.length;
       const activeGoals = goals.filter((g) => g.is_active).length;
@@ -250,9 +271,13 @@ export class GoalsService {
     }
   }
 
-  static async deleteGoal(userId: number, goalId: number): Promise<boolean> {
+  static async deleteGoal(userId: number, goalId: number, organizationId?: number): Promise<boolean> {
     try {
-      const result = await query('DELETE FROM goals WHERE id = $1 AND user_id = $2', [goalId, userId]);
+      const orgFilter = organizationId ? 'AND organization_id = $3' : '';
+      const result = await query(
+        `DELETE FROM goals WHERE id = $1 AND user_id = $2 ${orgFilter}`,
+        organizationId ? [goalId, userId, organizationId] : [goalId, userId]
+      );
       return result.rowCount > 0;
     } catch (error) {
       console.error('[Goals] Error deleting goal:', error);
@@ -260,9 +285,9 @@ export class GoalsService {
     }
   }
 
-  static async checkGoalAlerts(userId: number): Promise<{ goalId: number; name: string; alert: string }[]> {
+  static async checkGoalAlerts(userId: number, organizationId?: number): Promise<{ goalId: number; name: string; alert: string }[]> {
     try {
-      const goals = await this.getGoals(userId, true);
+      const goals = await this.getGoals(userId, true, organizationId);
       const alerts: { goalId: number; name: string; alert: string }[] = [];
 
       const today = new Date();

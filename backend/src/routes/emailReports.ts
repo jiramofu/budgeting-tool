@@ -1,5 +1,7 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import {
   getEmailPreferences,
   updateEmailPreferences,
@@ -13,16 +15,16 @@ import {
 const router = express.Router();
 
 // Apply auth middleware to all routes
-router.use(authenticate);
+router.use(authenticate, loadUserOrganizations, requireOrganization);
 
 /**
  * Get email preferences for the user
  * GET /api/email-reports/preferences
  */
-router.get('/preferences', async (req: Request, res: Response) => {
+router.get('/preferences', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
-    const preferences = await getEmailPreferences(userId);
+    const userId = req.userId;
+    const preferences = await getEmailPreferences(userId, req.organizationId!);
 
     res.json({
       success: true,
@@ -41,10 +43,10 @@ router.get('/preferences', async (req: Request, res: Response) => {
  * Update email preferences
  * PUT /api/email-reports/preferences
  */
-router.put('/preferences', async (req: Request, res: Response) => {
+router.put('/preferences', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
-    const preferences = await updateEmailPreferences(userId, req.body);
+    const userId = req.userId;
+    const preferences = await updateEmailPreferences(userId, req.body, req.organizationId!);
 
     res.json({
       success: true,
@@ -64,7 +66,7 @@ router.put('/preferences', async (req: Request, res: Response) => {
  * Send a test email to verify email service is working
  * POST /api/email-reports/test
  */
-router.post('/test', async (req: Request, res: Response) => {
+router.post('/test', async (req: PermissionRequest, res: Response) => {
   try {
     const { recipientEmail } = req.body;
 
@@ -75,7 +77,7 @@ router.post('/test', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await sendTestEmail(recipientEmail);
+    const result = await sendTestEmail(recipientEmail, req.organizationId!);
 
     res.json({
       success: result.success,
@@ -94,10 +96,10 @@ router.post('/test', async (req: Request, res: Response) => {
  * Get all email report schedules for the user
  * GET /api/email-reports
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
-    const reports = await getUserEmailReports(userId);
+    const userId = req.userId;
+    const reports = await getUserEmailReports(userId, req.organizationId!);
 
     res.json({
       success: true,
@@ -117,9 +119,9 @@ router.get('/', async (req: Request, res: Response) => {
  * Create a new email report schedule
  * POST /api/email-reports
  */
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const {
       reportType,
       recipientEmail,
@@ -159,7 +161,7 @@ router.post('/', async (req: Request, res: Response) => {
       scheduledDayOfWeek,
       scheduledDayOfMonth,
       scheduledTime,
-    });
+    }, req.organizationId!);
 
     res.status(201).json({
       success: true,
@@ -179,15 +181,16 @@ router.post('/', async (req: Request, res: Response) => {
  * Update an email report schedule
  * PUT /api/email-reports/:reportId
  */
-router.put('/:reportId', async (req: Request, res: Response) => {
+router.put('/:reportId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { reportId } = req.params;
 
     const report = await updateEmailReport(
       userId,
       parseInt(reportId),
-      req.body
+      req.body,
+      req.organizationId
     );
 
     res.json({
@@ -208,12 +211,12 @@ router.put('/:reportId', async (req: Request, res: Response) => {
  * Delete an email report schedule
  * DELETE /api/email-reports/:reportId
  */
-router.delete('/:reportId', async (req: Request, res: Response) => {
+router.delete('/:reportId', async (req: PermissionRequest, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const userId = req.userId;
     const { reportId } = req.params;
 
-    await deleteEmailReport(userId, parseInt(reportId));
+    await deleteEmailReport(userId, parseInt(reportId), req.organizationId!);
 
     res.json({
       success: true,

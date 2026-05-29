@@ -122,7 +122,7 @@ export class TemplatesService {
     return this.BUDGET_TEMPLATES[templateId] || null;
   }
 
-  static async applyTemplate(userId: number, templateId: string, budgetId: number): Promise<any> {
+  static async applyTemplate(userId: number, templateId: string, budgetId: number, organizationId?: number): Promise<any> {
     try {
       const template = this.getTemplate(templateId);
       if (!template) {
@@ -163,7 +163,7 @@ export class TemplatesService {
     }
   }
 
-  static async suggestCategories(userId: number, limit: number = 10): Promise<CategorySuggestion[]> {
+  static async suggestCategories(userId: number, limit: number = 10, organizationId?: number): Promise<CategorySuggestion[]> {
     try {
       const result = await query(
         `SELECT
@@ -193,7 +193,7 @@ export class TemplatesService {
     }
   }
 
-  static async getCategoryStats(userId: number): Promise<any> {
+  static async getCategoryStats(userId: number, organizationId?: number): Promise<any> {
     try {
       const result = await query(
         `SELECT

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/api';
+import { formatCurrency } from '../utils/currencyFormatter';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { MetricCard, SpendingByCategory, RecentTransactions, UpcomingBills } from '../components/dashboard';
 import { DollarSign, Wallet, TrendingUp, AlertCircle } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
@@ -37,6 +39,7 @@ interface DashboardMetrics {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { error: showError } = useToast();
+  const { currency } = useUserSettings();
   const [budget, setBudget] = useState<Budget | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -165,7 +168,7 @@ const Dashboard: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+      <div className="min-h-screen bg-primary p-4 md:p-8">
         <div className="mb-8 space-y-4">
           <SkeletonCard count={1} />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -185,7 +188,7 @@ const Dashboard: React.FC = () => {
       : 'bg-emerald-600';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+    <div className="min-h-screen bg-primary p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -197,9 +200,9 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="flex flex-col items-start md:items-end gap-2">
             <div className="text-2xl font-bold text-slate-50">
-              ${(Number(metrics.totalSpending) || 0).toFixed(2)}
+              {formatCurrency(metrics.totalSpending, currency)}
             </div>
-            <p className="text-sm text-slate-400">of ${(Number(metrics.budgetLimit) || 0).toFixed(2)} budget</p>
+            <p className="text-sm text-slate-400">of {formatCurrency(metrics.budgetLimit, currency)} budget</p>
           </div>
         </div>
 
@@ -223,7 +226,7 @@ const Dashboard: React.FC = () => {
             />
           </div>
           {budgetPercentage >= 100 && (
-            <p className="text-xs text-red-400 mt-2">Budget exceeded by ${(metrics.totalSpending - metrics.budgetLimit).toFixed(2)}</p>
+            <p className="text-xs text-red-400 mt-2">Budget exceeded by {formatCurrency(metrics.totalSpending - metrics.budgetLimit, currency)}</p>
           )}
         </div>
       </div>
@@ -233,8 +236,8 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Total expenses for the current month" position="bottom">
           <MetricCard
             title="Total Spending"
-            value={`$${(Number(metrics.totalSpending) || 0).toFixed(2)}`}
-            subtitle={`of $${(Number(metrics.budgetLimit) || 0).toFixed(2)}`}
+            value={formatCurrency(metrics.totalSpending, currency)}
+            subtitle={`of ${formatCurrency(metrics.budgetLimit, currency)}`}
             icon={<DollarSign className="w-5 h-5" />}
             trend={{
               direction: metrics.spendingTrend > 0 ? 'up' : 'down',
@@ -248,7 +251,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="How much budget you have left this month" position="bottom">
           <MetricCard
             title="Budget Remaining"
-            value={`$${(Number(metrics.budgetRemaining) || 0).toFixed(2)}`}
+            value={formatCurrency(metrics.budgetRemaining, currency)}
             subtitle={metrics.budgetRemaining > 0 ? 'You\'re on track' : 'Over budget'}
             icon={<Wallet className="w-5 h-5" />}
             variant={metrics.budgetRemaining > 0 ? 'success' : 'danger'}
@@ -258,7 +261,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Average spending per day based on days elapsed" position="bottom">
           <MetricCard
             title="Average Daily"
-            value={`$${(Number(metrics.avgDailySpending) || 0).toFixed(2)}`}
+            value={formatCurrency(metrics.avgDailySpending, currency)}
             subtitle="This month"
             icon={<TrendingUp className="w-5 h-5" />}
             variant="default"
@@ -268,7 +271,7 @@ const Dashboard: React.FC = () => {
         <Tooltip content="Total income received this month" position="bottom">
           <MetricCard
             title="Income"
-            value={`$${(metrics.income || 0).toFixed(2)}`}
+            value={formatCurrency(metrics.income, currency)}
             subtitle="This month"
             icon={<DollarSign className="w-5 h-5" />}
             variant="success"
@@ -280,7 +283,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         {/* Spending by category - spans 2 columns on large screens */}
         <div className="lg:col-span-2">
-          {budget && <SpendingByCategory budgetId={budget.id} />}
+          {budget && <SpendingByCategory budgetId={budget.id} currency={currency} />}
         </div>
 
         {/* Upcoming bills */}
@@ -295,6 +298,7 @@ const Dashboard: React.FC = () => {
           transactions={transactions}
           maxItems={6}
           onViewAll={handleViewAllTransactions}
+          currency={currency}
         />
       </div>
     </div>

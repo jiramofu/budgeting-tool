@@ -1,307 +1,248 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
+  TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { apiClient } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import ProgressBar from '../../components/ProgressBar';
+import { Colors } from '../../constants/colors';
+import { Transaction } from '../../types';
 
-interface BudgetData {
+interface Summary {
   totalBudgeted: number;
   totalSpent: number;
-  categoriesCount: number;
   budgetHealth: number;
 }
 
 const DashboardScreen: React.FC = () => {
-  const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const navigation = useNavigation<any>();
   const { user } = useAuth();
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [recentTx, setRecentTx] = useState<Transaction[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadDashboard = async () => {
-    try {
-      setLoading(true);
-      const currentDate = new Date();
-      const month = currentDate.getMonth() + 1;
-      const year = currentDate.getFullYear();
-
-      // Fetch budget data
-      const response = await apiClient.get(`/budgets/${year}/${month}`);
-      const budgetInfo = response.data;
-
-      setBudgetData({
-        totalBudgeted: budgetInfo.total_budgeted || 0,
-        totalSpent: budgetInfo.total_spent || 0,
-        categoriesCount: budgetInfo.categories_count || 0,
-        budgetHealth: budgetInfo.health_score || 85,
-      });
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
+  const load = async () => {
+    const now = new Date();
+    const [budgetRes, txRes] = await Promise.allSettled([
+      apiClient.get(`/budgets/${now.getFullYear()}/${now.getMonth() + 1}`),
+      apiClient.get('/transactions?limit=5'),
+    ]);
+    if (budgetRes.status === 'fulfilled') {
+      const d = budgetRes.value.data;
+      setSummary({ totalBudgeted: d.total_budgeted || 0, totalSpent: d.total_spent || 0, budgetHealth: d.health_score || 0 });
+    }
+    if (txRes.status === 'fulfilled') {
+      setRecentTx((txRes.value.data.transactions || txRes.value.data || []).slice(0, 5));
     }
   };
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
+  useFocusEffect(useCallback(() => { load(); }, []));
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadDashboard();
-    setRefreshing(false);
-  };
+  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const getHealthColor = (health: number): string => {
-    if (health >= 80) return '#10b981';
-    if (health >= 60) return '#f59e0b';
-    return '#ef4444';
-  };
+  const remaining = (summary?.totalBudgeted ?? 0) - (summary?.totalSpent ?? 0);
+  const spentPct = summary ? (summary.totalSpent / (summary.totalBudgeted || 1)) * 100 : 0;
+  const firstName = user?.email?.split('@')[0] ?? '';
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
-  }
-
-  const spentPercentage = budgetData
-    ? (budgetData.totalSpent / budgetData.totalBudgeted) * 100
-    : 0;
+  const healthLabel = (summary?.budgetHealth ?? 0) >= 80 ? 'On track' :
+    (summary?.budgetHealth ?? 0) >= 60 ? 'Caution' : 'Over budget';
+  const healthColor = (summary?.budgetHealth ?? 0) >= 80 ? Colors.income :
+    (summary?.budgetHealth ?? 0) >= 60 ? Colors.warning : Colors.expense;
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={styles.header}>
-        <Text style={styles.greeting}>👋 Hello, {user?.email?.split('@')[0]}</Text>
-        <Text style={styles.date}>
-          {new Date().toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </Text>
-      </View>
-
-      {budgetData && (
-        <>
-          {/* Budget Health */}
-          <View style={styles.card}>
-            <View style={styles.healthHeader}>
-              <Text style={styles.cardTitle}>Budget Health</Text>
-              <Text style={[styles.healthScore, { color: getHealthColor(budgetData.budgetHealth) }]}>
-                {budgetData.budgetHealth}%
-              </Text>
-            </View>
-            <View style={styles.healthBar}>
-              <View
-                style={[
-                  styles.healthBarFill,
-                  {
-                    width: `${budgetData.budgetHealth}%`,
-                    backgroundColor: getHealthColor(budgetData.budgetHealth),
-                  },
-                ]}
-              />
-            </View>
-            <Text style={styles.healthStatus}>
-              {budgetData.budgetHealth >= 80
-                ? '✅ On track'
-                : budgetData.budgetHealth >= 60
-                ? '⚠️ Needs attention'
-                : '🚨 Over budget'}
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+      >
+        {/* Header */}
+        <View style={styles.greeting}>
+          <View>
+            <Text style={styles.hi}>Good day, {firstName} 👋</Text>
+            <Text style={styles.date}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
+          <TouchableOpacity style={styles.notifBtn}>
+            <Text style={styles.notifIcon}>🔔</Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Budget Summary */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>This Month</Text>
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Budgeted</Text>
-                <Text style={styles.summaryAmount}>${budgetData.totalBudgeted.toFixed(2)}</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Spent</Text>
-                <Text style={styles.summaryAmount}>${budgetData.totalSpent.toFixed(2)}</Text>
-              </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Remaining</Text>
-                <Text
-                  style={[
-                    styles.summaryAmount,
-                    {
-                      color:
-                        budgetData.totalBudgeted - budgetData.totalSpent >= 0
-                          ? '#10b981'
-                          : '#ef4444',
-                    },
-                  ]}
-                >
-                  ${(budgetData.totalBudgeted - budgetData.totalSpent).toFixed(2)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Progress Bar */}
-            <View style={styles.progressBar}>
-              <View
-                style={[
-                  styles.progressBarFill,
-                  { width: `${Math.min(spentPercentage, 100)}%` },
-                ]}
-              />
-            </View>
-            <Text style={styles.progressText}>{spentPercentage.toFixed(0)}% spent</Text>
-          </View>
-
-          {/* Quick Stats */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Quick Stats</Text>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{budgetData.categoriesCount}</Text>
-                <Text style={styles.statLabel}>Categories</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>${budgetData.totalBudgeted.toFixed(0)}</Text>
-                <Text style={styles.statLabel}>Monthly Budget</Text>
-              </View>
+        {/* Hero budget card */}
+        <View style={styles.heroCard}>
+          <View style={styles.heroTop}>
+            <Text style={styles.heroLabel}>Monthly Budget</Text>
+            <View style={[styles.healthPill, { backgroundColor: healthColor + '22', borderColor: healthColor + '55' }]}>
+              <Text style={[styles.healthPillText, { color: healthColor }]}>{healthLabel}</Text>
             </View>
           </View>
-        </>
-      )}
-    </ScrollView>
+          <Text style={styles.heroAmount}>
+            ${(summary?.totalBudgeted ?? 0).toFixed(2)}
+          </Text>
+          <View style={styles.heroDivider} />
+          <ProgressBar value={spentPct} height={8} />
+          <View style={styles.heroStats}>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatLabel}>Spent</Text>
+              <Text style={[styles.heroStatVal, { color: Colors.expense }]}>
+                ${(summary?.totalSpent ?? 0).toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatLabel}>{remaining >= 0 ? 'Remaining' : 'Overspent'}</Text>
+              <Text style={[styles.heroStatVal, { color: remaining >= 0 ? Colors.income : Colors.expense }]}>
+                ${Math.abs(remaining).toFixed(2)}
+              </Text>
+            </View>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroStatLabel}>Used</Text>
+              <Text style={styles.heroStatVal}>{spentPct.toFixed(0)}%</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick actions */}
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.actions}>
+          <ActionCard icon="➕" label="Add Transaction" onPress={() => navigation.navigate('AddTransaction')} color={Colors.accent} />
+          <ActionCard icon="📊" label="Set Budget" onPress={() => navigation.navigate('AddBudget')} color={Colors.income} />
+          <ActionCard icon="📈" label="Analytics" onPress={() => navigation.navigate('Analytics')} color={Colors.warning} />
+        </View>
+
+        {/* Recent transactions */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Recent</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Transactions')}>
+            <Text style={styles.seeAll}>See all →</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.txCard}>
+          {recentTx.length === 0 ? (
+            <View style={styles.txEmpty}>
+              <Text style={styles.txEmptyText}>No transactions yet</Text>
+            </View>
+          ) : (
+            recentTx.map((tx, i) => {
+              const isExpense = tx.amount < 0;
+              return (
+                <View key={tx.id} style={[styles.txRow, i < recentTx.length - 1 && styles.txRowBorder]}>
+                  <View style={[styles.txIcon, { backgroundColor: isExpense ? Colors.expenseLight : Colors.incomeLight }]}>
+                    <Text style={{ fontSize: 16 }}>{isExpense ? '↓' : '↑'}</Text>
+                  </View>
+                  <View style={styles.txInfo}>
+                    <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                    <Text style={styles.txMeta}>
+                      {tx.category_name} · {new Date(tx.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
+                  </View>
+                  <Text style={[styles.txAmt, { color: isExpense ? Colors.expense : Colors.income }]}>
+                    {isExpense ? '-' : '+'}${Math.abs(tx.amount).toFixed(2)}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
+    </>
   );
 };
 
+const ActionCard = ({ icon, label, onPress, color }: { icon: string; label: string; onPress: () => void; color: string }) => (
+  <TouchableOpacity style={[styles.actionCard, { borderColor: color + '44' }]} onPress={onPress} activeOpacity={0.8}>
+    <View style={[styles.actionIconWrap, { backgroundColor: color + '22' }]}>
+      <Text style={styles.actionIcon}>{icon}</Text>
+    </View>
+    <Text style={styles.actionLabel}>{label}</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 16,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-  header: {
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  date: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  card: {
-    backgroundColor: '#fff',
+  screen: { flex: 1, backgroundColor: Colors.bg },
+  container: { padding: 20, paddingBottom: 32 },
+  greeting: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
+  hi: { fontSize: 22, fontWeight: '800', color: Colors.text, letterSpacing: -0.3 },
+  date: { fontSize: 13, color: Colors.textSecondary, marginTop: 3 },
+  notifBtn: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 12,
-  },
-  healthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'center',
   },
-  healthScore: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  notifIcon: { fontSize: 18 },
+  heroCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 22,
+    padding: 22,
+    borderWidth: 1,
+    borderColor: Colors.borderAccent,
+    marginBottom: 28,
+    shadowColor: Colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  healthBar: {
-    height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  heroLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 },
+  healthPill: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  healthBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  healthStatus: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  summaryItem: {
+  healthPillText: { fontSize: 11, fontWeight: '700' },
+  heroAmount: { fontSize: 42, fontWeight: '800', color: Colors.text, letterSpacing: -1, marginBottom: 16 },
+  heroDivider: { height: 1, backgroundColor: Colors.border, marginBottom: 14 },
+  heroStats: { flexDirection: 'row', marginTop: 12 },
+  heroStat: { flex: 1 },
+  heroStatLabel: { fontSize: 11, color: Colors.textMuted, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroStatVal: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 14 },
+  seeAll: { fontSize: 13, color: Colors.accent, fontWeight: '600' },
+  actions: { flexDirection: 'row', gap: 10, marginBottom: 28 },
+  actionCard: {
     flex: 1,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 16,
+    padding: 14,
     alignItems: 'center',
+    borderWidth: 1,
   },
-  summaryLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  summaryAmount: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 3,
+  actionIconWrap: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  actionIcon: { fontSize: 20 },
+  actionLabel: { fontSize: 11, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center', lineHeight: 16 },
+  txCard: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: 'hidden',
-    marginBottom: 8,
   },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#3b82f6',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#3b82f6',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
+  txEmpty: { padding: 28, alignItems: 'center' },
+  txEmptyText: { fontSize: 14, color: Colors.textMuted },
+  txRow: { flexDirection: 'row', alignItems: 'center', padding: 14 },
+  txRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.borderSubtle },
+  txIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+  txInfo: { flex: 1 },
+  txDesc: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  txMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  txAmt: { fontSize: 15, fontWeight: '700' },
 });
 
 export default DashboardScreen;

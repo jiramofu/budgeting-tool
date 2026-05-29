@@ -1,19 +1,20 @@
 import { Router, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate } from '../middleware/auth';
+import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
+import { requireOrganization } from '../middleware/permissionHelper';
 import { AdvancedBudgetingService } from '../services/advanced-budgeting-service';
 
 const router = Router();
 
+// Apply auth middleware to all routes
+router.use(authenticate, loadUserOrganizations, requireOrganization);
+
 console.log('[Advanced Budgeting Routes] Loading routes...');
 
 // Get envelopes (zero-based budgeting)
-router.get('/envelopes/:year/:month', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/envelopes/:year/:month', async (req: PermissionRequest, res: Response) => {
   console.log('[Advanced Budgeting] GET envelopes');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month);
 
@@ -21,7 +22,7 @@ router.get('/envelopes/:year/:month', authenticate, async (req: AuthRequest, res
       return res.status(400).json({ error: 'Invalid year or month' });
     }
 
-    const envelopes = await AdvancedBudgetingService.getEnvelopes(req.userId, month, year);
+    const envelopes = await AdvancedBudgetingService.getEnvelopes(req.userId, month, year, req.organizationId!);
     res.json(envelopes);
   } catch (error: any) {
     console.error('[Advanced Budgeting] Error getting envelopes:', error);
@@ -30,14 +31,10 @@ router.get('/envelopes/:year/:month', authenticate, async (req: AuthRequest, res
 });
 
 // Save budget rule
-router.post('/rules', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/rules', async (req: PermissionRequest, res: Response) => {
   console.log('[Advanced Budgeting] POST budget rule');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const rule = await AdvancedBudgetingService.saveBudgetRule(req.userId, req.body);
+    const rule = await AdvancedBudgetingService.saveBudgetRule(req.userId, req.body, req.organizationId!);
     res.json(rule);
   } catch (error: any) {
     console.error('[Advanced Budgeting] Error saving rule:', error);
@@ -46,13 +43,9 @@ router.post('/rules', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // Check budget alerts
-router.get('/alerts/:year/:month', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/alerts/:year/:month', async (req: PermissionRequest, res: Response) => {
   console.log('[Advanced Budgeting] GET alerts');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const year = parseInt(req.params.year);
     const month = parseInt(req.params.month);
 
@@ -60,7 +53,7 @@ router.get('/alerts/:year/:month', authenticate, async (req: AuthRequest, res: R
       return res.status(400).json({ error: 'Invalid year or month' });
     }
 
-    const alerts = await AdvancedBudgetingService.checkBudgetAlerts(req.userId, month, year);
+    const alerts = await AdvancedBudgetingService.checkBudgetAlerts(req.userId, month, year, req.organizationId!);
     res.json(alerts);
   } catch (error: any) {
     console.error('[Advanced Budgeting] Error checking alerts:', error);
@@ -69,14 +62,10 @@ router.get('/alerts/:year/:month', authenticate, async (req: AuthRequest, res: R
 });
 
 // Get budget recommendations
-router.get('/recommendations', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/recommendations', async (req: PermissionRequest, res: Response) => {
   console.log('[Advanced Budgeting] GET recommendations');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const recommendations = await AdvancedBudgetingService.getBudgetRecommendations(req.userId);
+    const recommendations = await AdvancedBudgetingService.getBudgetRecommendations(req.userId, req.organizationId!);
     res.json(recommendations);
   } catch (error: any) {
     console.error('[Advanced Budgeting] Error getting recommendations:', error);
@@ -85,15 +74,11 @@ router.get('/recommendations', authenticate, async (req: AuthRequest, res: Respo
 });
 
 // Get budget adherence
-router.get('/adherence', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/adherence', async (req: PermissionRequest, res: Response) => {
   console.log('[Advanced Budgeting] GET adherence');
   try {
-    if (!req.userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
     const months = parseInt(req.query.months as string) || 3;
-    const adherence = await AdvancedBudgetingService.getBudgetAdherence(req.userId, months);
+    const adherence = await AdvancedBudgetingService.getBudgetAdherence(req.userId, months, req.organizationId!);
     res.json(adherence);
   } catch (error: any) {
     console.error('[Advanced Budgeting] Error getting adherence:', error);

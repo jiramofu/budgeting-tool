@@ -20,7 +20,7 @@ interface SpendingAlert {
 }
 
 class SmartRulesEngine {
-  static async analyzeBudgetAndGetRecommendations(userId: number, month: number, year: number): Promise<BudgetRecommendation[]> {
+  static async analyzeBudgetAndGetRecommendations(userId: number, month: number, year: number, organizationId?: number): Promise<BudgetRecommendation[]> {
     try {
       const recommendations: BudgetRecommendation[] = [];
 
@@ -37,10 +37,10 @@ class SmartRulesEngine {
           AND t.user_id = $1
           AND EXTRACT(MONTH FROM t.transaction_date) = $2
           AND EXTRACT(YEAR FROM t.transaction_date) = $3
-          AND t.transaction_type = 'expense'
-        WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3
+          AND t.transaction_type = 'expense' ${organizationId ? 'AND t.organization_id = $4' : ''}
+        WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3 ${organizationId ? 'AND b.organization_id = $4' : ''}
         GROUP BY c.id, c.name, bt.target_amount`,
-        [userId, month, year]
+        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
       );
 
       // Get historical spending averages (last 6 months)
@@ -55,11 +55,11 @@ class SmartRulesEngine {
           JOIN categories c ON t.category_id = c.id
           WHERE t.user_id = $1
             AND t.transaction_type = 'expense'
-            AND t.transaction_date >= NOW() - INTERVAL '6 months'
+            AND t.transaction_date >= NOW() - INTERVAL '6 months' ${organizationId ? 'AND t.organization_id = $2' : ''}
           GROUP BY c.id, month, year
         ) monthly_data
         GROUP BY c.id`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const historyMap = new Map(historyResult.rows.map(r => [r.id, { avg: parseFloat(r.avg_spending || 0), std: parseFloat(r.std_dev || 0) }]));
@@ -120,7 +120,7 @@ class SmartRulesEngine {
     }
   }
 
-  static async detectSpendingAnomalies(userId: number, categoryId: number): Promise<SpendingAlert | null> {
+  static async detectSpendingAnomalies(userId: number, categoryId: number, organizationId?: number): Promise<SpendingAlert | null> {
     try {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
@@ -132,15 +132,15 @@ class SmartRulesEngine {
           COALESCE(SUM(ABS(t.amount)), 0) as current_spending
         FROM categories c
         LEFT JOIN budget_targets bt ON c.id = bt.category_id
-        LEFT JOIN budgets b ON bt.budget_id = b.id AND b.user_id = $1 AND b.month = $2 AND b.year = $3
+        LEFT JOIN budgets b ON bt.budget_id = b.id AND b.user_id = $1 AND b.month = $2 AND b.year = $3 ${organizationId ? 'AND b.organization_id = $5' : ''}
         LEFT JOIN transactions t ON c.id = t.category_id
           AND t.user_id = $1
           AND EXTRACT(MONTH FROM t.transaction_date) = $2
           AND EXTRACT(YEAR FROM t.transaction_date) = $3
-          AND t.transaction_type = 'expense'
-        WHERE c.id = $4
+          AND t.transaction_type = 'expense' ${organizationId ? 'AND t.organization_id = $5' : ''}
+        WHERE c.id = $4 ${organizationId ? 'AND c.organization_id = $5' : ''}
         GROUP BY c.id, c.name, bt.target_amount`,
-        [userId, currentMonth, currentYear, categoryId]
+        organizationId ? [userId, currentMonth, currentYear, categoryId, organizationId] : [userId, currentMonth, currentYear, categoryId]
       );
 
       if (result.rows.length === 0) return null;
@@ -184,7 +184,7 @@ class SmartRulesEngine {
     }
   }
 
-  static async getSpendingForecast(userId: number, categoryId: number, daysAhead: number = 30): Promise<{ projectedSpending: number; daysRemaining: number; dailyRate: number }> {
+  static async getSpendingForecast(userId: number, categoryId: number, daysAhead: number = 30, organizationId?: number): Promise<{ projectedSpending: number; daysRemaining: number; dailyRate: number }> {
     try {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
@@ -199,8 +199,8 @@ class SmartRulesEngine {
         WHERE user_id = $1 AND category_id = $2
           AND EXTRACT(MONTH FROM transaction_date) = $3
           AND EXTRACT(YEAR FROM transaction_date) = $4
-          AND transaction_type = 'expense'`,
-        [userId, categoryId, currentMonth, currentYear]
+          AND transaction_type = 'expense' ${organizationId ? 'AND organization_id = $5' : ''}`,
+        organizationId ? [userId, categoryId, currentMonth, currentYear, organizationId] : [userId, categoryId, currentMonth, currentYear]
       );
 
       const currentSpent = parseFloat(currentResult.rows[0].spent || 0);

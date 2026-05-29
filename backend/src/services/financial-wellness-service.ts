@@ -37,33 +37,33 @@ interface TaxInsight {
 
 export class FinancialWellnessService {
   // Calculate net worth from all accounts
-  static async calculateNetWorth(userId: number): Promise<NetWorthSnapshot> {
+  static async calculateNetWorth(userId: number, organizationId?: number): Promise<NetWorthSnapshot> {
     try {
       // Get positive transactions (assets/income)
       const assetsResult = await query(
         `SELECT COALESCE(SUM(CAST(t.amount AS NUMERIC)), 0) as total
          FROM transactions t
-         WHERE t.user_id = $1 AND t.amount > 0
+         WHERE t.user_id = $1 AND t.amount > 0 ${organizationId ? 'AND t.organization_id = $2' : ''}
          AND t.transaction_date >= NOW() - INTERVAL '12 months'`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       // Get negative transactions (liabilities/expenses)
       const liabilitiesResult = await query(
         `SELECT COALESCE(ABS(SUM(CAST(t.amount AS NUMERIC))), 0) as total
          FROM transactions t
-         WHERE t.user_id = $1 AND t.amount < 0
+         WHERE t.user_id = $1 AND t.amount < 0 ${organizationId ? 'AND t.organization_id = $2' : ''}
          AND t.transaction_date >= NOW() - INTERVAL '12 months'`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       // Get previous snapshot for trend
       const previousResult = await query(
         `SELECT net_worth FROM financial_snapshots
-         WHERE user_id = $1
+         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
          ORDER BY created_at DESC
          LIMIT 2`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const totalAssets = assetsResult.rows[0].total;
@@ -79,15 +79,15 @@ export class FinancialWellnessService {
       // Store snapshot
       const incomeResult = await query(
         `SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as income FROM transactions
-         WHERE user_id = $1 AND amount > 0 AND transaction_date >= NOW() - INTERVAL '12 months'`,
-        [userId]
+         WHERE user_id = $1 AND amount > 0 ${organizationId ? 'AND organization_id = $2' : ''} AND transaction_date >= NOW() - INTERVAL '12 months'`,
+        organizationId ? [userId, organizationId] : [userId]
       );
       const totalIncome = incomeResult.rows[0]?.income || 0;
 
       await query(
-        `INSERT INTO financial_snapshots (user_id, snapshot_date, net_worth, total_assets, total_liabilities, total_income, total_expenses)
-         VALUES ($1, CURRENT_DATE, $2, $3, $4, $5, $6)`,
-        [userId, netWorth, totalAssets, totalLiabilities, totalIncome, totalAssets + totalLiabilities]
+        `INSERT INTO financial_snapshots (user_id, organization_id, snapshot_date, net_worth, total_assets, total_liabilities, total_income, total_expenses)
+         VALUES ($1, $2, CURRENT_DATE, $3, $4, $5, $6, $7)`,
+        [userId, organizationId || null, netWorth, totalAssets, totalLiabilities, totalIncome, totalAssets + totalLiabilities]
       );
 
       return {
@@ -134,7 +134,7 @@ export class FinancialWellnessService {
   }
 
   // Get debt payoff plans for all expense categories
-  static async getDebtPayoffPlans(userId: number): Promise<DebtPayoffPlan[]> {
+  static async getDebtPayoffPlans(userId: number, organizationId?: number): Promise<DebtPayoffPlan[]> {
     try {
       // Get all negative balance categories (debt-like)
       const result = await query(
@@ -142,12 +142,12 @@ export class FinancialWellnessService {
                 ABS(SUM(CAST(t.amount AS NUMERIC))) as balance
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1 AND t.amount < 0
+         WHERE t.user_id = $1 AND t.amount < 0 ${organizationId ? 'AND t.organization_id = $2' : ''}
          GROUP BY c.id, c.name
          HAVING ABS(SUM(CAST(t.amount AS NUMERIC))) > 100
          ORDER BY ABS(SUM(CAST(t.amount AS NUMERIC))) DESC
          LIMIT 5`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const plans: DebtPayoffPlan[] = [];
@@ -181,7 +181,7 @@ export class FinancialWellnessService {
   }
 
   // Generate tax insights
-  static async getTaxInsights(userId: number): Promise<TaxInsight[]> {
+  static async getTaxInsights(userId: number, organizationId?: number): Promise<TaxInsight[]> {
     try {
       const insights: TaxInsight[] = [];
 
@@ -192,13 +192,13 @@ export class FinancialWellnessService {
                 COUNT(*) as transaction_count
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1
+         WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $2' : ''}
          AND t.transaction_date >= DATE_TRUNC('year', NOW())
          AND t.amount < 0
          AND c.name IN ('Medical', 'Charitable', 'Education', 'Home Office', 'Business Expenses', 'Professional Services')
          GROUP BY c.id, c.name
          ORDER BY ABS(SUM(CAST(t.amount AS NUMERIC))) DESC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       for (const row of result.rows) {
@@ -220,16 +220,16 @@ export class FinancialWellnessService {
   }
 
   // Calculate savings rate
-  static async getSavingsRateAnalysis(userId: number, months: number = 6): Promise<any> {
+  static async getSavingsRateAnalysis(userId: number, months: number = 6, organizationId?: number): Promise<any> {
     try {
       const result = await query(
         `SELECT
            SUM(CASE WHEN amount > 0 THEN CAST(amount AS NUMERIC) ELSE 0 END) as total_income,
            SUM(CASE WHEN amount < 0 THEN ABS(CAST(amount AS NUMERIC)) ELSE 0 END) as total_expenses
          FROM transactions
-         WHERE user_id = $1
+         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $3' : ''}
          AND transaction_date >= NOW() - INTERVAL '1 month' * $2`,
-        [userId, months]
+        organizationId ? [userId, months, organizationId] : [userId, months]
       );
 
       const { total_income = 0, total_expenses = 0 } = result.rows[0] || {};

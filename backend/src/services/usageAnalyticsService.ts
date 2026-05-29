@@ -49,9 +49,9 @@ export interface UsageTrendData {
  * Calculate API usage summary for a period
  */
 export async function calculateApiUsageSummary(
-  organizationId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  organizationId?: number
 ): Promise<ApiUsageSummary> {
   try {
     // Get basic statistics
@@ -121,9 +121,9 @@ export async function calculateApiUsageSummary(
  * Calculate endpoint-specific breakdown
  */
 export async function calculateEndpointBreakdown(
-  organizationId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  organizationId?: number
 ): Promise<EndpointBreakdown[]> {
   try {
     const result = await pool.query(
@@ -171,9 +171,9 @@ export async function calculateEndpointBreakdown(
  * Calculate user activity metrics
  */
 export async function calculateUserActivity(
-  organizationId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  organizationId?: number
 ): Promise<UserActivity[]> {
   try {
     const result = await pool.query(
@@ -210,8 +210,8 @@ export async function calculateUserActivity(
  * Called by nightly scheduler job
  */
 export async function saveDailyUsageSummary(
-  organizationId: number,
-  summaryDate: Date
+  summaryDate: Date,
+  organizationId?: number
 ): Promise<void> {
   try {
     const dateStr = summaryDate.toISOString().split('T')[0];
@@ -376,7 +376,7 @@ export async function saveDailyUsageSummary(
  * Get usage trend data for charts
  */
 export async function getUsageTrend(
-  organizationId: number,
+  organizationId?: number,
   metric: 'requests' | 'errors' | 'responseTime' = 'requests',
   days: number = 30
 ): Promise<UsageTrendData[]> {
@@ -415,8 +415,8 @@ export async function getUsageTrend(
  * Called by nightly scheduler
  */
 export async function calculateStorageMetrics(
-  organizationId: number,
-  metricDate: Date
+  metricDate: Date,
+  organizationId?: number
 ): Promise<void> {
   try {
     // Calculate active logs size

@@ -22,7 +22,8 @@ class ReportService {
   static async generateMonthlyPDFReport(
     userId: number,
     month: number,
-    year: number
+    year: number,
+    organizationId: number
   ): Promise<Buffer> {
     return new Promise(async (resolve, reject) => {
       try {
@@ -42,15 +43,15 @@ class ReportService {
         doc.moveDown();
 
         const summaryResult = await pool.query(
-          `SELECT 
+          `SELECT
             SUM(ABS(CASE WHEN amount < 0 THEN amount ELSE 0 END)) as total_spent,
             SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as total_income,
             COUNT(*) as transaction_count
-           FROM transactions 
-           WHERE user_id = $1 
-           AND EXTRACT(MONTH FROM date) = $2 
-           AND EXTRACT(YEAR FROM date) = $3`,
-          [userId, month, year]
+           FROM transactions
+           WHERE user_id = $1
+           AND EXTRACT(MONTH FROM date) = $2
+           AND EXTRACT(YEAR FROM date) = $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+          organizationId ? [userId, month, year, organizationId] : [userId, month, year]
         );
 
         const summary = summaryResult.rows[0];
@@ -65,20 +66,20 @@ class ReportService {
         doc.moveDown();
 
         const categoryResult = await pool.query(
-          `SELECT 
+          `SELECT
             c.name as category,
             SUM(ABS(t.amount)) as spent,
             bt.target_amount as budget
            FROM transactions t
            JOIN categories c ON t.category_id = c.id
            LEFT JOIN budget_targets bt ON bt.category_id = c.id
-           WHERE t.user_id = $1 
-           AND EXTRACT(MONTH FROM t.date) = $2 
+           WHERE t.user_id = $1
+           AND EXTRACT(MONTH FROM t.date) = $2
            AND EXTRACT(YEAR FROM t.date) = $3
-           AND t.amount < 0
+           AND t.amount < 0 ${organizationId ? 'AND t.organization_id = $4' : ''}
            GROUP BY c.id, c.name, bt.target_amount
            ORDER BY spent DESC`,
-          [userId, month, year]
+          organizationId ? [userId, month, year, organizationId] : [userId, month, year]
         );
 
         doc.fontSize(14).text("Spending by Category", { underline: true });
@@ -97,19 +98,19 @@ class ReportService {
         doc.moveDown();
 
         const transactionResult = await pool.query(
-          `SELECT 
+          `SELECT
             t.date,
             t.description,
             c.name as category,
             t.amount
            FROM transactions t
            JOIN categories c ON t.category_id = c.id
-           WHERE t.user_id = $1 
-           AND EXTRACT(MONTH FROM t.date) = $2 
-           AND EXTRACT(YEAR FROM t.date) = $3
+           WHERE t.user_id = $1
+           AND EXTRACT(MONTH FROM t.date) = $2
+           AND EXTRACT(YEAR FROM t.date) = $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
            ORDER BY t.date DESC
            LIMIT 30`,
-          [userId, month, year]
+          organizationId ? [userId, month, year, organizationId] : [userId, month, year]
         );
 
         doc.fontSize(14).text("Recent Transactions", { underline: true });
@@ -133,11 +134,12 @@ class ReportService {
   static async generateMonthlyCSVReport(
     userId: number,
     month: number,
-    year: number
+    year: number,
+    organizationId: number
   ): Promise<string> {
     try {
       const result = await pool.query(
-        `SELECT 
+        `SELECT
           t.date,
           t.description,
           c.name as category,
@@ -145,11 +147,11 @@ class ReportService {
           t.source
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1 
-         AND EXTRACT(MONTH FROM t.date) = $2 
-         AND EXTRACT(YEAR FROM t.date) = $3
+         WHERE t.user_id = $1
+         AND EXTRACT(MONTH FROM t.date) = $2
+         AND EXTRACT(YEAR FROM t.date) = $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
          ORDER BY t.date DESC`,
-        [userId, month, year]
+        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
       );
 
       let csv = "Date,Description,Category,Amount,Source\n";
@@ -165,22 +167,22 @@ class ReportService {
     }
   }
 
-  static async generateAnnualCSVReport(userId: number, year: number): Promise<string> {
+  static async generateAnnualCSVReport(userId: number, year: number, organizationId?: number): Promise<string> {
     try {
       const result = await pool.query(
-        `SELECT 
+        `SELECT
           EXTRACT(MONTH FROM t.date) as month,
           c.name as category,
           SUM(ABS(t.amount)) as spent,
           COUNT(*) as transaction_count
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
-         WHERE t.user_id = $1 
+         WHERE t.user_id = $1
          AND EXTRACT(YEAR FROM t.date) = $2
-         AND t.amount < 0
+         AND t.amount < 0 ${organizationId ? 'AND t.organization_id = $3' : ''}
          GROUP BY EXTRACT(MONTH FROM t.date), c.name
          ORDER BY month, category`,
-        [userId, year]
+        organizationId ? [userId, year, organizationId] : [userId, year]
       );
 
       let csv = "Month,Category,Total Spent,Transaction Count\n";
@@ -196,20 +198,20 @@ class ReportService {
     }
   }
 
-  static async generateSpendingTrendCSV(userId: number, months: number = 12): Promise<string> {
+  static async generateSpendingTrendCSV(userId: number, months: number = 12, organizationId?: number): Promise<string> {
     try {
       const result = await pool.query(
-        `SELECT 
+        `SELECT
           DATE_TRUNC('month', t.date) as month,
           SUM(CASE WHEN t.amount < 0 THEN ABS(t.amount) ELSE 0 END) as spent,
           SUM(CASE WHEN t.amount > 0 THEN t.amount ELSE 0 END) as income,
           COUNT(*) as transaction_count
          FROM transactions t
-         WHERE t.user_id = $1 
-         AND t.date >= CURRENT_DATE - INTERVAL '${months} months'
+         WHERE t.user_id = $1
+         AND t.date >= CURRENT_DATE - INTERVAL '${months} months' ${organizationId ? 'AND t.organization_id = $2' : ''}
          GROUP BY DATE_TRUNC('month', t.date)
          ORDER BY month DESC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       let csv = "Month,Total Spent,Total Income,Net,Transaction Count\n";

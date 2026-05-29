@@ -14,6 +14,7 @@ interface NotificationPayload {
   title: string;
   message: string;
   data?: Record<string, any>;
+  organizationId?: number;
 }
 
 class NotificationService {
@@ -49,7 +50,8 @@ class NotificationService {
     categoryName: string,
     percentage: number,
     spent: number,
-    limit: number
+    limit: number,
+    organizationId: number
   ): Promise<void> {
     try {
       const userResult = await pool.query("SELECT email FROM users WHERE id = $1", [userId]);
@@ -79,13 +81,14 @@ class NotificationService {
         title: `${categoryName} Budget ${status}`,
         message: `You have spent $${spent.toFixed(2)} of $${limit.toFixed(2)}`,
         data: { categoryName, percentage, spent, limit },
+        organizationId,
       });
     } catch (error) {
       console.error("Error sending budget alert:", error);
     }
   }
 
-  static async sendWelcomeEmail(email: string, firstName: string): Promise<void> {
+  static async sendWelcomeEmail(email: string, firstName: string, organizationId?: number): Promise<void> {
     try {
       const html = `
         <h2>Welcome to Budgeting Tool, ${firstName}!</h2>
@@ -113,7 +116,8 @@ class NotificationService {
   static async sendTransactionNotification(
     userId: number,
     description: string,
-    amount: number
+    amount: number,
+    organizationId: number
   ): Promise<void> {
     try {
       await this.createNotification({
@@ -122,13 +126,14 @@ class NotificationService {
         title: "Transaction Added",
         message: `${description}: -$${amount.toFixed(2)}`,
         data: { description, amount },
+        organizationId,
       });
     } catch (error) {
       console.error("Error sending transaction notification:", error);
     }
   }
 
-  static async sendMonthlyReport(userId: number): Promise<void> {
+  static async sendMonthlyReport(userId: number, organizationId?: number): Promise<void> {
     try {
       const userResult = await pool.query("SELECT email FROM users WHERE id = $1", [userId]);
 
@@ -143,10 +148,10 @@ class NotificationService {
            FROM transactions t
            LEFT JOIN budget_targets bt ON t.category_id = bt.category_id
            WHERE t.user_id = $1 AND EXTRACT(MONTH FROM t.date) = EXTRACT(MONTH FROM CURRENT_DATE)
-           AND EXTRACT(YEAR FROM t.date) = EXTRACT(YEAR FROM CURRENT_DATE)
+           AND EXTRACT(YEAR FROM t.date) = EXTRACT(YEAR FROM CURRENT_DATE) ${organizationId ? 'AND t.organization_id = $2' : ''}
            GROUP BY bt.target_amount
          ) subquery`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const totalSpent = budgetResult.rows[0]?.total_spent || 0;
@@ -184,9 +189,11 @@ class NotificationService {
 
       if (settings.push_notifications) {
         await pool.query(
-          `INSERT INTO notifications (user_id, type, title, message, data, read)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
-          [payload.userId, payload.type, payload.title, payload.message, JSON.stringify(payload.data || {}), false]
+          `INSERT INTO notifications (user_id, type, title, message, data, read ${payload.organizationId ? ', organization_id' : ''})
+           VALUES ($1, $2, $3, $4, $5, $6 ${payload.organizationId ? ', $7' : ''})`,
+          payload.organizationId
+            ? [payload.userId, payload.type, payload.title, payload.message, JSON.stringify(payload.data || {}), false, payload.organizationId]
+            : [payload.userId, payload.type, payload.title, payload.message, JSON.stringify(payload.data || {}), false]
         );
       }
     } catch (error) {
@@ -194,11 +201,11 @@ class NotificationService {
     }
   }
 
-  static async getNotifications(userId: number, limit: number = 20): Promise<any[]> {
+  static async getNotifications(userId: number, limit: number = 20, organizationId?: number): Promise<any[]> {
     try {
       const result = await pool.query(
-        `SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
-        [userId, limit]
+        `SELECT * FROM notifications WHERE user_id = $1 ${organizationId ? 'AND organization_id = $3' : ''} ORDER BY created_at DESC LIMIT $2`,
+        organizationId ? [userId, limit, organizationId] : [userId, limit]
       );
 
       return result.rows;
@@ -208,20 +215,26 @@ class NotificationService {
     }
   }
 
-  static async markNotificationAsRead(notificationId: number): Promise<void> {
+  static async markNotificationAsRead(notificationId: number, userId: number, organizationId?: number): Promise<void> {
     try {
-      await pool.query("UPDATE notifications SET read = true WHERE id = $1", [notificationId]);
+      await pool.query(
+        `UPDATE notifications SET read = true WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
+        organizationId ? [notificationId, userId, organizationId] : [notificationId, userId]
+      );
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
   }
 
-  static async scheduleMonthlyReports(): Promise<void> {
+  static async scheduleMonthlyReports(organizationId?: number): Promise<void> {
     try {
-      const users = await pool.query("SELECT id FROM users");
+      const users = await pool.query(
+        `SELECT id FROM users WHERE ${organizationId ? 'organization_id = $1' : '1=1'}`,
+        organizationId ? [organizationId] : []
+      );
 
       for (const user of users.rows) {
-        await this.sendMonthlyReport(user.id);
+        await this.sendMonthlyReport(user.id, organizationId);
       }
     } catch (error) {
       console.error("Error scheduling monthly reports:", error);

@@ -2,37 +2,43 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
-  Alert,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
+  Alert,
+  StatusBar,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
+import Button from '../../components/Button';
+import Input from '../../components/Input';
+import { Colors } from '../../constants/colors';
 
 const SignupScreen: React.FC<any> = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { signup } = useAuth();
 
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!firstName.trim()) e.firstName = 'Required';
+    if (!lastName.trim()) e.lastName = 'Required';
+    if (!email.trim()) e.email = 'Email is required';
+    if (!password) e.password = 'Password is required';
+    else if (password.length < 6) e.password = 'Must be at least 6 characters';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const handleSignup = async () => {
-    if (!email || !password || !firstName || !lastName) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
+    if (!validate()) return;
     try {
       setLoading(true);
-      await signup(email, password, firstName, lastName);
+      await signup(email.trim(), password, firstName.trim(), lastName.trim());
     } catch (error: any) {
       Alert.alert('Signup Failed', error.response?.data?.error || 'Failed to create account');
     } finally {
@@ -41,138 +47,64 @@ const SignupScreen: React.FC<any> = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Start managing your finances</Text>
-      </View>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <View style={styles.header}>
+            <Text style={styles.headline}>Create account</Text>
+            <Text style={styles.sub}>Join thousands managing their finances smarter</Text>
+          </View>
 
-      <View style={styles.formContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          placeholderTextColor="#999"
-          value={firstName}
-          onChangeText={setFirstName}
-          editable={!loading}
-        />
+          <View style={styles.card}>
+            <View style={styles.nameRow}>
+              <View style={styles.nameField}>
+                <Input label="First" value={firstName} onChangeText={setFirstName} placeholder="Jane" editable={!loading} error={errors.firstName} />
+              </View>
+              <View style={styles.gap} />
+              <View style={styles.nameField}>
+                <Input label="Last" value={lastName} onChangeText={setLastName} placeholder="Doe" editable={!loading} error={errors.lastName} />
+              </View>
+            </View>
+            <Input label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} editable={!loading} error={errors.email} />
+            <Input label="Password" value={password} onChangeText={setPassword} placeholder="Min. 6 characters" secureTextEntry editable={!loading} error={errors.password} />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Last Name"
-          placeholderTextColor="#999"
-          value={lastName}
-          onChangeText={setLastName}
-          editable={!loading}
-        />
+            <Button label="Create Account" onPress={handleSignup} loading={loading} style={styles.btn} />
+          </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          editable={!loading}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Password (min 6 characters)"
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignup}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Sign Up</Text>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.footerContainer}>
-        <Text style={styles.footerText}>Already have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={loading}>
-          <Text style={styles.loginLink}>Login</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={styles.link} onPress={() => !loading && navigation.navigate('Login')}>
+              Sign in
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-    padding: 20,
-  },
-  headerContainer: {
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  formContainer: {
-    marginVertical: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
+  flex: { flex: 1, backgroundColor: Colors.bg },
+  container: { flexGrow: 1, padding: 24, justifyContent: 'center' },
+  header: { marginBottom: 28 },
+  headline: { fontSize: 32, fontWeight: '800', color: Colors.text, letterSpacing: -0.5 },
+  sub: { fontSize: 14, color: Colors.textSecondary, marginTop: 6, lineHeight: 20 },
+  card: {
+    backgroundColor: Colors.bgCard,
+    borderRadius: 20,
+    padding: 24,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 16,
-    color: '#000',
+    borderColor: Colors.border,
+    marginBottom: 24,
   },
-  button: {
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  footerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 40,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  loginLink: {
-    fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '600',
-  },
+  nameRow: { flexDirection: 'row' },
+  nameField: { flex: 1 },
+  gap: { width: 12 },
+  btn: { marginTop: 4 },
+  footer: { flexDirection: 'row', justifyContent: 'center' },
+  footerText: { fontSize: 14, color: Colors.textSecondary },
+  link: { fontSize: 14, color: Colors.accent, fontWeight: '700' },
 });
 
 export default SignupScreen;

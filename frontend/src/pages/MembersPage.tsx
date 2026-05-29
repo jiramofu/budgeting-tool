@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { apiClient } from '../services/api';
 
 interface Member {
   userId: number;
@@ -41,7 +41,7 @@ export const MembersPage: React.FC = () => {
   const loadMembers = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/admin/dashboard/members-activity?days=${selectedDays}`);
+      const response = await apiClient.get(`/admin/dashboard/members-activity?days=${selectedDays}`);
       setMembersData(response.data);
       setError(null);
     } catch (err: any) {

@@ -117,13 +117,14 @@ export class TemplateService {
     userId: number,
     templateId: number,
     budgetId: number,
+    organizationId: number,
     customizations?: any
   ): Promise<TemplateApplication> {
     try {
       // Verify user owns the budget
       const budgetCheck = await pool.query(
-        `SELECT id FROM budgets WHERE id = $1 AND user_id = $2`,
-        [budgetId, userId]
+        `SELECT id FROM budgets WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
+        organizationId ? [budgetId, userId, organizationId] : [budgetId, userId]
       );
 
       if (budgetCheck.rows.length === 0) {
@@ -155,7 +156,8 @@ export class TemplateService {
           let categoryId = await this.getOrCreateCategory(
             userId,
             categoryName,
-            categoryStructure[categoryName]?.type || 'variable'
+            categoryStructure[categoryName]?.type || 'variable',
+            organizationId
           );
 
           // Create budget target
@@ -199,7 +201,7 @@ export class TemplateService {
   /**
    * Get applications of templates by user
    */
-  async getUserTemplateApplications(userId: number): Promise<TemplateApplication[]> {
+  async getUserTemplateApplications(userId: number, organizationId?: number): Promise<TemplateApplication[]> {
     try {
       const result = await pool.query(
         `
@@ -210,10 +212,10 @@ export class TemplateService {
           applied_at as "appliedAt",
           customizations_json as "customizations"
         FROM template_applications
-        WHERE user_id = $1
+        WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
         ORDER BY applied_at DESC
         `,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       return result.rows;
@@ -343,13 +345,14 @@ export class TemplateService {
   private async getOrCreateCategory(
     userId: number,
     categoryName: string,
-    categoryType: string
+    categoryType: string,
+    organizationId: number
   ): Promise<number> {
     try {
       // Check if category exists
       const existingCheck = await pool.query(
-        `SELECT id FROM categories WHERE user_id = $1 AND name = $2`,
-        [userId, categoryName]
+        `SELECT id FROM categories WHERE user_id = $1 AND name = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
+        organizationId ? [userId, categoryName, organizationId] : [userId, categoryName]
       );
 
       if (existingCheck.rows.length > 0) {
@@ -359,11 +362,11 @@ export class TemplateService {
       // Create new category
       const createResult = await pool.query(
         `
-        INSERT INTO categories (user_id, name, type)
-        VALUES ($1, $2, $3)
+        INSERT INTO categories (user_id, name, type ${organizationId ? ', organization_id' : ''})
+        VALUES ($1, $2, $3 ${organizationId ? ', $4' : ''})
         RETURNING id
         `,
-        [userId, categoryName, categoryType]
+        organizationId ? [userId, categoryName, categoryType, organizationId] : [userId, categoryName, categoryType]
       );
 
       return createResult.rows[0].id;

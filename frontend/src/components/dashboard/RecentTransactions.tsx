@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 interface Transaction {
   id: number;
@@ -16,6 +17,7 @@ interface RecentTransactionsProps {
   transactions: Transaction[];
   maxItems?: number;
   onViewAll?: () => void;
+  currency?: string;
 }
 
 const categoryColors: { [key: string]: string } = {
@@ -32,6 +34,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
   transactions,
   maxItems = 5,
   onViewAll,
+  currency = 'USD',
 }) => {
   const displayTransactions = transactions.slice(0, maxItems);
   const hasMore = transactions.length > maxItems;
@@ -122,7 +125,7 @@ const RecentTransactions: React.FC<RecentTransactionsProps> = ({
             {/* Right side: amount */}
             <div className="text-right ml-2 flex-shrink-0">
               <p className={`text-sm font-semibold ${isIncome(tx.amount) ? 'text-emerald-400' : 'text-slate-50'}`}>
-                {isIncome(tx.amount) ? '+' : '-'}${Math.abs(tx.amount).toFixed(2)}
+                {isIncome(tx.amount) ? '+' : '-'}{formatCurrency(Math.abs(tx.amount), currency)}
               </p>
             </div>
           </div>

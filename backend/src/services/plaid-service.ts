@@ -47,7 +47,8 @@ class PlaidService {
   static async exchangePublicToken(
     userId: number,
     publicToken: string,
-    metadata: any
+    metadata: any,
+    organizationId: number
   ): Promise<{ itemId: string; accessToken: string }> {
     try {
       const response = await this.client.itemPublicTokenExchange({
@@ -57,14 +58,15 @@ class PlaidService {
       const { access_token, item_id } = response.data;
 
       await pool.query(
-        `INSERT INTO bank_connections (user_id, plaid_item_id, institution_name, account_mask, access_token)
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO bank_connections (user_id, plaid_item_id, institution_name, account_mask, access_token, organization_id)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           userId,
           item_id,
           metadata.institution?.name || "Unknown",
           metadata.accounts[0]?.mask || "****",
           access_token,
+          organizationId || null,
         ]
       );
 
@@ -75,11 +77,11 @@ class PlaidService {
     }
   }
 
-  static async getAccounts(userId: number): Promise<PlaidAccount[]> {
+  static async getAccounts(userId: number, organizationId?: number): Promise<PlaidAccount[]> {
     try {
       const result = await pool.query(
-        "SELECT access_token, plaid_item_id FROM bank_connections WHERE user_id = $1",
-        [userId]
+        "SELECT access_token, plaid_item_id FROM bank_connections WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}",
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const connections = result.rows;
@@ -111,12 +113,13 @@ class PlaidService {
 
   static async syncTransactions(
     userId: number,
-    days: number = 30
+    days: number = 30,
+    organizationId: number
   ): Promise<{ imported: number; duplicates: number }> {
     try {
       const result = await pool.query(
-        "SELECT access_token FROM bank_connections WHERE user_id = $1",
-        [userId]
+        "SELECT access_token FROM bank_connections WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}",
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       if (result.rows.length === 0) {
@@ -141,7 +144,8 @@ class PlaidService {
         const isDuplicate = await this.checkDuplicate(
           userId,
           transaction.amount,
-          new Date(transaction.date)
+          new Date(transaction.date),
+          organizationId
         );
 
         if (isDuplicate) {
@@ -154,8 +158,8 @@ class PlaidService {
         );
 
         await pool.query(
-          `INSERT INTO transactions (user_id, date, amount, description, category_id, source, imported_id)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          `INSERT INTO transactions (user_id, date, amount, description, category_id, source, imported_id, organization_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             userId,
             transaction.date,
@@ -164,6 +168,7 @@ class PlaidService {
             categoryId,
             "plaid",
             transaction.transaction_id,
+            organizationId || null,
           ]
         );
 
@@ -180,12 +185,13 @@ class PlaidService {
   private static async checkDuplicate(
     userId: number,
     amount: number,
-    date: Date
+    date: Date,
+    organizationId: number
   ): Promise<boolean> {
     const result = await pool.query(
       `SELECT id FROM transactions
-       WHERE user_id = $1 AND amount = $2 AND date = $3 AND source = $4 LIMIT 1`,
-      [userId, amount, date.toISOString().split("T")[0], "plaid"]
+       WHERE user_id = $1 AND amount = $2 AND date = $3 AND source = $4 ${organizationId ? 'AND organization_id = $5' : ''} LIMIT 1`,
+      organizationId ? [userId, amount, date.toISOString().split("T")[0], "plaid", organizationId] : [userId, amount, date.toISOString().split("T")[0], "plaid"]
     );
 
     return result.rows.length > 0;
@@ -222,11 +228,11 @@ class PlaidService {
     return 1;
   }
 
-  static async disconnectAccount(userId: number, itemId: string): Promise<void> {
+  static async disconnectAccount(userId: number, itemId: string, organizationId?: number): Promise<void> {
     try {
       const result = await pool.query(
-        "SELECT access_token FROM bank_connections WHERE user_id = $1 AND plaid_item_id = $2",
-        [userId, itemId]
+        "SELECT access_token FROM bank_connections WHERE user_id = $1 AND plaid_item_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}",
+        organizationId ? [userId, itemId, organizationId] : [userId, itemId]
       );
 
       if (result.rows.length === 0) {
@@ -244,8 +250,8 @@ class PlaidService {
       }
 
       await pool.query(
-        "DELETE FROM bank_connections WHERE user_id = $1 AND plaid_item_id = $2",
-        [userId, itemId]
+        "DELETE FROM bank_connections WHERE user_id = $1 AND plaid_item_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}",
+        organizationId ? [userId, itemId, organizationId] : [userId, itemId]
       );
     } catch (error) {
       console.error("Error disconnecting account:", error);

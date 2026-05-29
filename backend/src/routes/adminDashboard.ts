@@ -24,7 +24,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -48,12 +48,12 @@ router.get(
         [req.organizationId]
       );
 
-      const storage = await getAuditStorageUsage(req.organizationId);
-      const policy = await getAuditRetentionPolicy(req.organizationId);
+      const storage = await getAuditStorageUsage(req.organizationId!);
+      const policy = await getAuditRetentionPolicy(req.organizationId!);
 
       res.json({
         organization: {
-          id: req.organizationId,
+          id: req.organizationId!,
           name: orgResult.rows[0]?.name || 'Organization',
           type: orgResult.rows[0]?.organization_type || 'team',
           created_at: orgResult.rows[0]?.created_at,
@@ -93,7 +93,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -104,25 +104,25 @@ router.get(
       const endDate = new Date();
 
       const summary = await usageAnalytics.calculateApiUsageSummary(
-        req.organizationId,
         startDate,
-        endDate
+        endDate,
+        req.organizationId!
       );
 
       const breakdown = await usageAnalytics.calculateEndpointBreakdown(
-        req.organizationId,
         startDate,
-        endDate
+        endDate,
+        req.organizationId!
       );
 
       const trend = await usageAnalytics.getUsageTrend(
-        req.organizationId,
+        req.organizationId!,
         'requests',
         days
       );
 
       const usage = await rateLimitConfig.getRateLimitUsage(
-        req.organizationId,
+        req.organizationId!,
         'today'
       );
 
@@ -156,7 +156,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -174,7 +174,7 @@ router.get(
          WHERE organization_id = $1 AND created_at >= $2
          GROUP BY action
          ORDER BY count DESC`,
-        [req.organizationId, startDate]
+        [req.organizationId!, startDate]
       );
 
       const resourceResult = await pool.query(
@@ -186,7 +186,7 @@ router.get(
          GROUP BY resource_type
          ORDER BY count DESC
          LIMIT 10`,
-        [req.organizationId, startDate]
+        [req.organizationId!, startDate]
       );
 
       const userResult = await pool.query(
@@ -198,7 +198,7 @@ router.get(
          GROUP BY user_id
          ORDER BY count DESC
          LIMIT 10`,
-        [req.organizationId, startDate]
+        [req.organizationId!, startDate]
       );
 
       const totalResult = await pool.query(
@@ -208,7 +208,7 @@ router.get(
            SUM(CASE WHEN status = 'failure' THEN 1 ELSE 0 END) as failure_count
          FROM audit_logs
          WHERE organization_id = $1 AND created_at >= $2`,
-        [req.organizationId, startDate]
+        [req.organizationId!, startDate]
       );
 
       const totals = totalResult.rows[0];
@@ -264,7 +264,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -275,13 +275,13 @@ router.get(
 
       const limits = tierResult.rows[0];
       const status = await rateLimitConfig.checkRateLimit(
-        req.organizationId,
         'GET /api',
-        'GET'
+        'GET',
+        req.organizationId!
       );
-      const alerts = await rateLimitConfig.getQuotaAlerts(req.organizationId);
+      const alerts = await rateLimitConfig.getQuotaAlerts(req.organizationId!);
       const usage = await rateLimitConfig.getRateLimitUsage(
-        req.organizationId,
+        req.organizationId!,
         'today'
       );
 
@@ -317,7 +317,7 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
@@ -337,9 +337,9 @@ router.get(
 
       // Get activity for each member
       const activity = await usageAnalytics.calculateUserActivity(
-        req.organizationId,
         startDate,
-        new Date()
+        new Date(),
+        req.organizationId!
       );
 
       const members = membersResult.rows.map((member: any) => {
@@ -387,12 +387,12 @@ router.get(
   requireRole(['owner', 'admin']),
   async (req: PermissionRequest, res: Response) => {
     try {
-      if (!req.userId || !req.organizationId) {
+      if (!req.userId || !req.organizationId!) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const storage = await getAuditStorageUsage(req.organizationId);
-      const policy = await getAuditRetentionPolicy(req.organizationId);
+      const storage = await getAuditStorageUsage(req.organizationId!);
+      const policy = await getAuditRetentionPolicy(req.organizationId!);
 
       // Get last 30 days of storage metrics
       const metricsResult = await pool.query(

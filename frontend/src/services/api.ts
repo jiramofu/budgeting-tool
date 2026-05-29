@@ -1,6 +1,24 @@
 import axios, { AxiosInstance } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// Determine API URL dynamically
+// If VITE_API_URL is explicitly set, use that
+// Otherwise, use the same host as the current page but port 3001
+const getApiUrl = (): string => {
+  // Check if explicitly configured
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+
+  // For development: detect if accessed via network IP or localhost
+  const protocol = window.location.protocol;
+  const hostname = window.location.hostname;
+
+  // If accessed from localhost, use localhost:3001 (backend port)
+  // If accessed from a network IP or domain, use that IP/domain:3001
+  return `${protocol}//${hostname}:3001/api`;
+};
+
+const API_URL = getApiUrl();
 
 class ApiClient {
   private client: AxiosInstance;
@@ -34,8 +52,8 @@ class ApiClient {
   }
 
   // Auth endpoints
-  signup(email: string, password: string, firstName?: string, lastName?: string) {
-    return this.client.post('/auth/signup', { email, password, firstName, lastName });
+  signup(email: string, password: string, firstName?: string, lastName?: string, country?: string) {
+    return this.client.post('/auth/signup', { email, password, firstName, lastName, country });
   }
 
   login(email: string, password: string) {
@@ -81,6 +99,10 @@ class ApiClient {
       description,
       transactionDate,
     });
+  }
+
+  deleteTransaction(transactionId: number) {
+    return this.client.delete(`/transactions/${transactionId}`);
   }
 
   // Bills endpoints
@@ -226,6 +248,25 @@ class ApiClient {
   getSpendingForecast(categoryId: number, daysAhead?: number) {
     return this.client.get(`/smart-rules/forecast/${categoryId}`, {
       params: { daysAhead },
+    });
+  }
+
+  // Settings endpoints
+  getUserSettings() {
+    return this.client.get('/user/settings');
+  }
+
+  updateUserSettings(updates: any) {
+    return this.client.post('/user/settings', updates);
+  }
+
+  uploadProfilePicture(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.client.post('/user/settings/profile-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
   }
 

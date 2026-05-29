@@ -3,6 +3,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface User {
   id: number;
   email: string;
+  role?: 'owner' | 'admin' | 'editor' | 'viewer';
+  firstName?: string;
+  lastName?: string;
 }
 
 interface AuthContextType {
@@ -37,6 +40,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(newToken);
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+    // Initialize default settings in localStorage if not already set
+    const existingSettings = localStorage.getItem('userSettings');
+    if (!existingSettings) {
+      localStorage.setItem('userSettings', JSON.stringify({
+        currency: 'USD',
+        theme: 'light',
+        language: 'en',
+      }));
+    }
   };
 
   const logout = () => {

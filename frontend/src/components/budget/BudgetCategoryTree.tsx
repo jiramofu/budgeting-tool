@@ -16,12 +16,14 @@ interface BudgetCategoryTreeProps {
   categories: CategoryItem[];
   onBudgetUpdate?: (categoryId: number, amount: number) => Promise<void>;
   isLoading?: boolean;
+  currency?: string;
 }
 
 const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
   categories,
   onBudgetUpdate,
   isLoading = false,
+  currency = 'USD',
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
     new Set()
@@ -66,6 +68,7 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
               }
               onCancel={() => setEditingCategoryId(null)}
               isLoading={isLoading}
+              currency={currency}
             />
           </div>
         ) : (
@@ -91,6 +94,7 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
                   icon={category.icon}
                   isExpanded={isExpanded}
                   onClick={hasChildren ? () => toggleExpanded(category.id) : undefined}
+                  currency={currency}
                 />
               </div>
 

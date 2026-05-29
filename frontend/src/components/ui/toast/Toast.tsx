@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react';
-import { Toast } from '../../hooks/useToast';
+import { Toast } from '../../../hooks/useToast';
 
 interface ToastComponentProps {
   toast: Toast;
@@ -35,7 +35,7 @@ const toastConfig = {
 };
 
 const ToastComponent: React.FC<ToastComponentProps> = ({ toast, onClose }) => {
-  const config = toastConfig[toast.type];
+  const config = toastConfig[toast.type as keyof typeof toastConfig];
   const IconComponent = config.icon;
 
   return (

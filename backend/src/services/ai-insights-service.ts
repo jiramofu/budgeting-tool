@@ -27,7 +27,7 @@ interface PredictedExpense {
 
 export class AIInsightsService {
   // Detect spending anomalies compared to historical average
-  static async detectAnomalies(userId: number, month: number, year: number): Promise<Anomaly[]> {
+  static async detectAnomalies(userId: number, month: number, year: number, organizationId?: number): Promise<Anomaly[]> {
     try {
       // Get current month transactions by category
       const currentResult = await query(
@@ -36,9 +36,9 @@ export class AIInsightsService {
          JOIN categories c ON t.category_id = c.id
          WHERE t.user_id = $1
          AND EXTRACT(MONTH FROM t.transaction_date) = $2
-         AND EXTRACT(YEAR FROM t.transaction_date) = $3
+         AND EXTRACT(YEAR FROM t.transaction_date) = $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
          GROUP BY c.id, c.name`,
-        [userId, month, year]
+        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
       );
 
       // Get average transactions for past 6 months (excluding current)
@@ -52,11 +52,11 @@ export class AIInsightsService {
            AND (EXTRACT(YEAR FROM t.transaction_date) < $2
              OR (EXTRACT(YEAR FROM t.transaction_date) = $2 AND EXTRACT(MONTH FROM t.transaction_date) < $3))
            AND EXTRACT(MONTH FROM t.transaction_date) + EXTRACT(YEAR FROM t.transaction_date) * 12 >=
-               ($3 + $2 * 12 - 6)
+               ($3 + $2 * 12 - 6) ${organizationId ? 'AND t.organization_id = $4' : ''}
            GROUP BY EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date), c.id, c.name
          ) monthly
          GROUP BY id, name`,
-        [userId, year, month]
+        organizationId ? [userId, year, month, organizationId] : [userId, year, month]
       );
 
       const avgMap = new Map(avgResult.rows.map((r: any) => [r.id, r.avg_amount]));
@@ -96,7 +96,7 @@ export class AIInsightsService {
   }
 
   // Generate smart insights based on spending patterns
-  static async generateInsights(userId: number): Promise<Insight[]> {
+  static async generateInsights(userId: number, organizationId?: number): Promise<Insight[]> {
     try {
       const insights: Insight[] = [];
 
@@ -106,8 +106,8 @@ export class AIInsightsService {
            SUM(CASE WHEN amount > 0 THEN CAST(amount AS NUMERIC) ELSE 0 END) as income,
            SUM(CASE WHEN amount < 0 THEN CAST(amount AS NUMERIC) ELSE 0 END) as expenses
          FROM transactions
-         WHERE user_id = $1 AND transaction_date >= NOW() - INTERVAL '30 days'`,
-        [userId]
+         WHERE user_id = $1 AND transaction_date >= NOW() - INTERVAL '30 days' ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const { income = 0, expenses = 0 } = savingsResult.rows[0] || {};
@@ -139,11 +139,11 @@ export class AIInsightsService {
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
          WHERE t.user_id = $1
-         AND t.transaction_date >= NOW() - INTERVAL '30 days'
+         AND t.transaction_date >= NOW() - INTERVAL '30 days' ${organizationId ? 'AND t.organization_id = $2' : ''}
          GROUP BY c.id, c.name
          ORDER BY total DESC
          LIMIT 3`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       if (trendResult.rows.length > 0) {
@@ -170,7 +170,7 @@ export class AIInsightsService {
   }
 
   // Predict future spending based on patterns
-  static async predictNextMonth(userId: number): Promise<PredictedExpense[]> {
+  static async predictNextMonth(userId: number, organizationId?: number): Promise<PredictedExpense[]> {
     try {
       const result = await query(
         `SELECT c.id, c.name, AVG(CAST(monthly_total AS NUMERIC)) as predicted_amount,
@@ -183,13 +183,13 @@ export class AIInsightsService {
                   EXTRACT(MONTH FROM t.transaction_date) as month
            FROM transactions t
            JOIN categories c ON t.category_id = c.id
-           WHERE t.user_id = $1
+           WHERE t.user_id = $1 ${organizationId ? 'AND t.organization_id = $2' : ''}
            GROUP BY c.id, c.name, year, month
          ) monthly
          GROUP BY id, name
          HAVING COUNT(*) >= 2
          ORDER BY AVG(CAST(monthly_total AS NUMERIC)) DESC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       return result.rows.map((row: any) => ({
@@ -205,7 +205,7 @@ export class AIInsightsService {
   }
 
   // Smart categorization using transaction description and history
-  static async suggestCategory(userId: number, description: string, amount: number): Promise<number | null> {
+  static async suggestCategory(userId: number, description: string, amount: number, organizationId?: number): Promise<number | null> {
     try {
       // Find similar transactions
       const result = await query(
@@ -214,11 +214,11 @@ export class AIInsightsService {
          JOIN categories c ON t.category_id = c.id
          WHERE t.user_id = $1
          AND (t.description ILIKE '%' || $2 || '%'
-           OR LOWER(t.description) SIMILAR TO LOWER($2))
+           OR LOWER(t.description) SIMILAR TO LOWER($2)) ${organizationId ? 'AND t.organization_id = $3' : ''}
          GROUP BY c.id
          ORDER BY match_count DESC
          LIMIT 1`,
-        [userId, description.split(' ')[0]] // Use first word for pattern matching
+        organizationId ? [userId, description.split(' ')[0], organizationId] : [userId, description.split(' ')[0]] // Use first word for pattern matching
       );
 
       if (result.rows.length > 0) {
@@ -231,11 +231,11 @@ export class AIInsightsService {
          FROM transactions t
          JOIN categories c ON t.category_id = c.id
          WHERE t.user_id = $1
-         AND CAST(t.amount AS NUMERIC) BETWEEN $2 * 0.7 AND $2 * 1.3
+         AND CAST(t.amount AS NUMERIC) BETWEEN $2 * 0.7 AND $2 * 1.3 ${organizationId ? 'AND t.organization_id = $3' : ''}
          GROUP BY c.id
          ORDER BY COUNT(*) DESC
          LIMIT 1`,
-        [userId, amount]
+        organizationId ? [userId, amount, organizationId] : [userId, amount]
       );
 
       return amountResult.rows.length > 0 ? amountResult.rows[0].id : null;

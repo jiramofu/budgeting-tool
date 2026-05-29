@@ -23,14 +23,14 @@ interface SubscriptionSummary {
 }
 
 export class SubscriptionService {
-  static async getSubscriptionSummary(userId: number): Promise<SubscriptionSummary> {
+  static async getSubscriptionSummary(userId: number, organizationId?: number): Promise<SubscriptionSummary> {
     try {
       const result = await query(
         `SELECT id, user_id, name, amount, billing_cycle, next_billing_date, category_id, is_active, start_date, end_date, notes
          FROM subscriptions
-         WHERE user_id = $1 AND is_active = true
+         WHERE user_id = $1 AND is_active = true ${organizationId ? 'AND organization_id = $2' : ''}
          ORDER BY next_billing_date ASC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       let monthlyCommitment = 0;
@@ -105,14 +105,15 @@ export class SubscriptionService {
     }
   }
 
-  static async addSubscription(userId: number, subscription: Subscription): Promise<Subscription> {
+  static async addSubscription(userId: number, subscription: Subscription, organizationId?: number): Promise<Subscription> {
     try {
       const result = await query(
-        `INSERT INTO subscriptions (user_id, name, amount, billing_cycle, next_billing_date, category_id, is_active, start_date, end_date, notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        `INSERT INTO subscriptions (user_id, organization_id, name, amount, billing_cycle, next_billing_date, category_id, is_active, start_date, end_date, notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING id, user_id, name, amount, billing_cycle, next_billing_date, category_id, is_active, start_date, end_date, notes`,
         [
           userId,
+          organizationId || null,
           subscription.name,
           subscription.amount,
           subscription.billingCycle,
@@ -145,14 +146,14 @@ export class SubscriptionService {
     }
   }
 
-  static async cancelSubscription(subscriptionId: number): Promise<void> {
+  static async cancelSubscription(subscriptionId: number, userId: number, organizationId?: number): Promise<void> {
     try {
       const now = new Date().toISOString().split('T')[0];
       await query(
         `UPDATE subscriptions
          SET is_active = false, end_date = $1
-         WHERE id = $2`,
-        [now, subscriptionId]
+         WHERE id = $2 AND user_id = $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+        organizationId ? [now, subscriptionId, userId, organizationId] : [now, subscriptionId, userId]
       );
     } catch (error) {
       console.error('[Subscription] Error canceling subscription:', error);
@@ -160,7 +161,7 @@ export class SubscriptionService {
     }
   }
 
-  static async getUpcomingBillings(userId: number, days: number = 30): Promise<Subscription[]> {
+  static async getUpcomingBillings(userId: number, days: number = 30, organizationId?: number): Promise<Subscription[]> {
     try {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + days);
@@ -168,9 +169,9 @@ export class SubscriptionService {
       const result = await query(
         `SELECT id, user_id, name, amount, billing_cycle, next_billing_date, category_id, is_active, start_date, end_date, notes
          FROM subscriptions
-         WHERE user_id = $1 AND is_active = true AND next_billing_date <= $2
+         WHERE user_id = $1 AND is_active = true AND next_billing_date <= $2 ${organizationId ? 'AND organization_id = $3' : ''}
          ORDER BY next_billing_date ASC`,
-        [userId, futureDate.toISOString().split('T')[0]]
+        organizationId ? [userId, futureDate.toISOString().split('T')[0], organizationId] : [userId, futureDate.toISOString().split('T')[0]]
       );
 
       return result.rows.map((row: any) => ({

@@ -31,7 +31,7 @@ interface EnvelopeStatus {
 
 export class AdvancedBudgetingService {
   // Get all budget envelopes with status (zero-based budgeting)
-  static async getEnvelopes(userId: number, month: number, year: number): Promise<EnvelopeStatus[]> {
+  static async getEnvelopes(userId: number, month: number, year: number, organizationId?: number): Promise<EnvelopeStatus[]> {
     try {
       const result = await query(
         `SELECT c.id, c.name,
@@ -42,11 +42,11 @@ export class AdvancedBudgetingService {
          LEFT JOIN transactions t ON c.id = t.category_id
            AND t.user_id = $1
            AND EXTRACT(MONTH FROM t.transaction_date) = $2
-           AND EXTRACT(YEAR FROM t.transaction_date) = $3
-         WHERE c.user_id = $1
+           AND EXTRACT(YEAR FROM t.transaction_date) = $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
+         WHERE c.user_id = $1 ${organizationId ? 'AND c.organization_id = $4' : ''}
          GROUP BY c.id, c.name, bt.target_amount
          ORDER BY c.name`,
-        [userId, month, year]
+        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
       );
 
       return result.rows.map((row: any) => ({
@@ -64,7 +64,7 @@ export class AdvancedBudgetingService {
   }
 
   // Create or update budget rules
-  static async saveBudgetRule(userId: number, rule: BudgetRule): Promise<BudgetRule> {
+  static async saveBudgetRule(userId: number, rule: BudgetRule, organizationId?: number): Promise<BudgetRule> {
     try {
       if (rule.id) {
         // Update existing rule
@@ -72,9 +72,9 @@ export class AdvancedBudgetingService {
           `UPDATE budget_rules
            SET trigger_amount = $1, trigger_type = $2, action = $3, action_value = $4
            WHERE id = $5 AND budget_id IN (
-             SELECT id FROM budgets WHERE user_id = $6
+             SELECT id FROM budgets WHERE user_id = $6 ${organizationId ? 'AND organization_id = $7' : ''}
            )`,
-          [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId]
+          organizationId ? [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId, organizationId] : [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId]
         );
       } else {
         // Create new rule
@@ -94,9 +94,9 @@ export class AdvancedBudgetingService {
   }
 
   // Check budget rules and generate alerts
-  static async checkBudgetAlerts(userId: number, month: number, year: number): Promise<BudgetAlert[]> {
+  static async checkBudgetAlerts(userId: number, month: number, year: number, organizationId?: number): Promise<BudgetAlert[]> {
     try {
-      const envelopes = await this.getEnvelopes(userId, month, year);
+      const envelopes = await this.getEnvelopes(userId, month, year, organizationId);
       const alerts: BudgetAlert[] = [];
 
       for (const envelope of envelopes) {
@@ -135,7 +135,7 @@ export class AdvancedBudgetingService {
   }
 
   // Get recommended budget adjustments
-  static async getBudgetRecommendations(userId: number): Promise<any[]> {
+  static async getBudgetRecommendations(userId: number, organizationId?: number): Promise<any[]> {
     try {
       const result = await query(
         `SELECT c.id, c.name,
@@ -148,13 +148,13 @@ export class AdvancedBudgetingService {
            FROM transactions t
            JOIN categories c ON t.category_id = c.id
            WHERE t.user_id = $1
-           AND t.transaction_date >= NOW() - INTERVAL '6 months'
+           AND t.transaction_date >= NOW() - INTERVAL '6 months' ${organizationId ? 'AND t.organization_id = $2' : ''}
            GROUP BY c.id, c.name, EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date)
          ) monthly
          GROUP BY id, name
          HAVING COUNT(*) >= 3
          ORDER BY AVG(CAST(monthly_amount AS NUMERIC)) DESC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       return result.rows.map((row: any) => ({
@@ -172,7 +172,7 @@ export class AdvancedBudgetingService {
   }
 
   // Track budget adherence over time
-  static async getBudgetAdherence(userId: number, months: number = 3): Promise<any[]> {
+  static async getBudgetAdherence(userId: number, months: number = 3, organizationId?: number): Promise<any[]> {
     try {
       const result = await query(
         `SELECT EXTRACT(YEAR FROM t.transaction_date) as year,
@@ -183,10 +183,10 @@ export class AdvancedBudgetingService {
                 SUM(CASE WHEN CAST(t.amount AS NUMERIC) < 0 THEN CAST(t.amount AS NUMERIC) ELSE 0 END) as expenses
          FROM transactions t
          WHERE t.user_id = $1
-         AND t.transaction_date >= NOW() - INTERVAL '1 month' * $2
+         AND t.transaction_date >= NOW() - INTERVAL '1 month' * $2 ${organizationId ? 'AND t.organization_id = $3' : ''}
          GROUP BY year, month
          ORDER BY year DESC, month DESC`,
-        [userId, months]
+        organizationId ? [userId, months, organizationId] : [userId, months]
       );
 
       return result.rows.map((row: any) => ({

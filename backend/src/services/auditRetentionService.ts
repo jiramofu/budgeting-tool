@@ -69,8 +69,8 @@ export async function getAuditRetentionPolicy(
  * Moves logs from audit_logs to audit_log_archives
  */
 export async function archiveAuditLogs(
-  organizationId: number,
-  beforeDate: Date
+  beforeDate: Date,
+  organizationId?: number
 ): Promise<number> {
   const client = await pool.connect();
 
@@ -85,7 +85,7 @@ export async function archiveAuditLogs(
        FROM audit_logs
        WHERE organization_id = $1 AND created_at < $2
        ORDER BY created_at ASC`,
-      [organizationId, beforeDate]
+      [organizationId || null, beforeDate]
     );
 
     if (selectResult.rows.length === 0) {
@@ -114,7 +114,7 @@ export async function archiveAuditLogs(
     const deleteResult = await client.query(
       `DELETE FROM audit_logs
        WHERE organization_id = $1 AND created_at < $2`,
-      [organizationId, beforeDate]
+      [organizationId || null, beforeDate]
     );
 
     await client.query('COMMIT');
@@ -137,8 +137,8 @@ export async function archiveAuditLogs(
  * Permanently removes archived logs past retention period
  */
 export async function deleteArchivedLogs(
-  organizationId: number,
-  beforeDate: Date
+  beforeDate: Date,
+  organizationId?: number
 ): Promise<number> {
   try {
     const result = await pool.query(
@@ -206,10 +206,10 @@ export async function getAuditStorageUsage(
  * Includes both active and archived logs
  */
 export async function exportAuditLogs(
-  organizationId: number,
   startDate: Date,
   endDate: Date,
-  format: 'json' | 'csv' = 'json'
+  format: 'json' | 'csv' = 'json',
+  organizationId?: number
 ): Promise<string> {
   try {
     // Get active logs
@@ -297,8 +297,8 @@ function convertLogsToCSV(logs: any[]): string {
  * Update retention policy for organization
  */
 export async function updateRetentionPolicy(
-  organizationId: number,
-  policy: Partial<RetentionPolicy>
+  policy: Partial<RetentionPolicy>,
+  organizationId?: number
 ): Promise<RetentionPolicy> {
   try {
     const updateFields = [];
@@ -353,7 +353,7 @@ export async function updateRetentionPolicy(
  * Create retention policy for organization
  */
 async function createRetentionPolicy(
-  organizationId: number,
+  organizationId?: number,
   policy?: Partial<RetentionPolicy>
 ): Promise<RetentionPolicy> {
   try {
@@ -411,12 +411,12 @@ export async function cleanupAuditLogs(): Promise<{
       );
 
       // Archive logs
-      const archivedCount = await archiveAuditLogs(org.id, activeDaysAgo);
+      const archivedCount = await archiveAuditLogs(activeDaysAgo, org.id);
       totalArchived += archivedCount;
 
       // Delete archived logs
       if (org.auto_delete) {
-        const deletedCount = await deleteArchivedLogs(org.id, archiveDaysAgo);
+        const deletedCount = await deleteArchivedLogs(archiveDaysAgo, org.id);
         totalDeleted += deletedCount;
       }
     }

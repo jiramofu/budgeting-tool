@@ -38,7 +38,7 @@ export class Phase4AnalyticsService {
   /**
    * Calculate analytics for a specific month
    */
-  static async getMonthAnalytics(userId: number, year: number, month: number): Promise<MonthlyAnalytics> {
+  static async getMonthAnalytics(userId: number, year: number, month: number, organizationId?: number): Promise<MonthlyAnalytics> {
     try {
       const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
       const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -56,9 +56,9 @@ export class Phase4AnalyticsService {
          LEFT JOIN categories c ON t.category_id = c.id
          WHERE t.user_id = $1
          AND DATE(t.transaction_date) >= $2
-         AND DATE(t.transaction_date) <= $3
+         AND DATE(t.transaction_date) <= $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
          GROUP BY c.id, c.name, t.transaction_type`,
-        [userId, startDate, endDate]
+        organizationId ? [userId, startDate, endDate, organizationId] : [userId, startDate, endDate]
       );
 
       const transactions = transactionsResult.rows;
@@ -79,8 +79,8 @@ export class Phase4AnalyticsService {
           b.year
          FROM budget_targets bt
          JOIN budgets b ON bt.budget_id = b.id
-         WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3`,
-        [userId, month, year]
+         WHERE b.user_id = $1 AND b.month = $2 AND b.year = $3 ${organizationId ? 'AND b.organization_id = $4' : ''}`,
+        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
       );
 
       const budgets = new Map();
@@ -105,8 +105,8 @@ export class Phase4AnalyticsService {
             `SELECT SUM(amount) as prev_total FROM transactions
              WHERE user_id = $1 AND category_id = $2
              AND DATE(transaction_date) >= $3 AND DATE(transaction_date) <= $4
-             AND transaction_type = 'expense'`,
-            [userId, trans.category_id, prevStartDate, prevEndDate]
+             AND transaction_type = 'expense' ${organizationId ? 'AND organization_id = $5' : ''}`,
+            organizationId ? [userId, trans.category_id, prevStartDate, prevEndDate, organizationId] : [userId, trans.category_id, prevStartDate, prevEndDate]
           );
 
           const prevTotal = prevResult.rows[0]?.prev_total || 0;
@@ -151,17 +151,17 @@ export class Phase4AnalyticsService {
   /**
    * Get comprehensive analytics summary (current, last month, YTD, etc.)
    */
-  static async getAnalyticsSummary(userId: number): Promise<AnalyticsSummary> {
+  static async getAnalyticsSummary(userId: number, organizationId?: number): Promise<AnalyticsSummary> {
     try {
       const today = new Date();
       const currentYear = today.getFullYear();
       const currentMonth = today.getMonth() + 1;
 
-      const currentMonthData = await this.getMonthAnalytics(userId, currentYear, currentMonth);
+      const currentMonthData = await this.getMonthAnalytics(userId, currentYear, currentMonth, organizationId);
 
       const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
       const lastMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-      const lastMonthData = await this.getMonthAnalytics(userId, lastMonthYear, lastMonth);
+      const lastMonthData = await this.getMonthAnalytics(userId, lastMonthYear, lastMonth, organizationId);
 
       // YTD calculation
       const ytdStartDate = new Date(currentYear, 0, 1).toISOString().split('T')[0];
@@ -172,8 +172,8 @@ export class Phase4AnalyticsService {
           SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
           SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expenses
          FROM transactions
-         WHERE user_id = $1 AND DATE(transaction_date) >= $2 AND DATE(transaction_date) <= $3`,
-        [userId, ytdStartDate, ytdEndDate]
+         WHERE user_id = $1 AND DATE(transaction_date) >= $2 AND DATE(transaction_date) <= $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+        organizationId ? [userId, ytdStartDate, ytdEndDate, organizationId] : [userId, ytdStartDate, ytdEndDate]
       );
 
       const ytdRow = ytdResult.rows[0];
@@ -198,8 +198,8 @@ export class Phase4AnalyticsService {
           SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
           SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expenses
          FROM transactions
-         WHERE user_id = $1 AND DATE(transaction_date) >= $2 AND DATE(transaction_date) <= $3`,
-        [userId, lastYearStart, lastYearEnd]
+         WHERE user_id = $1 AND DATE(transaction_date) >= $2 AND DATE(transaction_date) <= $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+        organizationId ? [userId, lastYearStart, lastYearEnd, organizationId] : [userId, lastYearStart, lastYearEnd]
       );
 
       const lastYearRow = lastYearResult.rows[0];
@@ -223,10 +223,10 @@ export class Phase4AnalyticsService {
           SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
           SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expenses
          FROM transactions
-         WHERE user_id = $1 AND transaction_date >= NOW() - INTERVAL '12 months'
+         WHERE user_id = $1 AND transaction_date >= NOW() - INTERVAL '12 months' ${organizationId ? 'AND organization_id = $2' : ''}
          GROUP BY year, month
          ORDER BY year ASC, month ASC`,
-        [userId]
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const monthlyTrend: MonthlyAnalytics[] = monthlyTrendResult.rows.map((row: any) => ({
@@ -249,8 +249,8 @@ export class Phase4AnalyticsService {
             0
           ) as compliance_rate
          FROM spending_analytics sa
-         WHERE sa.user_id = $1 AND sa.budget_target > 0`,
-        [userId]
+         WHERE sa.user_id = $1 AND sa.budget_target > 0 ${organizationId ? 'AND sa.organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       const budgetComplianceRate = budgetComplianceResult.rows[0]?.compliance_rate || 0;
@@ -273,7 +273,7 @@ export class Phase4AnalyticsService {
   /**
    * Save analytics to database for performance
    */
-  static async saveAnalyticsToDB(userId: number): Promise<void> {
+  static async saveAnalyticsToDB(userId: number, organizationId?: number): Promise<void> {
     try {
       const today = new Date();
       const year = today.getFullYear();
@@ -281,12 +281,13 @@ export class Phase4AnalyticsService {
 
       // Get all categories
       const categoriesResult = await query(
-        `SELECT id FROM categories WHERE user_id = $1`,
-        [userId]
+        `SELECT id FROM categories WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [userId, organizationId] : [userId]
       );
 
       // Clear existing analytics for this month
-      await query('DELETE FROM spending_analytics WHERE user_id = $1 AND year = $2 AND month = $3', [userId, year, month]);
+      await query(`DELETE FROM spending_analytics WHERE user_id = $1 AND year = $2 AND month = $3 ${organizationId ? 'AND organization_id = $4' : ''}`,
+        organizationId ? [userId, year, month, organizationId] : [userId, year, month]);
 
       // Calculate and save analytics for each category
       for (const { id: categoryId } of categoriesResult.rows) {
@@ -301,8 +302,8 @@ export class Phase4AnalyticsService {
            FROM transactions
            WHERE user_id = $1 AND category_id = $2
            AND DATE(transaction_date) >= $3 AND DATE(transaction_date) <= $4
-           AND transaction_type = 'expense'`,
-          [userId, categoryId, startDate, endDate]
+           AND transaction_type = 'expense' ${organizationId ? 'AND organization_id = $5' : ''}`,
+          organizationId ? [userId, categoryId, startDate, endDate, organizationId] : [userId, categoryId, startDate, endDate]
         );
 
         const row = result.rows[0];
@@ -314,8 +315,8 @@ export class Phase4AnalyticsService {
           const budgetResult = await query(
             `SELECT target_amount FROM budget_targets bt
              JOIN budgets b ON bt.budget_id = b.id
-             WHERE b.user_id = $1 AND bt.category_id = $2 AND b.month = $3 AND b.year = $4`,
-            [userId, categoryId, month, year]
+             WHERE b.user_id = $1 AND bt.category_id = $2 AND b.month = $3 AND b.year = $4 ${organizationId ? 'AND b.organization_id = $5' : ''}`,
+            organizationId ? [userId, categoryId, month, year, organizationId] : [userId, categoryId, month, year]
           );
 
           const budgetTarget = budgetResult.rows[0]?.target_amount || 0;
@@ -331,8 +332,8 @@ export class Phase4AnalyticsService {
             `SELECT SUM(amount) as prev_total FROM transactions
              WHERE user_id = $1 AND category_id = $2
              AND DATE(transaction_date) >= $3 AND DATE(transaction_date) <= $4
-             AND transaction_type = 'expense'`,
-            [userId, categoryId, prevStartDate, prevEndDate]
+             AND transaction_type = 'expense' ${organizationId ? 'AND organization_id = $5' : ''}`,
+            organizationId ? [userId, categoryId, prevStartDate, prevEndDate, organizationId] : [userId, categoryId, prevStartDate, prevEndDate]
           );
 
           const prevTotal = prevResult.rows[0]?.prev_total || 0;
@@ -340,9 +341,9 @@ export class Phase4AnalyticsService {
 
           await query(
             `INSERT INTO spending_analytics
-             (user_id, year, month, category_id, total_spent, budget_target, transaction_count, percentage_of_budget, trend_vs_prev_month, avg_transaction_amount)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [userId, year, month, categoryId, totalSpent, budgetTarget, transactionCount, percentageOfBudget, trendPercentage, row?.avg_amount || 0]
+             (user_id, year, month, category_id, total_spent, budget_target, transaction_count, percentage_of_budget, trend_vs_prev_month, avg_transaction_amount, organization_id)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+            [userId, year, month, categoryId, totalSpent, budgetTarget, transactionCount, percentageOfBudget, trendPercentage, row?.avg_amount || 0, organizationId || null]
           );
         }
       }

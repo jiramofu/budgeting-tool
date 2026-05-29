@@ -23,10 +23,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
   variant = 'default',
 }) => {
   const variantStyles = {
-    default: 'bg-slate-800 border-slate-700',
-    success: 'bg-emerald-900/20 border-emerald-700/50',
-    warning: 'bg-amber-900/20 border-amber-700/50',
-    danger: 'bg-red-900/20 border-red-700/50',
+    default: 'bg-secondary border-primary',
+    success: 'bg-emerald-100/80 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700/50',
+    warning: 'bg-amber-100/80 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700/50',
+    danger: 'bg-red-100/80 dark:bg-red-900/20 border-red-300 dark:border-red-700/50',
   };
 
   const trendColors = {
@@ -39,10 +39,10 @@ const MetricCard: React.FC<MetricCardProps> = ({
       {/* Header with icon and title */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <p className="text-slate-400 text-sm font-medium mb-1">{title}</p>
+          <p className="text-secondary text-sm font-medium mb-1">{title}</p>
         </div>
         {icon && (
-          <div className="text-slate-500 ml-2">
+          <div className="text-tertiary ml-2">
             {icon}
           </div>
         )}
@@ -50,9 +50,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
 
       {/* Main value */}
       <div className="mb-4">
-        <p className="text-3xl font-bold text-slate-50">{value}</p>
+        <p className="text-3xl font-bold text-primary">{value}</p>
         {subtitle && (
-          <p className="text-slate-400 text-sm mt-1">{subtitle}</p>
+          <p className="text-secondary text-sm mt-1">{subtitle}</p>
         )}
       </div>
 
@@ -67,7 +67,7 @@ const MetricCard: React.FC<MetricCardProps> = ({
           <span className={`text-sm font-medium ${trend.direction === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
             {trend.direction === 'up' ? '+' : '-'}{trend.percent}%
           </span>
-          <span className="text-slate-400 text-sm">{trend.label}</span>
+          <span className="text-secondary text-sm">{trend.label}</span>
         </div>
       )}
     </div>

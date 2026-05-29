@@ -1,219 +1,195 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   TextInput,
+  StatusBar,
 } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { apiClient } from '../../services/api';
+import { Transaction } from '../../types';
+import { Colors } from '../../constants/colors';
+import EmptyState from '../../components/EmptyState';
+import FAB from '../../components/FAB';
 
-interface Transaction {
-  id: number;
-  date: string;
-  description: string;
-  amount: number;
-  category_name: string;
-  category_id: number;
-}
+type Filter = 'all' | 'expense' | 'income';
+
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'expense', label: 'Expenses' },
+  { key: 'income', label: 'Income' },
+];
 
 const TransactionsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const loadTransactions = async () => {
+  const load = async () => {
     try {
-      setLoading(true);
-      const response = await apiClient.get('/transactions');
-      const txList = response.data.transactions || [];
-
-      setTransactions(
-        txList.map((t: any) => ({
-          id: t.id,
-          date: t.date,
-          description: t.description,
-          amount: t.amount,
-          category_name: t.category_name,
-          category_id: t.category_id,
-        }))
-      );
-    } catch (error) {
-      console.error('Error loading transactions:', error);
-    } finally {
-      setLoading(false);
-    }
+      const res = await apiClient.get('/transactions');
+      setTransactions(res.data.transactions || res.data || []);
+    } catch { } finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    loadTransactions();
-  }, []);
+  useFocusEffect(useCallback(() => { setLoading(true); load(); }, []));
+  const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadTransactions();
-    setRefreshing(false);
-  };
+  const visible = transactions.filter((t) => {
+    const matchSearch = t.description.toLowerCase().includes(search.toLowerCase()) ||
+      t.category_name.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === 'all' || (filter === 'expense' && t.amount < 0) || (filter === 'income' && t.amount >= 0);
+    return matchSearch && matchFilter;
+  });
 
-  const filteredTransactions = transactions.filter(
-    (t) =>
-      t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.category_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const totalFiltered = visible.reduce((s, t) => s + t.amount, 0);
 
-  const renderTransactionItem = ({ item }: { item: Transaction }) => {
+  const renderItem = ({ item }: { item: Transaction }) => {
     const isExpense = item.amount < 0;
-    const displayAmount = Math.abs(item.amount);
-    const displayDate = new Date(item.date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
-
+    const dateStr = new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     return (
-      <View style={styles.transactionCard}>
-        <View style={styles.transactionLeft}>
-          <Text style={styles.transactionDate}>{displayDate}</Text>
-          <View>
-            <Text style={styles.transactionDescription}>{item.description}</Text>
-            <Text style={styles.transactionCategory}>{item.category_name}</Text>
-          </View>
+      <View style={styles.row}>
+        <View style={[styles.typeCircle, { backgroundColor: isExpense ? Colors.expenseLight : Colors.incomeLight }]}>
+          <Text style={{ fontSize: 16, color: isExpense ? Colors.expense : Colors.income }}>
+            {isExpense ? '↓' : '↑'}
+          </Text>
         </View>
-        <Text style={[styles.transactionAmount, isExpense ? styles.expense : styles.income]}>
-          {isExpense ? '-' : '+'}${displayAmount.toFixed(2)}
+        <View style={styles.rowBody}>
+          <Text style={styles.rowDesc} numberOfLines={1}>{item.description}</Text>
+          <Text style={styles.rowMeta}>{item.category_name} · {dateStr}</Text>
+        </View>
+        <Text style={[styles.rowAmt, { color: isExpense ? Colors.expense : Colors.income }]}>
+          {isExpense ? '-' : '+'}${Math.abs(item.amount).toFixed(2)}
         </Text>
       </View>
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search transactions..."
-        placeholderTextColor="#999"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-      <FlatList
-        style={styles.list}
-        data={filteredTransactions}
-        renderItem={renderTransactionItem}
-        keyExtractor={(item) => item.id.toString()}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No transactions found</Text>
-            <Text style={styles.emptySubtext}>
-              {searchQuery ? 'Try a different search' : 'Add your first transaction'}
-            </Text>
+    <>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.bg} />
+      <View style={styles.screen}>
+        {/* Search bar */}
+        <View style={styles.searchWrap}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search transactions..."
+            placeholderTextColor={Colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
+          />
+        </View>
+
+        {/* Filter chips + total */}
+        <View style={styles.toolRow}>
+          <View style={styles.filters}>
+            {FILTERS.map((f) => (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.chip, filter === f.key && styles.chipActive]}
+                onPress={() => setFilter(f.key)}
+              >
+                <Text style={[styles.chipText, filter === f.key && styles.chipTextActive]}>{f.label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        }
-      />
-    </View>
+          {visible.length > 0 && (
+            <Text style={[styles.netTotal, { color: totalFiltered >= 0 ? Colors.income : Colors.expense }]}>
+              {totalFiltered >= 0 ? '+' : '-'}${Math.abs(totalFiltered).toFixed(2)}
+            </Text>
+          )}
+        </View>
+
+        <FlatList
+          data={visible}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id.toString()}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.accent} />}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            !loading ? (
+              <EmptyState
+                icon="💳"
+                title={search ? 'No results' : 'No transactions'}
+                subtitle={search ? 'Try a different search term' : 'Tap + to add your first transaction'}
+                actionLabel={!search ? 'Add Transaction' : undefined}
+                onAction={!search ? () => navigation.navigate('AddTransaction') : undefined}
+              />
+            ) : null
+          }
+        />
+        <FAB onPress={() => navigation.navigate('AddTransaction')} />
+      </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 12,
-    fontSize: 14,
-    color: '#000',
-  },
-  list: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-  },
-  transactionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+  screen: { flex: 1, backgroundColor: Colors.bg },
+  searchWrap: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    margin: 16,
+    marginBottom: 10,
+    backgroundColor: Colors.bgCard,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
   },
-  transactionLeft: {
-    flex: 1,
+  searchIcon: { fontSize: 16, marginRight: 8 },
+  searchInput: { flex: 1, color: Colors.text, fontSize: 15, paddingVertical: 13 },
+  toolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+    gap: 10,
   },
-  transactionDate: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
+  filters: { flexDirection: 'row', gap: 8, flex: 1 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  transactionDescription: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
+  chipActive: { backgroundColor: Colors.accentGlow, borderColor: Colors.accent },
+  chipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  chipTextActive: { color: Colors.accent },
+  netTotal: { fontSize: 15, fontWeight: '800' },
+  list: { paddingHorizontal: 16, paddingBottom: 96 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bgCard,
+    borderRadius: 14,
+    marginBottom: 8,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  transactionCategory: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginTop: 2,
-  },
-  transactionAmount: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  expense: {
-    color: '#ef4444',
-  },
-  income: {
-    color: '#10b981',
-  },
-  emptyContainer: {
-    flex: 1,
+  typeCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 100,
+    marginRight: 12,
   },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
+  rowBody: { flex: 1 },
+  rowDesc: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  rowMeta: { fontSize: 12, color: Colors.textMuted, marginTop: 3 },
+  rowAmt: { fontSize: 15, fontWeight: '800' },
 });
 
 export default TransactionsScreen;
