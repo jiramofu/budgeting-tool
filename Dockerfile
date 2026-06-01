@@ -44,11 +44,16 @@ COPY --from=backend-builder /app/dist ./dist
 # Copy database files (schema and migrations)
 COPY backend/database ./database
 
-# Copy built frontend with build timestamp to break cache
-ARG BUILD_TIMESTAMP=default
-RUN echo "Build timestamp: ${BUILD_TIMESTAMP}"
+# Copy built frontend - always run this fresh, never cache
+RUN echo "================================================"
+RUN echo "Stage 3 Runtime: Copying frontend from builder..."
+RUN echo "================================================"
 COPY --from=frontend-builder /app/dist ./public
-RUN echo "Verifying public directory..." && ls -la public/ && test -f public/index.html && echo "✓ Frontend files copied successfully" && find public/ -type f | head -20
+RUN echo "Verifying public directory exists..." && \
+    ls -lah public/ || (echo "ERROR: /public directory missing!" && exit 1) && \
+    test -f public/index.html || (echo "ERROR: index.html not found in /public!" && exit 1) && \
+    echo "✓ index.html verified at /public/index.html" && \
+    echo "Total files copied: $(find public/ -type f | wc -l)"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
