@@ -44,9 +44,9 @@ COPY --from=backend-builder /app/dist ./dist
 # Copy database files (schema and migrations)
 COPY backend/database ./database
 
-# Copy built frontend
+# Copy built frontend (use --chown to ensure it's not cached)
 COPY --from=frontend-builder /app/dist ./public
-RUN echo "Verifying public directory..." && ls -la public/ && test -f public/index.html && echo "✓ Frontend files copied successfully"
+RUN echo "Verifying public directory..." && ls -la public/ && test -f public/index.html && echo "✓ Frontend files copied successfully" && find public/ -type f | head -20
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

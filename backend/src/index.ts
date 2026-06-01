@@ -163,8 +163,11 @@ console.log('Total middleware/routes in app stack:', app._router.stack.length);
 app.get('*', (req, res) => {
   try {
     const path = require('path');
-    res.sendFile(path.join(__dirname, '../../public/index.html'));
+    const indexPath = path.join(__dirname, '../../public/index.html');
+    console.log(`[SPA Router] Serving index.html from: ${indexPath}`);
+    res.sendFile(indexPath);
   } catch (error) {
+    console.error(`[SPA Router] Error serving index.html:`, error);
     res.status(404).json({ error: 'Not found' });
   }
 });
