@@ -28,7 +28,7 @@ const SearchAnalytics: React.FC<SearchAnalyticsProps> = ({
       setLoading(true);
       setError('');
 
-      const response = await apiClient.get('/api/search/popular', {
+      const response = await apiClient.get('/search/popular', {
         params: { limit: 10 },
       });
 

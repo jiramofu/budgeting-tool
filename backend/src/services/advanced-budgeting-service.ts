@@ -138,7 +138,7 @@ export class AdvancedBudgetingService {
   static async getBudgetRecommendations(userId: number, organizationId?: number): Promise<any[]> {
     try {
       const result = await query(
-        `SELECT c.id, c.name,
+        `SELECT monthly.id, monthly.name,
                 AVG(CAST(monthly_amount AS NUMERIC)) as recommended_amount,
                 MAX(CAST(monthly_amount AS NUMERIC)) as peak_amount,
                 COUNT(*) as months_of_data
@@ -151,7 +151,7 @@ export class AdvancedBudgetingService {
            AND t.transaction_date >= NOW() - INTERVAL '6 months'
            GROUP BY c.id, c.name, EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date)
          ) monthly
-         GROUP BY id, name
+         GROUP BY monthly.id, monthly.name
          HAVING COUNT(*) >= 3
          ORDER BY AVG(CAST(monthly_amount AS NUMERIC)) DESC`,
         [userId]
