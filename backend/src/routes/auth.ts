@@ -1,8 +1,10 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import crypto from 'crypto';
 import { query } from '../config/database';
 import { config } from '../config/env';
+import { sendEmail } from '../services/emailService';
 
 // Country to Currency mapping
 const COUNTRY_CURRENCY_MAP: { [key: string]: string } = {
@@ -62,6 +64,41 @@ const getCountryFromLocale = (locale: string): string => {
 const router = Router();
 
 console.log('[Auth Routes] Loading auth routes...');
+
+// Helper: Generate verification token and hash
+function generateVerificationToken(): { token: string; hash: string } {
+  const token = crypto.randomBytes(32).toString('hex');
+  const hash = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+  return { token, hash };
+}
+
+// Helper: Send verification email
+async function sendVerificationEmail(
+  email: string,
+  token: string,
+  frontendUrl: string = 'http://localhost:5173'
+): Promise<boolean> {
+  const verificationLink = `${frontendUrl}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
+
+  const html = `
+    <h2>Welcome to Budget Tool!</h2>
+    <p>Please verify your email address to complete your signup:</p>
+    <p><a href="${verificationLink}" style="background-color: #2563eb; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block;">Verify Email</a></p>
+    <p>Or copy this link: <code>${verificationLink}</code></p>
+    <p>This link expires in 24 hours.</p>
+  `;
+
+  const result = await sendEmail({
+    to: email,
+    subject: 'Verify your Budget Tool email',
+    html,
+  });
+
+  return result.success;
+}
 
 const DEFAULT_CATEGORIES = [
   // Fixed Expenses
@@ -193,8 +230,20 @@ router.post('/signup', async (req: Request, res: Response) => {
       expiresIn: config.jwtExpiry,
     } as SignOptions);
 
+    // Send verification email in background (non-blocking)
+    const { token: verificationToken } = generateVerificationToken();
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    sendVerificationEmail(email, verificationToken, frontendUrl).catch(err => {
+      console.error('[Auth] Failed to send verification email:', err);
+      // Don't fail signup even if email fails
+    });
+
     console.log('[Auth] Signup successful for:', email);
-    res.status(201).json({ user: { id: user.id, email: user.email }, token });
+    res.status(201).json({
+      user: { id: user.id, email: user.email },
+      token,
+      message: 'Signup successful. Check your email for verification link.'
+    });
   } catch (error: any) {
     console.error('[Auth] Signup error:', error);
     if (error.code === '23505') {

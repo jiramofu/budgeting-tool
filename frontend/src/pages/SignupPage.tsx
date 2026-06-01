@@ -22,6 +22,7 @@ const SignupPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -44,7 +45,13 @@ const SignupPage: React.FC = () => {
         }));
       }
 
-      navigate('/');
+      // Show verification message
+      setVerificationSent(true);
+
+      // Navigate after a brief delay to show the message
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Signup failed');
     } finally {
@@ -113,6 +120,13 @@ const SignupPage: React.FC = () => {
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">Sign Up</h2>
 
         {error && <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">{error}</div>}
+
+        {verificationSent && (
+          <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-4">
+            <p className="font-semibold mb-1">✓ Signup successful!</p>
+            <p className="text-sm">Check your email for a verification link. Redirecting to dashboard...</p>
+          </div>
+        )}
 
         {/* Google Sign-In Button */}
         <div className="mb-6">
