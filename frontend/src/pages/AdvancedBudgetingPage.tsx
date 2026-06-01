@@ -3,7 +3,7 @@ import { apiClient } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { Tooltip, HelpIcon } from '../components/ui/tooltip';
-import { Edit2, X, Save } from 'lucide-react';
+import { Edit2, X, Save, Plus } from 'lucide-react';
 
 interface EnvelopeStatus {
   categoryId: number;
@@ -56,6 +56,11 @@ const AdvancedBudgetingPage: React.FC = () => {
   const [editingEnvelopeId, setEditingEnvelopeId] = useState<number | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryType, setNewCategoryType] = useState<'fixed' | 'variable' | 'recurring'>('variable');
+  const [newCategoryAmount, setNewCategoryAmount] = useState('');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   useEffect(() => {
     loadBudgetingData();
@@ -152,6 +157,74 @@ const AdvancedBudgetingPage: React.FC = () => {
     setEditAmount('');
   };
 
+  const handleAddCategory = async () => {
+    if (!newCategoryName.trim()) {
+      showError('Please enter a category name');
+      return;
+    }
+
+    if (!newCategoryAmount || isNaN(parseFloat(newCategoryAmount))) {
+      showError('Please enter a valid budget amount');
+      return;
+    }
+
+    try {
+      setIsSavingCategory(true);
+
+      // Create the category
+      const categoryRes = await apiClient.post('/categories', {
+        name: newCategoryName.trim(),
+        type: newCategoryType,
+      });
+
+      const categoryId = categoryRes.data.id;
+
+      // Create budget target for current month
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const budgetRes = await apiClient.get('/budgets/current');
+      const budgetId = budgetRes.data.id;
+
+      await apiClient.post(`/budgets/${budgetId}/targets`, {
+        categoryId,
+        targetAmount: parseFloat(newCategoryAmount),
+      });
+
+      // Add the new envelope to the list
+      const newEnvelope: EnvelopeStatus = {
+        categoryId,
+        categoryName: newCategoryName.trim(),
+        allocated: parseFloat(newCategoryAmount),
+        spent: 0,
+        remaining: parseFloat(newCategoryAmount),
+        percentageUsed: 0,
+      };
+
+      setEnvelopes([...envelopes, newEnvelope].sort((a, b) => a.categoryName.localeCompare(b.categoryName)));
+
+      // Reset form
+      setNewCategoryName('');
+      setNewCategoryType('variable');
+      setNewCategoryAmount('');
+      setShowAddCategory(false);
+      showSuccess?.('Category created successfully');
+    } catch (error: any) {
+      console.error('Failed to add category:', error);
+      showError('Failed to create category');
+    } finally {
+      setIsSavingCategory(false);
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setShowAddCategory(false);
+    setNewCategoryName('');
+    setNewCategoryType('variable');
+    setNewCategoryAmount('');
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -223,9 +296,18 @@ const AdvancedBudgetingPage: React.FC = () => {
       {/* Envelope Budgeting (Zero-Based) */}
       {envelopes.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Budget Envelopes (Zero-Based Budget)</h2>
-            <HelpIcon text="Allocate every dollar to a specific category. When an envelope is empty, you've spent all that category's budget." position="top" />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Budget Envelopes (Zero-Based Budget)</h2>
+              <HelpIcon text="Allocate every dollar to a specific category. When an envelope is empty, you've spent all that category's budget." position="top" />
+            </div>
+            <button
+              onClick={() => setShowAddCategory(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus size={18} />
+              Add Category
+            </button>
           </div>
           <div className="space-y-4">
             {envelopes.map((envelope) => (
@@ -309,6 +391,88 @@ const AdvancedBudgetingPage: React.FC = () => {
               >
                 <Save size={16} />
                 {isSavingEdit ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Category Modal */}
+      {showAddCategory && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Add New Category
+              </h3>
+              <button
+                onClick={handleCancelAddCategory}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Category Name
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="e.g., Transportation, Insurance"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Category Type
+                </label>
+                <select
+                  value={newCategoryType}
+                  onChange={(e) => setNewCategoryType(e.target.value as 'fixed' | 'variable' | 'recurring')}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="fixed">Fixed (same every month)</option>
+                  <option value="variable">Variable (changes each month)</option>
+                  <option value="recurring">Recurring (occasional expenses)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Budget Amount
+                </label>
+                <input
+                  type="number"
+                  value={newCategoryAmount}
+                  onChange={(e) => setNewCategoryAmount(e.target.value)}
+                  placeholder="Enter budget amount"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleCancelAddCategory}
+                disabled={isSavingCategory}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddCategory}
+                disabled={isSavingCategory}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Plus size={16} />
+                {isSavingCategory ? 'Creating...' : 'Create'}
               </button>
             </div>
           </div>

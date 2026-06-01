@@ -223,6 +223,60 @@ router.put(
   }
 );
 
+// Create budget target for a budget
+router.post(
+  '/:budgetId/targets',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Budget] POST target:', req.params, req.body);
+    try {
+      const { budgetId } = req.params;
+      const { categoryId, targetAmount } = req.body;
+
+      if (!categoryId || !targetAmount || isNaN(parseFloat(targetAmount)) || parseFloat(targetAmount) < 0) {
+        return res.status(400).json({ error: 'Valid categoryId and targetAmount are required' });
+      }
+
+      // Verify budget belongs to user
+      const budgetCheck = await query(
+        'SELECT * FROM budgets WHERE id = $1 AND user_id = $2',
+        [budgetId, req.userId]
+      );
+
+      if (budgetCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Budget not found' });
+      }
+
+      // Verify category belongs to user
+      const categoryCheck = await query(
+        'SELECT * FROM categories WHERE id = $1 AND user_id = $2',
+        [categoryId, req.userId]
+      );
+
+      if (categoryCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Create budget target
+      const result = await query(
+        `INSERT INTO budget_targets (budget_id, category_id, target_amount)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (budget_id, category_id)
+         DO UPDATE SET target_amount = $3, updated_at = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [budgetId, categoryId, parseFloat(targetAmount)]
+      );
+
+      res.status(201).json(result.rows[0]);
+    } catch (error: any) {
+      console.error('[Budget] Error creating target:', error);
+      res.status(500).json({ error: 'Failed to create budget target: ' + error.message });
+    }
+  }
+);
+
 // Get budget targets for a budget
 router.get(
   '/:budgetId/targets',
