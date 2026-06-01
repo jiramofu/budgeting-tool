@@ -91,7 +91,7 @@ function AppContent() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/admin/debug" element={<AdminDebugPage />} />
+      <Route path="/admin/debug" element={<ProtectedRoute><AdminDebugPage /></ProtectedRoute>} />
       <Route
         path="/"
         element={
