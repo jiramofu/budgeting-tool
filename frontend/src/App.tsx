@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import AdminDebugPage from './pages/AdminDebugPage';
 import Dashboard from './pages/Dashboard';
 import ImportCSVPage from './pages/ImportCSVPage';
 import Analytics from './pages/Analytics';
@@ -90,6 +91,7 @@ function AppContent() {
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/admin/debug" element={<AdminDebugPage />} />
       <Route
         path="/"
         element={
