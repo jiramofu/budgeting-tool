@@ -186,98 +186,27 @@ const GoalsPage: React.FC = () => {
 
   const handleAddProgress = async (goalId: number) => {
     try {
-      console.log('=== START ADD PROGRESS ===');
-      console.log('Goal ID:', goalId);
-      console.log('Progress Amount:', progressAmount);
-
       if (!progressAmount) {
         const errorMsg = 'Please enter an amount';
         setError(errorMsg);
         showError(errorMsg);
-        console.log('ERROR: No amount entered');
         return;
       }
 
-      console.log('[1] Calling API: addGoalProgress');
-      const response = await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
-      console.log('[2] API Response received:', response);
-      console.log('[2] Response status:', response?.status);
-      console.log('[2] Response data:', response?.data);
+      console.log('[GoalsPage] Adding progress:', { goalId, amount: progressAmount });
+      await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
+      console.log('[GoalsPage] Progress added successfully, reloading goals');
 
-      // Update the goal in state directly with the response data
-      if (response && response.data) {
-        const updatedGoal = response.data;
-        console.log('[3] Updated goal from response:', updatedGoal);
-        console.log('[3] New progress_percentage:', updatedGoal.progress_percentage);
-        console.log('[3] New current_amount:', updatedGoal.current_amount);
-
-        console.log('[4] Updating goals state...');
-        setGoals(prevGoals => {
-          console.log('[4] Previous goals count:', prevGoals.length);
-          const newGoals = prevGoals.map(g => {
-            if (g.id === goalId) {
-              console.log('[4] Replacing goal', goalId, 'with updated version');
-              return updatedGoal;
-            }
-            return g;
-          });
-          console.log('[4] New goals count:', newGoals.length);
-          console.log('[4] Updated goal in array:', newGoals.find(g => g.id === goalId));
-          return newGoals;
-        });
-
-        console.log('[5] Summary exists?', !!summary);
-        // Update summary if it exists
-        if (summary) {
-          console.log('[5] Recalculating summary...');
-          const allGoals = goals.map(g => g.id === goalId ? updatedGoal : g);
-          const totalGoals = allGoals.length;
-          const activeGoals = allGoals.filter((g) => g.is_active).length;
-          const completedGoals = allGoals.filter((g) => g.progress_percentage >= 100).length;
-
-          let totalTargeted = 0;
-          let totalProgress = 0;
-
-          for (const goal of allGoals) {
-            totalTargeted += goal.target_amount;
-            totalProgress += goal.current_amount;
-          }
-
-          const overallProgress = totalTargeted > 0 ? (totalProgress / totalTargeted) * 100 : 0;
-
-          const newSummary = {
-            totalGoals,
-            activeGoals,
-            completedGoals,
-            overallProgress: Math.min(overallProgress, 100),
-            totalTargeted,
-            totalProgress,
-            goals: allGoals,
-          };
-
-          console.log('[5] New summary:', newSummary);
-          setSummary(newSummary);
-        }
-      } else {
-        console.error('[ERROR] No response data received');
-        console.error('[ERROR] Response:', response);
-      }
-
-      console.log('[6] Showing success message');
       success('Progress added successfully');
-      console.log('[7] Clearing form');
       setProgressAmount('');
       setShowProgressForm(null);
-      console.log('=== END ADD PROGRESS (SUCCESS) ===');
+
+      // Reload all goals from the server
+      await loadGoals();
+      console.log('[GoalsPage] Goals reloaded after adding progress');
     } catch (err: any) {
-      console.error('=== END ADD PROGRESS (ERROR) ===');
-      console.error('[ERROR] Failed to add progress:', err);
-      console.error('[ERROR] Error message:', err.message);
-      console.error('[ERROR] Error stack:', err.stack);
-      console.error('[ERROR] Response data:', err.response?.data);
-      console.error('[ERROR] Response status:', err.response?.status);
-      const errorMsg = err.response?.data?.error || 'Failed to add progress';
-      console.error('[ERROR] Setting error:', errorMsg);
+      console.error('[GoalsPage] Error adding progress:', err.message);
+      const errorMsg = err.response?.data?.error || 'Failed to add progress: ' + err.message;
       setError(errorMsg);
       showError(errorMsg);
     }
