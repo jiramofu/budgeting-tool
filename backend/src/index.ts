@@ -185,6 +185,12 @@ console.log('Total middleware/routes in app stack:', app._router.stack.length);
 app.get('*', (req, res) => {
   console.log(`[SPA Router] Catch-all handler triggered for path: ${req.path}`);
 
+  // Skip API routes - they should have been handled already
+  if (req.path.startsWith('/api/')) {
+    console.log(`[SPA Router] Blocking API request: ${req.path}`);
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+
   // Skip if it's a static asset request
   if (req.path.startsWith('/assets/') || req.path.includes('.')) {
     console.log(`[SPA Router] Blocking static asset request: ${req.path}`);
