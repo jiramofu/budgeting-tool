@@ -204,14 +204,13 @@ export class GoalsService {
 
       console.log('[GoalsService] Calculated new amount:', newAmount, 'percentage:', progressPercentage);
 
-      const updateParams = organizationId ? [newAmount, progressPercentage, goalId, userId, organizationId] : [newAmount, progressPercentage, goalId, userId];
-      console.log('[GoalsService] Executing update with params:', updateParams);
+      console.log('[GoalsService] Executing update - updating goal amount and percentage');
 
       const updateResult = await query(
         `UPDATE goals
          SET current_amount = $1, progress_percentage = $2, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $3 AND user_id = $4 ${organizationId ? 'AND organization_id = $5' : ''}`,
-        updateParams
+         WHERE id = $3 AND user_id = $4`,
+        [newAmount, progressPercentage, goalId, userId]
       );
 
       console.log('[GoalsService] Update result - rows affected:', updateResult.rowCount);
