@@ -35,12 +35,16 @@ export async function runProjectionCalculationJob() {
       `[Phase4 Jobs] Projection calculation job completed. Success: ${successCount}, Errors: ${errorCount}`
     );
 
-    // Log job status
-    await query(
-      `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
-       VALUES ($1, $2, NOW(), $3, $4)`,
-      [1, 'projection', errorCount === 0 ? 'completed' : 'failed', successCount]
-    );
+    // Log job status (skip if system user doesn't exist)
+    try {
+      await query(
+        `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
+         VALUES ($1, $2, NOW(), $3, $4)`,
+        [1, 'projection', errorCount === 0 ? 'completed' : 'failed', successCount]
+      );
+    } catch (logError) {
+      console.warn('[Phase4 Jobs] Could not log projection job status (system user may not exist):', logError.message);
+    }
   } catch (error) {
     console.error('[Phase4 Jobs] Error in projection calculation job:', error);
   }
@@ -78,12 +82,16 @@ export async function runAnalyticsCalculationJob() {
       `[Phase4 Jobs] Analytics calculation job completed. Success: ${successCount}, Errors: ${errorCount}`
     );
 
-    // Log job status
-    await query(
-      `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
-       VALUES ($1, $2, NOW(), $3, $4)`,
-      [1, 'analytics', errorCount === 0 ? 'completed' : 'failed', successCount]
-    );
+    // Log job status (skip if system user doesn't exist)
+    try {
+      await query(
+        `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
+         VALUES ($1, $2, NOW(), $3, $4)`,
+        [1, 'analytics', errorCount === 0 ? 'completed' : 'failed', successCount]
+      );
+    } catch (logError) {
+      console.warn('[Phase4 Jobs] Could not log analytics job status (system user may not exist):', logError.message);
+    }
   } catch (error) {
     console.error('[Phase4 Jobs] Error in analytics calculation job:', error);
   }
@@ -121,12 +129,16 @@ export async function runTrendsCalculationJob() {
       `[Phase4 Jobs] Trends calculation job completed. Success: ${successCount}, Errors: ${errorCount}`
     );
 
-    // Log job status
-    await query(
-      `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
-       VALUES ($1, $2, NOW(), $3, $4)`,
-      [1, 'trends', errorCount === 0 ? 'completed' : 'failed', successCount]
-    );
+    // Log job status (skip if system user doesn't exist)
+    try {
+      await query(
+        `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
+         VALUES ($1, $2, NOW(), $3, $4)`,
+        [1, 'trends', errorCount === 0 ? 'completed' : 'failed', successCount]
+      );
+    } catch (logError) {
+      console.warn('[Phase4 Jobs] Could not log trends job status (system user may not exist):', logError.message);
+    }
   } catch (error) {
     console.error('[Phase4 Jobs] Error in trends calculation job:', error);
   }
