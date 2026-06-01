@@ -109,7 +109,67 @@ router.post(
   }
 );
 
-// Update budget target for category
+// Update budget target for current month's category (simplified endpoint)
+router.put(
+  '/targets/:categoryId',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Budget] PUT target for current budget:', req.params, req.body);
+    try {
+      const { categoryId } = req.params;
+      const { targetAmount } = req.body;
+
+      if (!targetAmount || isNaN(parseFloat(targetAmount)) || parseFloat(targetAmount) < 0) {
+        return res.status(400).json({ error: 'Valid target amount is required' });
+      }
+
+      // Get current month budget
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const budgetResult = await query(
+        'SELECT id FROM budgets WHERE user_id = $1 AND month = $2 AND year = $3 AND organization_id = $4',
+        [req.userId, month, year, req.organizationId]
+      );
+
+      if (budgetResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Current budget not found' });
+      }
+
+      const budgetId = budgetResult.rows[0].id;
+
+      // Verify category belongs to user
+      const categoryCheck = await query(
+        'SELECT * FROM categories WHERE id = $1 AND user_id = $2',
+        [categoryId, req.userId]
+      );
+
+      if (categoryCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Update or create budget target
+      const result = await query(
+        `INSERT INTO budget_targets (budget_id, category_id, target_amount)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (budget_id, category_id)
+         DO UPDATE SET target_amount = $3, updated_at = CURRENT_TIMESTAMP
+         RETURNING *`,
+        [budgetId, categoryId, parseFloat(targetAmount)]
+      );
+
+      res.json(result.rows[0]);
+    } catch (error: any) {
+      console.error('[Budget] Error updating target:', error);
+      res.status(500).json({ error: 'Failed to update budget target: ' + error.message });
+    }
+  }
+);
+
+// Update budget target for category (explicit budget ID)
 router.put(
   '/:budgetId/targets/:categoryId',
   authenticate,

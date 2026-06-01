@@ -3,6 +3,7 @@ import { apiClient } from '../services/api';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { Tooltip, HelpIcon } from '../components/ui/tooltip';
+import { Edit2, X, Save } from 'lucide-react';
 
 interface EnvelopeStatus {
   categoryId: number;
@@ -42,7 +43,7 @@ interface AdherenceRecord {
 }
 
 const AdvancedBudgetingPage: React.FC = () => {
-  const { error: showError } = useToast();
+  const { error: showError, success: showSuccess } = useToast();
   const [envelopes, setEnvelopes] = useState<EnvelopeStatus[]>([]);
   const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
   const [recommendations, setRecommendations] = useState<BudgetRecommendation[]>([]);
@@ -52,6 +53,9 @@ const AdvancedBudgetingPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [adherenceMonths, setAdherenceMonths] = useState(3);
+  const [editingEnvelopeId, setEditingEnvelopeId] = useState<number | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   useEffect(() => {
     loadBudgetingData();
@@ -101,6 +105,51 @@ const AdvancedBudgetingPage: React.FC = () => {
       default:
         return '';
     }
+  };
+
+  const handleEditEnvelope = (envelope: EnvelopeStatus) => {
+    setEditingEnvelopeId(envelope.categoryId);
+    setEditAmount(envelope.allocated.toString());
+  };
+
+  const handleSaveEnvelopeEdit = async () => {
+    if (!editAmount || isNaN(parseFloat(editAmount))) {
+      showError('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      setIsSavingEdit(true);
+      const amount = parseFloat(editAmount);
+
+      // Call API to update budget target
+      await apiClient.put(`/budgets/targets/${editingEnvelopeId}`, {
+        targetAmount: amount,
+      });
+
+      // Update local state
+      setEnvelopes(
+        envelopes.map((env) =>
+          env.categoryId === editingEnvelopeId
+            ? { ...env, allocated: amount, remaining: amount - env.spent, percentageUsed: (env.spent / amount) * 100 }
+            : env
+        )
+      );
+
+      setEditingEnvelopeId(null);
+      setEditAmount('');
+      showSuccess?.('Budget target updated successfully');
+    } catch (error: any) {
+      console.error('Failed to update budget target:', error);
+      showError('Failed to update budget target');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEnvelopeId(null);
+    setEditAmount('');
   };
 
   if (isLoading) {
@@ -183,9 +232,18 @@ const AdvancedBudgetingPage: React.FC = () => {
               <div key={envelope.categoryId} className="border border-gray-200 dark:border-gray-700 rounded p-4">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-bold text-gray-900 dark:text-white">{envelope.categoryName}</h3>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    ${Number(envelope.spent).toFixed(2)} / ${Number(envelope.allocated).toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      ${Number(envelope.spent).toFixed(2)} / ${Number(envelope.allocated).toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => handleEditEnvelope(envelope)}
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                      title="Edit budget target"
+                    >
+                      <Edit2 size={16} className="text-gray-600 dark:text-gray-400" />
+                    </button>
+                  </div>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-4 overflow-hidden">
                   <div
@@ -201,6 +259,58 @@ const AdvancedBudgetingPage: React.FC = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Envelope Modal */}
+      {editingEnvelopeId !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Edit Budget Target
+              </h3>
+              <button
+                onClick={handleCancelEdit}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+              >
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                New Budget Amount
+              </label>
+              <input
+                type="number"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                placeholder="Enter amount"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                step="0.01"
+                min="0"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelEdit}
+                disabled={isSavingEdit}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEnvelopeEdit}
+                disabled={isSavingEdit}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <Save size={16} />
+                {isSavingEdit ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}
