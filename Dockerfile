@@ -14,17 +14,18 @@ RUN npm run build
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm ci
+RUN echo "Installing frontend dependencies..." && npm ci --verbose
 COPY frontend/src ./src
 COPY frontend/index.html ./
+COPY frontend/public ./public
 COPY frontend/vite.config.ts ./
 COPY frontend/vitest.config.ts ./
 COPY frontend/tsconfig.json ./
 COPY frontend/tsconfig.node.json ./
 COPY frontend/postcss.config.js ./
 COPY frontend/tailwind.config.js ./
-RUN npm run build
-RUN ls -la dist/ && echo "Frontend build completed successfully"
+RUN echo "Building frontend..." && npm run build
+RUN echo "Verifying build output..." && ls -la dist/ && test -f dist/index.html && echo "✓ Frontend build successful - index.html exists"
 
 # Stage 3: Runtime - Backend
 FROM node:20-alpine AS runtime
@@ -45,6 +46,7 @@ COPY backend/database ./database
 
 # Copy built frontend
 COPY --from=frontend-builder /app/dist ./public
+RUN echo "Verifying public directory..." && ls -la public/ && test -f public/index.html && echo "✓ Frontend files copied successfully"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
