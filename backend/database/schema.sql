@@ -332,3 +332,118 @@ CREATE INDEX idx_notifications_read_at ON notifications(read_at);
 CREATE INDEX idx_notification_preferences_user_id ON notification_preferences(user_id);
 CREATE INDEX idx_bank_connections_user_id ON bank_connections(user_id);
 CREATE INDEX idx_bank_connections_is_active ON bank_connections(is_active);
+
+-- ============================================================================
+-- PHASE 8: ENTERPRISE FEATURES - Multi-Organization, RBAC, Audit Logging
+-- ============================================================================
+
+-- Organizations table (replaces/extends household concept)
+CREATE TABLE IF NOT EXISTS organizations (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  organization_type VARCHAR(50) NOT NULL DEFAULT 'personal' CHECK (organization_type IN ('personal', 'team', 'enterprise')),
+  owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  description TEXT,
+  logo_url VARCHAR(500),
+  settings JSONB DEFAULT '{}',
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_organizations_owner_id ON organizations(owner_id);
+CREATE INDEX idx_organizations_is_active ON organizations(is_active);
+CREATE INDEX idx_organizations_type ON organizations(organization_type);
+
+-- Organization members table (membership and role assignment)
+CREATE TABLE IF NOT EXISTS organization_members (
+  id SERIAL PRIMARY KEY,
+  organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(50) NOT NULL DEFAULT 'user' CHECK (role IN ('owner', 'admin', 'manager', 'user', 'viewer')),
+  invited_by_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  invitation_token VARCHAR(255),
+  invitation_accepted_at TIMESTAMP,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(organization_id, user_id)
+);
+
+CREATE INDEX idx_organization_members_organization_id ON organization_members(organization_id);
+CREATE INDEX idx_organization_members_user_id ON organization_members(user_id);
+CREATE INDEX idx_organization_members_role ON organization_members(role);
+CREATE INDEX idx_organization_members_is_active ON organization_members(is_active);
+
+-- Organization roles table (permission definitions per role)
+CREATE TABLE IF NOT EXISTS organization_roles (
+  id SERIAL PRIMARY KEY,
+  organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  role_name VARCHAR(100) NOT NULL,
+  description TEXT,
+  permissions JSONB NOT NULL DEFAULT '{}',
+  is_default BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(organization_id, role_name)
+);
+
+CREATE INDEX idx_organization_roles_organization_id ON organization_roles(organization_id);
+
+-- Audit logs table (immutable audit trail - append-only)
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id BIGSERIAL PRIMARY KEY,
+  organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  action VARCHAR(50) NOT NULL CHECK (action IN ('create', 'read', 'update', 'delete')),
+  resource_type VARCHAR(100) NOT NULL,
+  resource_id VARCHAR(255),
+  description TEXT,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  status VARCHAR(20) NOT NULL DEFAULT 'success' CHECK (status IN ('success', 'failure')),
+  error_message TEXT,
+  changes JSONB,
+  before_values JSONB,
+  after_values JSONB,
+  request_id VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_audit_logs_organization_id ON audit_logs(organization_id);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_resource_type ON audit_logs(resource_type);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX idx_audit_logs_org_date ON audit_logs(organization_id, created_at DESC);
+
+-- API rate limits table (configuration per organization)
+CREATE TABLE IF NOT EXISTS api_rate_limits (
+  id SERIAL PRIMARY KEY,
+  organization_id INTEGER NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
+  requests_per_minute INTEGER DEFAULT 60,
+  requests_per_hour INTEGER DEFAULT 1000,
+  tier VARCHAR(50) NOT NULL DEFAULT 'free' CHECK (tier IN ('free', 'pro', 'enterprise')),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_api_rate_limits_organization_id ON api_rate_limits(organization_id);
+
+-- API usage logs table (usage tracking)
+CREATE TABLE IF NOT EXISTS api_usage_logs (
+  id BIGSERIAL PRIMARY KEY,
+  organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  endpoint VARCHAR(255) NOT NULL,
+  method VARCHAR(10) NOT NULL,
+  status_code INTEGER,
+  response_time_ms INTEGER,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  ip_address VARCHAR(45),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_api_usage_logs_organization_id ON api_usage_logs(organization_id);
+CREATE INDEX idx_api_usage_logs_created_at ON api_usage_logs(created_at);
+CREATE INDEX idx_api_usage_logs_endpoint ON api_usage_logs(endpoint);
+

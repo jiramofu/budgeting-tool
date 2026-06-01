@@ -4,29 +4,13 @@ import { pool } from './database';
 
 export async function initializeDatabase(): Promise<void> {
   try {
-    console.log('[Database] Checking if database is initialized...');
+    console.log('[Database] Initializing database schema and migrations...');
 
-    // Check if users table exists
-    const result = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE table_schema = 'public'
-        AND table_name = 'users'
-      );
-    `);
-
-    if (result.rows[0].exists) {
-      console.log('[Database] Database already initialized, skipping schema creation');
-      return;
-    }
-
-    console.log('[Database] Database not initialized, running schema...');
-
-    // Read and execute schema
+    // Always read and execute schema (it uses CREATE TABLE IF NOT EXISTS)
     const schemaPath = path.join(__dirname, '../../database/schema.sql');
     const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
 
-    // Split by semicolon and execute each statement
+    console.log('[Database] Executing main schema...');
     const statements = schemaSql.split(';').filter(s => s.trim());
 
     for (const statement of statements) {
@@ -43,7 +27,41 @@ export async function initializeDatabase(): Promise<void> {
       }
     }
 
-    console.log('[Database] Schema initialization completed successfully');
+    console.log('[Database] Main schema initialization completed');
+
+    // Apply any additional migrations
+    const migrationsDir = path.join(__dirname, '../../database/migrations');
+    if (fs.existsSync(migrationsDir)) {
+      const migrationFiles = fs.readdirSync(migrationsDir)
+        .filter(f => f.endsWith('.sql'))
+        .sort();
+
+      if (migrationFiles.length > 0) {
+        console.log(`[Database] Found ${migrationFiles.length} migration files, applying...`);
+
+        for (const file of migrationFiles) {
+          const migrationPath = path.join(migrationsDir, file);
+          const migrationSql = fs.readFileSync(migrationPath, 'utf-8');
+
+          console.log(`[Database] Applying migration: ${file}`);
+          const migrationStatements = migrationSql.split(';').filter(s => s.trim());
+
+          for (const statement of migrationStatements) {
+            if (statement.trim()) {
+              try {
+                await pool.query(statement);
+              } catch (error: any) {
+                if (!error.message.includes('already exists') && !error.message.includes('unique constraint')) {
+                  console.warn(`[Database] Warning in ${file}:`, error.message);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    console.log('[Database] Database initialization completed successfully');
   } catch (error) {
     console.error('[Database] Error initializing database:', error);
     throw error;
