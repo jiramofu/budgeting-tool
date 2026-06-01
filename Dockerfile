@@ -38,6 +38,9 @@ RUN npm ci --omit=dev
 # Copy built backend
 COPY --from=backend-builder /app/dist ./dist
 
+# Copy database files (schema and migrations)
+COPY backend/database ./database
+
 # Copy built frontend
 COPY --from=frontend-builder /app/dist ./public
 
