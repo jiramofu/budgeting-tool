@@ -82,8 +82,8 @@ const TemplatesPage: React.FC = () => {
       success('Template applied successfully');
       setShowApplyConfirm(false);
       setSelectedTemplate(null);
-      // Optionally reload or redirect
-      window.location.href = '/';
+      // Redirect to budgets page to edit the categories
+      window.location.href = '/budgets';
     } catch (err: any) {
       console.error('Failed to apply template:', err);
       const errorMsg = 'Failed to apply template';
