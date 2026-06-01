@@ -18,11 +18,13 @@ RUN npm ci
 COPY frontend/src ./src
 COPY frontend/index.html ./
 COPY frontend/vite.config.ts ./
+COPY frontend/vitest.config.ts ./
 COPY frontend/tsconfig.json ./
 COPY frontend/tsconfig.node.json ./
 COPY frontend/postcss.config.js ./
 COPY frontend/tailwind.config.js ./
 RUN npm run build
+RUN ls -la dist/ && echo "Frontend build completed successfully"
 
 # Stage 3: Runtime - Backend
 FROM node:20-alpine AS runtime
