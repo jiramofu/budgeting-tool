@@ -32,6 +32,7 @@ import organizationsRoutes from './routes/organizations';
 import auditLogsRoutes from './routes/auditLogs';
 import adminDashboardRoutes from './routes/adminDashboard';
 import errorTrackingRoutes from './routes/errorTracking';
+import adminRoutes from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import { requestLogger } from './middleware/requestLogger';
 import { auditRequestSetup, auditErrorLogger } from './middleware/auditLog';
@@ -171,6 +172,10 @@ if (config.enableOrganizations) {
 // Error tracking routes (always available for monitoring)
 app.use('/api/errors', errorTrackingRoutes);
 console.log('✓ Error tracking routes mounted');
+
+// Admin routes (database reset, etc.)
+app.use('/api/admin', adminRoutes);
+console.log('✓ Admin routes mounted');
 
 console.log('Routes configured');
 console.log('Total middleware/routes in app stack:', app._router.stack.length);
