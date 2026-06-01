@@ -150,25 +150,38 @@ router.put('/:goalId', authenticate, loadUserOrganizations, requireOrganization,
 
 // Add progress to goal
 router.post('/:goalId/progress', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
-  console.log('[Goals] POST add progress');
+  console.log('[Goals] POST add progress - START');
+  console.log('[Goals] User ID:', req.userId);
+  console.log('[Goals] Organization ID:', req.organizationId);
+  console.log('[Goals] Goal ID:', req.params.goalId);
+  console.log('[Goals] Body:', req.body);
+
   try {
     if (!req.userId) {
+      console.error('[Goals] Error: No userId');
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const { amount, notes } = req.body;
     if (amount === undefined) {
+      console.error('[Goals] Error: No amount in body');
       return res.status(400).json({ error: 'Amount is required' });
     }
 
     const goalId = parseInt(req.params.goalId);
+    console.log('[Goals] Calling GoalsService.addProgress...');
     const progress = await GoalsService.addProgress(req.userId, goalId, amount, notes, req.organizationId!);
+    console.log('[Goals] Progress added:', progress);
 
     // Return the updated goal (not just the progress entry) so frontend can update UI
+    console.log('[Goals] Fetching updated goal...');
     const updatedGoal = await GoalsService.getGoal(req.userId, goalId, req.organizationId!);
+    console.log('[Goals] Updated goal:', updatedGoal);
+    console.log('[Goals] Returning 201 response');
     res.status(201).json(updatedGoal);
   } catch (error: any) {
-    console.error('[Goals] Error adding progress:', error);
+    console.error('[Goals] Error adding progress:', error.message);
+    console.error('[Goals] Error stack:', error.stack);
     res.status(500).json({ error: 'Failed to add progress: ' + error.message });
   }
 });

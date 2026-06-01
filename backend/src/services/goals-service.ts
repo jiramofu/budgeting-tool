@@ -190,7 +190,11 @@ export class GoalsService {
 
   static async addProgress(userId: number, goalId: number, amount: number, notes?: string, organizationId?: number): Promise<GoalProgress> {
     try {
+      console.log('[GoalsService] addProgress called:', { userId, goalId, amount, organizationId });
+
       const goal = await this.getGoal(userId, goalId, organizationId);
+      console.log('[GoalsService] Got goal:', goal?.id, goal?.current_amount, goal?.target_amount);
+
       if (!goal) {
         throw new Error('Goal not found');
       }
@@ -198,12 +202,23 @@ export class GoalsService {
       const newAmount = Math.min(goal.current_amount + amount, goal.target_amount);
       const progressPercentage = (newAmount / goal.target_amount) * 100;
 
-      await query(
+      console.log('[GoalsService] Calculated new amount:', newAmount, 'percentage:', progressPercentage);
+
+      const updateParams = organizationId ? [newAmount, progressPercentage, goalId, userId, organizationId] : [newAmount, progressPercentage, goalId, userId];
+      console.log('[GoalsService] Executing update with params:', updateParams);
+
+      const updateResult = await query(
         `UPDATE goals
          SET current_amount = $1, progress_percentage = $2, updated_at = CURRENT_TIMESTAMP
          WHERE id = $3 AND user_id = $4 ${organizationId ? 'AND organization_id = $5' : ''}`,
-        organizationId ? [newAmount, progressPercentage, goalId, userId, organizationId] : [newAmount, progressPercentage, goalId, userId]
+        updateParams
       );
+
+      console.log('[GoalsService] Update result - rows affected:', updateResult.rowCount);
+
+      if (updateResult.rowCount === 0) {
+        console.error('[GoalsService] WARNING: No rows were updated! Goal may not exist or user may not have permission');
+      }
 
       const progressResult = await query(
         `INSERT INTO goal_progress (goal_id, amount, progress_date, notes)
@@ -212,6 +227,7 @@ export class GoalsService {
         [goalId, amount, notes || null]
       );
 
+      console.log('[GoalsService] Progress inserted successfully');
       return progressResult.rows[0];
     } catch (error) {
       console.error('[Goals] Error adding progress:', error);
