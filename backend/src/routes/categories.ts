@@ -113,5 +113,79 @@ router.post(
   }
 );
 
+// Seed default categories for current user
+router.post(
+  '/seed/defaults',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Category] POST seed defaults for user:', req.userId);
+    try {
+      const defaultCategories = [
+        // Fixed Expenses
+        { name: 'Rent/Mortgage', type: 'fixed', color: '#3b82f6', icon: '🏠' },
+        { name: 'Insurance', type: 'fixed', color: '#3b82f6', icon: '🛡️' },
+        { name: 'Utilities', type: 'fixed', color: '#3b82f6', icon: '💡' },
+        { name: 'Phone/Internet', type: 'fixed', color: '#3b82f6', icon: '📱' },
+
+        // Variable Expenses
+        { name: 'Groceries', type: 'variable', color: '#ef4444', icon: '🛒' },
+        { name: 'Dining Out', type: 'variable', color: '#ef4444', icon: '🍽️' },
+        { name: 'Transportation', type: 'variable', color: '#ef4444', icon: '🚗' },
+        { name: 'Gas', type: 'variable', color: '#ef4444', icon: '⛽' },
+        { name: 'Entertainment', type: 'variable', color: '#ef4444', icon: '🎬' },
+        { name: 'Shopping', type: 'variable', color: '#ef4444', icon: '🛍️' },
+        { name: 'Health & Wellness', type: 'variable', color: '#ef4444', icon: '💪' },
+        { name: 'Personal Care', type: 'variable', color: '#ef4444', icon: '💇' },
+
+        // Recurring Expenses
+        { name: 'Subscriptions', type: 'recurring', color: '#10b981', icon: '📺' },
+        { name: 'Gym Membership', type: 'recurring', color: '#10b981', icon: '🏋️' },
+        { name: 'Software/Apps', type: 'recurring', color: '#10b981', icon: '💻' },
+        { name: 'Donations', type: 'recurring', color: '#10b981', icon: '❤️' },
+        { name: 'Tithe', type: 'fixed', color: '#8b5cf6', icon: '⛪' },
+
+        // Savings & Goals
+        { name: 'Emergency Fund', type: 'fixed', color: '#06b6d4', icon: '🏦' },
+        { name: 'Savings', type: 'fixed', color: '#06b6d4', icon: '💳' },
+        { name: 'Charity', type: 'variable', color: '#8b5cf6', icon: '🤝' },
+        { name: 'Debt Payoff', type: 'fixed', color: '#f59e0b', icon: '📉' },
+      ];
+
+      let createdCount = 0;
+      const errors = [];
+
+      for (const category of defaultCategories) {
+        try {
+          const result = await query(
+            'INSERT INTO categories (user_id, name, type, color, icon, organization_id) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING RETURNING *',
+            [req.userId, category.name, category.type, category.color, category.icon, req.organizationId]
+          );
+          if (result.rows.length > 0) {
+            createdCount++;
+          }
+        } catch (error: any) {
+          errors.push(`${category.name}: ${error.message}`);
+        }
+      }
+
+      const totalResult = await query(
+        'SELECT COUNT(*) as count FROM categories WHERE user_id = $1 AND organization_id = $2',
+        [req.userId, req.organizationId]
+      );
+
+      res.json({
+        message: `Seeded ${createdCount} new default categories`,
+        totalCategories: parseInt(totalResult.rows[0].count),
+        errors: errors.length > 0 ? errors : undefined,
+      });
+    } catch (error: any) {
+      console.error('[Category] Error seeding defaults:', error);
+      res.status(500).json({ error: 'Failed to seed default categories: ' + error.message });
+    }
+  }
+);
+
 console.log('[Category Routes] Category routes loaded successfully');
 export default router;
