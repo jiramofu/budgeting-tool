@@ -30,6 +30,19 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow p-8">
+        {/* Logo and Branding */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <img
+              src="/assets/images/app_logo.png"
+              alt="Compass Logo"
+              className="h-16 w-16"
+            />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Compass</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Your Financial Navigation System</p>
+        </div>
+
         <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-6">Login</h2>
 
         {error && <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-4">{error}</div>}
