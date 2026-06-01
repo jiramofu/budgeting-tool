@@ -197,13 +197,49 @@ const GoalsPage: React.FC = () => {
       const response = await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
       console.log('[GoalsPage] Progress added response:', response);
 
+      // Update the goal in state directly with the response data
+      if (response.data) {
+        const updatedGoal = response.data;
+        console.log('[GoalsPage] Updating goal in state:', updatedGoal);
+
+        // Update the goals array with the new goal data
+        setGoals(prevGoals =>
+          prevGoals.map(g => g.id === goalId ? updatedGoal : g)
+        );
+
+        // Update summary if it exists
+        if (summary) {
+          console.log('[GoalsPage] Recalculating summary...');
+          const allGoals = goals.map(g => g.id === goalId ? updatedGoal : g);
+          const totalGoals = allGoals.length;
+          const activeGoals = allGoals.filter((g) => g.is_active).length;
+          const completedGoals = allGoals.filter((g) => g.progress_percentage >= 100).length;
+
+          let totalTargeted = 0;
+          let totalProgress = 0;
+
+          for (const goal of allGoals) {
+            totalTargeted += goal.target_amount;
+            totalProgress += goal.current_amount;
+          }
+
+          const overallProgress = totalTargeted > 0 ? (totalProgress / totalTargeted) * 100 : 0;
+
+          setSummary({
+            totalGoals,
+            activeGoals,
+            completedGoals,
+            overallProgress: Math.min(overallProgress, 100),
+            totalTargeted,
+            totalProgress,
+            goals: allGoals,
+          });
+        }
+      }
+
       success('Progress added successfully');
       setProgressAmount('');
       setShowProgressForm(null);
-
-      console.log('[GoalsPage] Reloading goals...');
-      await loadGoals();
-      console.log('[GoalsPage] Goals reloaded');
     } catch (err: any) {
       console.error('[GoalsPage] Failed to add progress:', err);
       console.error('[GoalsPage] Error details:', {
