@@ -55,4 +55,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/index.js"]
 
-EXPOSE 3001
+EXPOSE 8080
