@@ -22,7 +22,14 @@ INSERT INTO categories (user_id, name, type, color, icon) VALUES
 (1, 'Subscriptions', 'recurring', '#10b981', '📺'),
 (1, 'Gym Membership', 'recurring', '#10b981', '🏋️'),
 (1, 'Software/Apps', 'recurring', '#10b981', '💻'),
-(1, 'Donations', 'recurring', '#10b981', '❤️')
+(1, 'Donations', 'recurring', '#10b981', '❤️'),
+(1, 'Tithe', 'fixed', '#8b5cf6', '⛪'),
+
+-- Savings & Goals
+(1, 'Emergency Fund', 'fixed', '#06b6d4', '🏦'),
+(1, 'Savings', 'fixed', '#06b6d4', '💳'),
+(1, 'Charity', 'variable', '#8b5cf6', '🤝'),
+(1, 'Debt Payoff', 'fixed', '#f59e0b', '📉')
 ON CONFLICT DO NOTHING;
 
 SELECT COUNT(*) as total_categories FROM categories WHERE user_id = 1;
