@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { CurrencyProvider } from './context/CurrencyContext';
+import { BudgetProvider } from './context/BudgetContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ToastProvider, ToastContainer } from './components/ui/toast';
 import { DashboardSkeleton } from './components/SkeletonLoader';
@@ -304,9 +305,11 @@ function App() {
           <CurrencyProvider>
             <Router>
               <AuthProvider>
-                <OfflineDetector />
-                <AppContent />
-                <ToastContainer />
+                <BudgetProvider>
+                  <OfflineDetector />
+                  <AppContent />
+                  <ToastContainer />
+                </BudgetProvider>
               </AuthProvider>
             </Router>
           </CurrencyProvider>
