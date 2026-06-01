@@ -42,11 +42,11 @@ export class AdvancedBudgetingService {
          LEFT JOIN transactions t ON c.id = t.category_id
            AND t.user_id = $1
            AND EXTRACT(MONTH FROM t.transaction_date) = $2
-           AND EXTRACT(YEAR FROM t.transaction_date) = $3 ${organizationId ? 'AND t.organization_id = $4' : ''}
-         WHERE c.user_id = $1 ${organizationId ? 'AND c.organization_id = $4' : ''}
+           AND EXTRACT(YEAR FROM t.transaction_date) = $3
+         WHERE c.user_id = $1
          GROUP BY c.id, c.name, bt.target_amount
          ORDER BY c.name`,
-        organizationId ? [userId, month, year, organizationId] : [userId, month, year]
+        [userId, month, year]
       );
 
       return result.rows.map((row: any) => ({
@@ -148,13 +148,13 @@ export class AdvancedBudgetingService {
            FROM transactions t
            JOIN categories c ON t.category_id = c.id
            WHERE t.user_id = $1
-           AND t.transaction_date >= NOW() - INTERVAL '6 months' ${organizationId ? 'AND t.organization_id = $2' : ''}
+           AND t.transaction_date >= NOW() - INTERVAL '6 months'
            GROUP BY c.id, c.name, EXTRACT(YEAR FROM t.transaction_date), EXTRACT(MONTH FROM t.transaction_date)
          ) monthly
          GROUP BY id, name
          HAVING COUNT(*) >= 3
          ORDER BY AVG(CAST(monthly_amount AS NUMERIC)) DESC`,
-        organizationId ? [userId, organizationId] : [userId]
+        [userId]
       );
 
       return result.rows.map((row: any) => ({
@@ -183,10 +183,10 @@ export class AdvancedBudgetingService {
                 SUM(CASE WHEN CAST(t.amount AS NUMERIC) < 0 THEN CAST(t.amount AS NUMERIC) ELSE 0 END) as expenses
          FROM transactions t
          WHERE t.user_id = $1
-         AND t.transaction_date >= NOW() - INTERVAL '1 month' * $2 ${organizationId ? 'AND t.organization_id = $3' : ''}
+         AND t.transaction_date >= NOW() - INTERVAL '1 month' * $2
          GROUP BY year, month
          ORDER BY year DESC, month DESC`,
-        organizationId ? [userId, months, organizationId] : [userId, months]
+        [userId, months]
       );
 
       return result.rows.map((row: any) => ({
