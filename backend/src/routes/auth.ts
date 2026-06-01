@@ -409,5 +409,121 @@ router.post('/apple', async (req: Request, res: Response) => {
   }
 });
 
+// Forgot Password - Request password reset token
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  console.log('[Auth] Forgot password request received:', { email: req.body.email });
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists
+    const userResult = await query('SELECT id, email FROM users WHERE email = $1', [email]);
+
+    // Never reveal if email exists (security best practice)
+    if (userResult.rows.length === 0) {
+      console.log('[Auth] Forgot password requested for non-existent email:', email);
+      return res.status(200).json({ message: 'If an account exists, you will receive a reset link' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Generate password reset token
+    const { token: resetToken, hash: resetHash } = generateVerificationToken();
+    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Store token hash in database
+    await query(
+      `UPDATE users
+       SET password_reset_token = $1, password_reset_expiry = $2
+       WHERE id = $3`,
+      [resetHash, resetTokenExpiry, user.id]
+    );
+
+    // Send password reset email
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetLink = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    const html = `
+      <h2>Password Reset Request</h2>
+      <p>We received a request to reset your password. Click the link below to set a new password:</p>
+      <p><a href="${resetLink}" style="background-color: #2563eb; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block;">Reset Password</a></p>
+      <p>Or copy this link: <code>${resetLink}</code></p>
+      <p>This link expires in 24 hours.</p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    `;
+
+    await sendEmail({
+      to: email,
+      subject: 'Password Reset Request',
+      html,
+    });
+
+    console.log('[Auth] Password reset email sent to:', email);
+    res.status(200).json({ message: 'If an account exists, you will receive a reset link' });
+  } catch (error: any) {
+    console.error('[Auth] Forgot password error:', error);
+    res.status(500).json({ error: 'Failed to process password reset request' });
+  }
+});
+
+// Reset Password - Set new password with token
+router.post('/reset-password', async (req: Request, res: Response) => {
+  console.log('[Auth] Reset password request received');
+  try {
+    const { token, email, newPassword } = req.body;
+
+    if (!token || !email || !newPassword) {
+      return res.status(400).json({ error: 'Token, email, and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    }
+
+    // Hash the provided token to compare with stored hash
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    // Find user with valid reset token
+    const userResult = await query(
+      `SELECT id, email, password_reset_token, password_reset_expiry
+       FROM users
+       WHERE email = $1
+       AND password_reset_token = $2
+       AND password_reset_expiry > NOW()`,
+      [email, tokenHash]
+    );
+
+    if (userResult.rows.length === 0) {
+      console.log('[Auth] Invalid or expired reset token for email:', email);
+      return res.status(401).json({ error: 'Invalid or expired reset link' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Hash new password
+    const passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds);
+
+    // Update password and clear reset token
+    await query(
+      `UPDATE users
+       SET password_hash = $1, password_reset_token = NULL, password_reset_expiry = NULL
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
+
+    console.log('[Auth] Password reset successful for:', email);
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (error: any) {
+    console.error('[Auth] Reset password error:', error);
+    res.status(500).json({ error: 'Password reset failed: ' + error.message });
+  }
+});
+
 console.log('[Auth Routes] Auth routes loaded successfully');
 export default router;

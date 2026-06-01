@@ -73,9 +73,14 @@ const LoginPage: React.FC = () => {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-gray-600 dark:text-gray-400">
-          Don't have an account? <Link to="/signup" className="text-primary font-medium">Sign up</Link>
-        </p>
+        <div className="mt-6 flex flex-col gap-4">
+          <p className="text-center text-gray-600 dark:text-gray-400">
+            Don't have an account? <Link to="/signup" className="text-primary font-medium">Sign up</Link>
+          </p>
+          <p className="text-center text-gray-600 dark:text-gray-400">
+            <Link to="/forgot-password" className="text-primary font-medium hover:underline">Forgot password?</Link>
+          </p>
+        </div>
       </div>
     </div>
   );
