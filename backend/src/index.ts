@@ -183,8 +183,11 @@ console.log('Total middleware/routes in app stack:', app._router.stack.length);
 // SPA routing - serve index.html for all non-API routes (for React Router)
 // Skip static assets (/assets/*, /public/*, etc.) and let static middleware handle them
 app.get('*', (req, res) => {
+  console.log(`[SPA Router] Catch-all handler triggered for path: ${req.path}`);
+
   // Skip if it's a static asset request
   if (req.path.startsWith('/assets/') || req.path.includes('.')) {
+    console.log(`[SPA Router] Blocking static asset request: ${req.path}`);
     return res.status(404).json({ error: 'Not found' });
   }
 
@@ -193,7 +196,12 @@ app.get('*', (req, res) => {
     // __dirname is /app/dist at runtime, so ../public gets us to /app/public
     const indexPath = path.join(__dirname, '../public/index.html');
     console.log(`[SPA Router] Serving index.html from: ${indexPath} for path: ${req.path}`);
-    res.sendFile(indexPath);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`[SPA Router] sendFile error for ${req.path}:`, err);
+        res.status(500).json({ error: 'Failed to serve app: ' + err.message });
+      }
+    });
   } catch (error) {
     console.error(`[SPA Router] Error serving index.html:`, error);
     res.status(500).json({ error: 'Failed to serve app' });
