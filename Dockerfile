@@ -24,8 +24,8 @@ COPY frontend/tsconfig.json ./
 COPY frontend/tsconfig.node.json ./
 COPY frontend/postcss.config.js ./
 COPY frontend/tailwind.config.js ./
-RUN echo "Building frontend..." && npm run build
-RUN echo "Verifying build output..." && ls -la dist/ && test -f dist/index.html && echo "✓ Frontend build successful - index.html exists"
+RUN echo "Building frontend..." && npm run build && echo "Build complete, checking files..."
+RUN echo "Verifying build output..." && ls -la dist/ && echo "Files in dist:" && find dist/ -type f | wc -l && test -f dist/index.html && echo "✓ Frontend build successful - index.html exists" || echo "ERROR: index.html not found in dist!"
 
 # Stage 3: Runtime - Backend
 FROM node:20-alpine AS runtime
@@ -44,7 +44,9 @@ COPY --from=backend-builder /app/dist ./dist
 # Copy database files (schema and migrations)
 COPY backend/database ./database
 
-# Copy built frontend (use --chown to ensure it's not cached)
+# Copy built frontend with build timestamp to break cache
+ARG BUILD_TIMESTAMP=default
+RUN echo "Build timestamp: ${BUILD_TIMESTAMP}"
 COPY --from=frontend-builder /app/dist ./public
 RUN echo "Verifying public directory..." && ls -la public/ && test -f public/index.html && echo "✓ Frontend files copied successfully" && find public/ -type f | head -20
 
