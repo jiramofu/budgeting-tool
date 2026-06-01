@@ -169,12 +169,13 @@ app.get('*', (req, res) => {
 
   try {
     const path = require('path');
-    const indexPath = path.join(__dirname, '../../public/index.html');
-    console.log(`[SPA Router] Serving index.html for: ${req.path}`);
+    // __dirname is /app/dist at runtime, so ../public gets us to /app/public
+    const indexPath = path.join(__dirname, '../public/index.html');
+    console.log(`[SPA Router] Serving index.html from: ${indexPath} for path: ${req.path}`);
     res.sendFile(indexPath);
   } catch (error) {
     console.error(`[SPA Router] Error serving index.html:`, error);
-    res.status(404).json({ error: 'Not found' });
+    res.status(500).json({ error: 'Failed to serve app' });
   }
 });
 
