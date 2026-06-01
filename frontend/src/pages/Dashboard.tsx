@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/api';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useBudgetContext } from '../context/BudgetContext';
 import { MetricCard, SpendingByCategory, RecentTransactions, UpcomingBills } from '../components/dashboard';
 import { DollarSign, Wallet, TrendingUp, AlertCircle } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
@@ -40,6 +41,7 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { error: showError } = useToast();
   const { currency } = useUserSettings();
+  const budgetContext = useBudgetContext();
   const [budget, setBudget] = useState<Budget | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
@@ -126,8 +128,8 @@ const Dashboard: React.FC = () => {
     const daysElapsed = Math.max(1, now.getDate());
     const avgDailySpending = totalSpending / daysElapsed;
 
-    // Budget remaining (assuming default limit of 5000)
-    const budgetLimit = 5000;
+    // Budget limit: Use context income if available, otherwise default to 5000
+    const budgetLimit = budgetContext.incomeData?.availableForBudget || 5000;
     const budgetRemaining = Math.max(0, budgetLimit - totalSpending);
 
     // Calculate spending trend (compare to last month)

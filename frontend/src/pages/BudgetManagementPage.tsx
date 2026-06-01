@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useBudgetContext, Category as ContextCategory } from '../context/BudgetContext';
 import {
   BudgetBar,
   BudgetInput,
@@ -29,6 +30,7 @@ interface BudgetMetrics {
 
 const BudgetManagementPage: React.FC = () => {
   const { currency } = useUserSettings();
+  const budgetContext = useBudgetContext();
   const [categories, setCategories] = useState<Category[]>([]);
   const [metrics, setMetrics] = useState<BudgetMetrics>({
     totalBudget: 0,
@@ -39,17 +41,20 @@ const BudgetManagementPage: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(budgetContext.currentBudgetMonth);
+  const [selectedYear, setSelectedYear] = useState(budgetContext.currentBudgetYear);
 
   useEffect(() => {
+    // Update context with selected month/year
+    budgetContext.setCurrentMonth(selectedMonth);
+    budgetContext.setCurrentYear(selectedYear);
     loadBudgetData();
   }, [selectedMonth, selectedYear]);
 
   const loadBudgetData = async () => {
     try {
-      setIsLoading(true);
-      setError('');
+      budgetContext.setIsLoading(true);
+      budgetContext.setError('');
 
       // Fetch categories and budget data
       const categoriesRes = await apiClient.get('/categories');
@@ -110,12 +115,15 @@ const BudgetManagementPage: React.FC = () => {
       ];
 
       setCategories(mockCategories);
+      // Dispatch to context as well
+      budgetContext.setCategories(mockCategories as ContextCategory[]);
       calculateMetrics(mockCategories);
     } catch (err: any) {
       console.error('Failed to load budget data:', err);
-      setError('Failed to load budget data. Please try again.');
+      const errorMsg = 'Failed to load budget data. Please try again.';
+      budgetContext.setError(errorMsg);
     } finally {
-      setIsLoading(false);
+      budgetContext.setIsLoading(false);
     }
   };
 
@@ -142,13 +150,17 @@ const BudgetManagementPage: React.FC = () => {
     const totalRemaining = Math.max(0, totalBudget - totalSpent);
     const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
 
-    setMetrics({
+    const newMetrics = {
       totalBudget,
       totalSpent,
       totalRemaining,
       percentageUsed: Math.round(percentageUsed),
       categoriesOverBudget,
-    });
+    };
+
+    setMetrics(newMetrics);
+    // Update context metrics as well
+    budgetContext.setMetrics(newMetrics);
   };
 
   const handleBudgetUpdate = async (categoryId: number, amount: number) => {

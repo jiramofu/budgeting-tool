@@ -31,6 +31,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
+    return undefined;
   }, [showMenu]);
 
   const handleViewProfile = () => {

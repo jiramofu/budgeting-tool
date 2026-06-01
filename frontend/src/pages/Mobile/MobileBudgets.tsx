@@ -57,6 +57,7 @@ interface BudgetCardProps extends BudgetItem {
 }
 
 const BudgetCard: React.FC<BudgetCardProps> = ({
+  id,
   name,
   spent,
   budget,
@@ -120,7 +121,7 @@ const BudgetCard: React.FC<BudgetCardProps> = ({
 
       {/* Action Button */}
       <button
-        onClick={() => onEdit?.({ name, spent, budget, icon: Icon, color })}
+        onClick={() => onEdit?.({ id, name, spent, budget, icon: Icon, color })}
         className="w-full py-2 px-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 font-medium text-sm transition-colors"
       >
         Edit Budget

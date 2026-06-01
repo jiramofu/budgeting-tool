@@ -69,7 +69,6 @@ export const CategoryBreakdownChart: React.FC<CategoryBreakdownChartProps> = ({
 
     return {
       path: pathData,
-      color: item.color,
       percentage,
       labelX,
       labelY,
