@@ -64,6 +64,9 @@ app.use(requestLogger);
 // Serve uploaded files
 app.use('/uploads', express.static('uploads'));
 
+// Serve frontend static files
+app.use(express.static('public'));
+
 // Phase 8: Enterprise Features Middleware (with feature flag)
 if (config.enableOrganizations) {
   console.log('Enterprise Features enabled - initializing RBAC, audit logging, and rate limiting middleware');
@@ -156,9 +159,13 @@ if (config.enableOrganizations) {
 console.log('Routes configured');
 console.log('Total middleware/routes in app stack:', app._router.stack.length);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Not found' });
+// SPA routing - serve index.html for all non-API routes (for React Router)
+app.get('*', (req, res) => {
+  try {
+    res.sendFile('/app/public/index.html');
+  } catch (error) {
+    res.status(404).json({ error: 'Not found' });
+  }
 });
 
 // Phase 8: Error handler for audit logging
