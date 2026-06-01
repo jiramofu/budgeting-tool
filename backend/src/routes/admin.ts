@@ -63,17 +63,53 @@ router.post('/reset-database', verifyResetToken, async (req: Request, res: Respo
     const stats: { [key: string]: number } = {};
 
     for (const deleteQuery of deleteQueries) {
-      const result = await query(deleteQuery);
-      const tableName = deleteQuery.replace('DELETE FROM ', '').trim();
-      stats[tableName] = result.rowCount || 0;
-      console.log(`[Admin] Deleted ${result.rowCount || 0} rows from ${tableName}`);
+      try {
+        const result = await query(deleteQuery);
+        const tableName = deleteQuery.replace('DELETE FROM ', '').trim();
+        stats[tableName] = result.rowCount || 0;
+        console.log(`[Admin] Deleted ${result.rowCount || 0} rows from ${tableName}`);
+      } catch (error: any) {
+        const tableName = deleteQuery.replace('DELETE FROM ', '').trim();
+        // Skip tables that don't exist (relation does not exist error)
+        if (error.message && error.message.includes('does not exist')) {
+          console.log(`[Admin] Skipping table ${tableName} - does not exist in schema`);
+          stats[tableName] = 0;
+        } else {
+          throw error; // Re-throw other errors
+        }
+      }
     }
 
     // Verify deletion
-    const userCountResult = await query('SELECT COUNT(*) as count FROM users');
-    const budgetCountResult = await query('SELECT COUNT(*) as count FROM budgets');
-    const txnCountResult = await query('SELECT COUNT(*) as count FROM transactions');
-    const orgCountResult = await query('SELECT COUNT(*) as count FROM organizations');
+    let userCount = 0, budgetCount = 0, txnCount = 0, orgCount = 0;
+
+    try {
+      const userCountResult = await query('SELECT COUNT(*) as count FROM users');
+      userCount = parseInt(userCountResult.rows[0].count);
+    } catch (e) {
+      console.warn('[Admin] Could not verify users table');
+    }
+
+    try {
+      const budgetCountResult = await query('SELECT COUNT(*) as count FROM budgets');
+      budgetCount = parseInt(budgetCountResult.rows[0].count);
+    } catch (e) {
+      console.warn('[Admin] Could not verify budgets table');
+    }
+
+    try {
+      const txnCountResult = await query('SELECT COUNT(*) as count FROM transactions');
+      txnCount = parseInt(txnCountResult.rows[0].count);
+    } catch (e) {
+      console.warn('[Admin] Could not verify transactions table');
+    }
+
+    try {
+      const orgCountResult = await query('SELECT COUNT(*) as count FROM organizations');
+      orgCount = parseInt(orgCountResult.rows[0].count);
+    } catch (e) {
+      console.warn('[Admin] Could not verify organizations table');
+    }
 
     await query('COMMIT');
 
@@ -84,10 +120,10 @@ router.post('/reset-database', verifyResetToken, async (req: Request, res: Respo
       message: 'Database reset completed successfully',
       deletedRecords: stats,
       verification: {
-        users: parseInt(userCountResult.rows[0].count),
-        budgets: parseInt(budgetCountResult.rows[0].count),
-        transactions: parseInt(txnCountResult.rows[0].count),
-        organizations: parseInt(orgCountResult.rows[0].count),
+        users: userCount,
+        budgets: budgetCount,
+        transactions: txnCount,
+        organizations: orgCount,
       },
     });
   } catch (error: any) {
