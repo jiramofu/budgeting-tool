@@ -2,20 +2,21 @@ import axios, { AxiosInstance } from 'axios';
 
 // Determine API URL dynamically
 // If VITE_API_URL is explicitly set, use that
-// Otherwise, use the same host as the current page but port 3001
+// Otherwise, use relative path to current domain (works for both dev and production)
 const getApiUrl = (): string => {
   // Check if explicitly configured
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
 
-  // For development: detect if accessed via network IP or localhost
-  const protocol = window.location.protocol;
-  const hostname = window.location.hostname;
+  // In development: use localhost:3001
+  // In production: use relative path /api (same domain as frontend)
+  if (import.meta.env.DEV) {
+    return 'http://localhost:3001/api';
+  }
 
-  // If accessed from localhost, use localhost:3001 (backend port)
-  // If accessed from a network IP or domain, use that IP/domain:3001
-  return `${protocol}//${hostname}:3001/api`;
+  // Production: use relative path to same domain
+  return '/api';
 };
 
 const API_URL = getApiUrl();
