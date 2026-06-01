@@ -2,6 +2,10 @@
 -- Run: psql -U postgres -d budgeting_tool -f database/seed_categories.sql
 
 INSERT INTO categories (user_id, name, type, color, icon) VALUES
+-- Income
+(1, 'Gross Income', 'fixed', '#059669', '💵'),
+(1, 'Net Pay', 'fixed', '#10b981', '💰'),
+
 -- Fixed Expenses
 (1, 'Rent/Mortgage', 'fixed', '#3b82f6', '🏠'),
 (1, 'Insurance', 'fixed', '#3b82f6', '🛡️'),

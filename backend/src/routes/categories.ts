@@ -123,6 +123,10 @@ router.post(
     console.log('[Category] POST seed defaults for user:', req.userId);
     try {
       const defaultCategories = [
+        // Income
+        { name: 'Gross Income', type: 'fixed', color: '#059669', icon: '💵' },
+        { name: 'Net Pay', type: 'fixed', color: '#10b981', icon: '💰' },
+
         // Fixed Expenses
         { name: 'Rent/Mortgage', type: 'fixed', color: '#3b82f6', icon: '🏠' },
         { name: 'Insurance', type: 'fixed', color: '#3b82f6', icon: '🛡️' },
