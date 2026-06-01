@@ -162,7 +162,8 @@ console.log('Total middleware/routes in app stack:', app._router.stack.length);
 // SPA routing - serve index.html for all non-API routes (for React Router)
 app.get('*', (req, res) => {
   try {
-    res.sendFile('/app/public/index.html');
+    const path = require('path');
+    res.sendFile(path.join(__dirname, '../../public/index.html'));
   } catch (error) {
     res.status(404).json({ error: 'Not found' });
   }
