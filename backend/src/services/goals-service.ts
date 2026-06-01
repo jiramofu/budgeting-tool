@@ -190,10 +190,11 @@ export class GoalsService {
 
   static async addProgress(userId: number, goalId: number, amount: number, notes?: string, organizationId?: number): Promise<GoalProgress> {
     try {
-      console.log('[GoalsService] addProgress called:', { userId, goalId, amount, organizationId });
+      console.log('🔵 [GoalsService.addProgress] START');
+      console.log('🔵 [GoalsService.addProgress] Inputs:', { userId, goalId, amount, notes, organizationId });
 
       const goal = await this.getGoal(userId, goalId, organizationId);
-      console.log('[GoalsService] Got goal:', goal?.id, goal?.current_amount, goal?.target_amount);
+      console.log('🔵 [GoalsService.addProgress] Got goal:', { id: goal?.id, current_amount: goal?.current_amount, target_amount: goal?.target_amount });
 
       if (!goal) {
         throw new Error('Goal not found');
@@ -201,35 +202,33 @@ export class GoalsService {
 
       const newAmount = Math.min(goal.current_amount + amount, goal.target_amount);
       const progressPercentage = (newAmount / goal.target_amount) * 100;
+      console.log('🔵 [GoalsService.addProgress] Calculated values:', { newAmount, progressPercentage });
 
-      console.log('[GoalsService] Calculated new amount:', newAmount, 'percentage:', progressPercentage);
-
-      console.log('[GoalsService] Executing update - updating goal amount and percentage');
-
+      console.log('🔵 [GoalsService.addProgress] EXECUTING UPDATE QUERY...');
       const updateResult = await query(
-        `UPDATE goals
-         SET current_amount = $1, progress_percentage = $2, updated_at = CURRENT_TIMESTAMP
-         WHERE id = $3 AND user_id = $4`,
+        `UPDATE goals SET current_amount = $1, progress_percentage = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND user_id = $4`,
         [newAmount, progressPercentage, goalId, userId]
       );
 
-      console.log('[GoalsService] Update result - rows affected:', updateResult.rowCount);
+      console.log('🟢 [GoalsService.addProgress] UPDATE COMPLETED');
+      console.log('🟢 [GoalsService.addProgress] Rows affected:', updateResult.rowCount);
 
       if (updateResult.rowCount === 0) {
-        console.error('[GoalsService] WARNING: No rows were updated! Goal may not exist or user may not have permission');
+        console.error('🔴 [GoalsService.addProgress] ERROR: No rows updated! Goal may not exist.');
+        console.error('🔴 [GoalsService.addProgress] Query was: UPDATE goals... WHERE id=' + goalId + ' AND user_id=' + userId);
       }
 
+      console.log('🔵 [GoalsService.addProgress] INSERTING INTO goal_progress...');
       const progressResult = await query(
-        `INSERT INTO goal_progress (goal_id, amount, progress_date, notes)
-         VALUES ($1, $2, CURRENT_DATE, $3)
-         RETURNING *`,
+        `INSERT INTO goal_progress (goal_id, amount, progress_date, notes) VALUES ($1, $2, CURRENT_DATE, $3) RETURNING *`,
         [goalId, amount, notes || null]
       );
 
-      console.log('[GoalsService] Progress inserted successfully');
+      console.log('🟢 [GoalsService.addProgress] Progress row inserted:', progressResult.rows[0]);
+      console.log('🟢 [GoalsService.addProgress] COMPLETE');
       return progressResult.rows[0];
     } catch (error) {
-      console.error('[Goals] Error adding progress:', error);
+      console.error('🔴 [GoalsService.addProgress] ERROR:', error);
       throw error;
     }
   }
