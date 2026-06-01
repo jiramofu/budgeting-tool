@@ -47,7 +47,18 @@ import { swaggerSpec } from './swagger';
 const app = express();
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://accounts.google.com", "https://appleid.cdn-apple.com"],
+      connectSrc: ["'self'", "https://accounts.google.com", "https://appleid.cdn-apple.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      frameSrc: ["https://accounts.google.com", "https://appleid.cdn-apple.com"],
+    },
+  },
+}));
 app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = Array.isArray(config.corsOrigin) ? config.corsOrigin : [config.corsOrigin];
