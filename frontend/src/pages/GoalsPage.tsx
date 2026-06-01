@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../services/api';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { useUserSettings } from '../hooks/useUserSettings';
@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { HelpIcon } from '../components/ui/tooltip';
+import confetti from 'canvas-confetti';
 
 interface Goal {
   id: number;
@@ -57,6 +58,7 @@ const GoalsPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [showProgressForm, setShowProgressForm] = useState<number | null>(null);
   const [progressAmount, setProgressAmount] = useState('');
+  const celebratedGoalsRef = useRef<Set<number>>(new Set());
 
   const [formData, setFormData] = useState({
     name: '',
@@ -70,6 +72,34 @@ const GoalsPage: React.FC = () => {
   useEffect(() => {
     loadGoals();
   }, []);
+
+  // Trigger confetti when a goal reaches 100% completion
+  useEffect(() => {
+    goals.forEach((goal) => {
+      if (goal.progress_percentage >= 100 && !celebratedGoalsRef.current.has(goal.id)) {
+        celebratedGoalsRef.current.add(goal.id);
+        triggerConfetti();
+      }
+    });
+  }, [goals]);
+
+  const triggerConfetti = () => {
+    // Confetti from center
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+
+    // Additional confetti burst
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
+    }, 250);
+  };
 
   const loadGoals = async () => {
     try {
