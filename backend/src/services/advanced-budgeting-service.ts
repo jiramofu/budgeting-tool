@@ -72,9 +72,9 @@ export class AdvancedBudgetingService {
           `UPDATE budget_rules
            SET trigger_amount = $1, trigger_type = $2, action = $3, action_value = $4
            WHERE id = $5 AND budget_id IN (
-             SELECT id FROM budgets WHERE user_id = $6 ${organizationId ? 'AND organization_id = $7' : ''}
+             SELECT id FROM budgets WHERE user_id = $6
            )`,
-          organizationId ? [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId, organizationId] : [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId]
+          [rule.triggerAmount, rule.triggerType, rule.action, rule.actionValue, rule.id, userId]
         );
       } else {
         // Create new rule
