@@ -1,76 +1,78 @@
-﻿version: '3.8'
+version: '3.8'
 
 services:
   postgres:
-    image: postgres:13-alpine
-    container_name: budgeting-tool-db
+    image: postgres:16-alpine
+    container_name: budget-db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: budgeting_tool
+      POSTGRES_USER: ${DB_USER:-budgetapp}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-budgetapp_dev}
+      POSTGRES_DB: ${DB_NAME:-budgetapp_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-budgetapp}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - budgeting-network
+      - budget-network
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: budgeting-tool-api
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: budget-api
     environment:
-      NODE_ENV: production
-      PORT: 5000
-      API_URL: http://localhost:5000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/budgeting_tool
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3001
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: budgeting_tool
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
-      JWT_EXPIRY: 7d
-      FRONTEND_URL: http://localhost:3000
+      DB_USER: ${DB_USER:-budgetapp}
+      DB_PASSWORD: ${DB_PASSWORD:-budgetapp_dev}
+      DB_NAME: ${DB_NAME:-budgetapp_db}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     ports:
-      - "5000:5000"
+      - "3001:3001"
     depends_on:
       postgres:
         condition: service_healthy
-    volumes:
-      - ./backend/src:/app/src
-      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - budgeting-network
+      - budget-network
+    restart: unless-stopped
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: budgeting-tool-web
-    environment:
-      VITE_API_URL: http://localhost:5000
-      VITE_APP_NAME: Budgeting Tool
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: budget-web
     ports:
-      - "3000:3000"
+      - "80:80"
     depends_on:
       - backend
-    volumes:
-      - ./frontend/src:/app/src
-      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - budgeting-network
+      - budget-network
+    restart: unless-stopped
+
+networks:
+  budget-network:
+    driver: bridge
 
 volumes:
   postgres_data:
-
-networks:
-  budgeting-network:
-    driver: bridge
+    driver: local
