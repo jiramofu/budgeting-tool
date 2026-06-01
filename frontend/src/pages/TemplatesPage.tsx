@@ -41,11 +41,11 @@ const TemplatesPage: React.FC = () => {
       setIsLoading(true);
       setError('');
 
-      const templatesRes = await apiClient.get('/api/templates');
+      const templatesRes = await apiClient.get('/templates');
       setTemplates(templatesRes.data);
 
       try {
-        const suggestionsRes = await apiClient.get('/api/templates/suggestions/categories');
+        const suggestionsRes = await apiClient.get('/templates/suggestions/categories');
         setSuggestions(suggestionsRes.data);
       } catch (err) {
         // Suggestions are optional
@@ -75,8 +75,8 @@ const TemplatesPage: React.FC = () => {
         return;
       }
 
-      await apiClient.get(`/api/templates/${selectedTemplate.id}/apply`, {
-        data: { budgetId },
+      await apiClient.post(`/templates/${selectedTemplate.id}/apply`, {
+        budgetId,
       });
 
       success('Template applied successfully');
