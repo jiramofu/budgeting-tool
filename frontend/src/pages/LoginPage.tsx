@@ -32,13 +32,7 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow p-8">
         {/* Logo and Branding */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <img
-              src="/assets/images/app_logo.png"
-              alt="Compass Logo"
-              className="h-16 w-16"
-            />
-          </div>
+          <div className="flex justify-center mb-4 text-5xl">🧭</div>
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Compass</h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm">Your Financial Navigation System</p>
         </div>
