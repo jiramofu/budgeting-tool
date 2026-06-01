@@ -193,14 +193,25 @@ const GoalsPage: React.FC = () => {
         return;
       }
 
-      await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
+      console.log('[GoalsPage] Adding progress to goal:', goalId, 'amount:', progressAmount);
+      const response = await apiClient.addGoalProgress(goalId, parseFloat(progressAmount));
+      console.log('[GoalsPage] Progress added response:', response);
+
       success('Progress added successfully');
       setProgressAmount('');
       setShowProgressForm(null);
+
+      console.log('[GoalsPage] Reloading goals...');
       await loadGoals();
+      console.log('[GoalsPage] Goals reloaded');
     } catch (err: any) {
-      console.error('Failed to add progress:', err);
-      const errorMsg = 'Failed to add progress';
+      console.error('[GoalsPage] Failed to add progress:', err);
+      console.error('[GoalsPage] Error details:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status
+      });
+      const errorMsg = err.response?.data?.error || 'Failed to add progress';
       setError(errorMsg);
       showError(errorMsg);
     }
