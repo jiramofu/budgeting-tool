@@ -164,7 +164,9 @@ router.post('/:goalId/progress', authenticate, loadUserOrganizations, requireOrg
     const goalId = parseInt(req.params.goalId);
     const progress = await GoalsService.addProgress(req.userId, goalId, amount, notes, req.organizationId!);
 
-    res.status(201).json(progress);
+    // Return the updated goal (not just the progress entry) so frontend can update UI
+    const updatedGoal = await GoalsService.getGoal(req.userId, goalId, req.organizationId!);
+    res.status(201).json(updatedGoal);
   } catch (error: any) {
     console.error('[Goals] Error adding progress:', error);
     res.status(500).json({ error: 'Failed to add progress: ' + error.message });
