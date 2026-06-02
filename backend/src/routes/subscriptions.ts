@@ -1,7 +1,5 @@
 import { Router, Response } from 'express';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { PermissionRequest, loadUserOrganizations } from '../middleware/permissions';
-import { requireOrganization } from '../middleware/permissionHelper';
+import { authenticate } from '../middleware/auth';
 import { SubscriptionService } from '../services/subscription-service';
 
 const router = Router();
@@ -9,14 +7,14 @@ const router = Router();
 console.log('[Subscription Routes] Loading subscription routes...');
 
 // Get subscription summary
-router.get('/summary', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.get('/summary', authenticate, async (req: any, res: Response) => {
   console.log('[Subscription] GET summary');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const summary = await SubscriptionService.getSubscriptionSummary(req.userId, req.organizationId!);
+    const summary = await SubscriptionService.getSubscriptionSummary(req.userId);
     res.json(summary);
   } catch (error: any) {
     console.error('[Subscription] Error getting summary:', error);
@@ -25,7 +23,7 @@ router.get('/summary', authenticate, loadUserOrganizations, requireOrganization,
 });
 
 // Get upcoming billings
-router.get('/upcoming', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.get('/upcoming', authenticate, async (req: any, res: Response) => {
   console.log('[Subscription] GET upcoming');
   try {
     if (!req.userId) {
@@ -33,7 +31,7 @@ router.get('/upcoming', authenticate, loadUserOrganizations, requireOrganization
     }
 
     const days = parseInt(req.query.days as string) || 30;
-    const upcoming = await SubscriptionService.getUpcomingBillings(req.userId, days, req.organizationId!);
+    const upcoming = await SubscriptionService.getUpcomingBillings(req.userId, days);
     res.json(upcoming);
   } catch (error: any) {
     console.error('[Subscription] Error getting upcoming:', error);
@@ -42,7 +40,7 @@ router.get('/upcoming', authenticate, loadUserOrganizations, requireOrganization
 });
 
 // Add subscription
-router.post('/', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.post('/', authenticate, async (req: any, res: Response) => {
   console.log('[Subscription] POST subscription');
   try {
     if (!req.userId) {
@@ -51,7 +49,6 @@ router.post('/', authenticate, loadUserOrganizations, requireOrganization, async
 
     const subscription = await SubscriptionService.addSubscription(req.userId, {
       userId: req.userId,
-      organizationId: req.organizationId!,
       ...req.body,
     });
 
@@ -63,14 +60,14 @@ router.post('/', authenticate, loadUserOrganizations, requireOrganization, async
 });
 
 // Cancel subscription
-router.put('/:id/cancel', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.put('/:id/cancel', authenticate, async (req: any, res: Response) => {
   console.log('[Subscription] PUT cancel');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    await SubscriptionService.cancelSubscription(parseInt(req.params.id), req.userId, req.organizationId!);
+    await SubscriptionService.cancelSubscription(parseInt(req.params.id), req.userId);
     res.json({ success: true });
   } catch (error: any) {
     console.error('[Subscription] Error canceling:', error);
