@@ -128,14 +128,14 @@ const SubscriptionsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-primary p-4 md:p-8">
       <div className="mb-8">
-        <div className="flex flex-row items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-4xl font-bold text-slate-50">Subscriptions & Memberships</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-50">Subscriptions & Memberships</h1>
             <HelpIcon text="Track all your recurring subscriptions and memberships in one place" position="right" />
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className={`flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+            className={`w-full sm:w-auto flex-shrink-0 inline-flex items-center justify-center sm:justify-start gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
               showForm
                 ? 'bg-slate-700 hover:bg-slate-600 text-slate-50'
                 : 'bg-blue-600 hover:bg-blue-700 text-white'
