@@ -357,7 +357,7 @@ const InvestmentsPage: React.FC = () => {
 
           {/* Individual Investments */}
           {portfolio.investments.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 pb-40">
               <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Holdings</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
