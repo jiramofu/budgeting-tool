@@ -182,18 +182,18 @@ const InvestmentsPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-2">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
-        <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
+          <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold"
+        >
+          {showForm ? '✕ Close' : '+ Add Investment'}
+        </button>
       </div>
-
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setShowForm(!showForm)}
-        className="fixed bottom-32 right-8 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-lg font-semibold z-50"
-      >
-        {showForm ? '✕ Close' : '+ Add Investment'}
-      </button>
 
       {error && <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 rounded">{error}</div>}
 
@@ -357,7 +357,7 @@ const InvestmentsPage: React.FC = () => {
 
           {/* Individual Investments */}
           {portfolio.investments.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 pb-40">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Holdings</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
