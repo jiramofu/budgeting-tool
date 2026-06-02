@@ -76,7 +76,9 @@ const GoalsPage: React.FC = () => {
   // Trigger confetti when a goal reaches 100% completion
   useEffect(() => {
     goals.forEach((goal) => {
+      console.log('🎯 [Confetti Check] Goal:', goal.name, '| Progress:', goal.progress_percentage, '| Already celebrated:', celebratedGoalsRef.current.has(goal.id));
       if (goal.progress_percentage >= 100 && !celebratedGoalsRef.current.has(goal.id)) {
+        console.log('🎉 [Confetti Trigger] TRIGGERING CONFETTI for goal:', goal.name);
         celebratedGoalsRef.current.add(goal.id);
         triggerConfetti();
       }
@@ -84,21 +86,28 @@ const GoalsPage: React.FC = () => {
   }, [goals]);
 
   const triggerConfetti = () => {
-    // Confetti from center
-    confetti({
-      particleCount: 100,
-      spread: 70,
-      origin: { y: 0.6 }
-    });
-
-    // Additional confetti burst
-    setTimeout(() => {
+    console.log('✨ [Confetti] Starting confetti animation...');
+    try {
+      // Confetti from center
       confetti({
-        particleCount: 50,
-        spread: 100,
+        particleCount: 100,
+        spread: 70,
         origin: { y: 0.6 }
       });
-    }, 250);
+      console.log('✨ [Confetti] First burst complete');
+
+      // Additional confetti burst
+      setTimeout(() => {
+        confetti({
+          particleCount: 50,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+        console.log('✨ [Confetti] Second burst complete');
+      }, 250);
+    } catch (err) {
+      console.error('❌ [Confetti] Error triggering confetti:', err);
+    }
   };
 
   const loadGoals = async () => {
