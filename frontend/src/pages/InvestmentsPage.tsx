@@ -137,6 +137,8 @@ const InvestmentsPage: React.FC = () => {
 
   const handleEdit = (inv: Investment) => {
     setEditingId(inv.id);
+    // Extract just the date part (yyyy-MM-dd) from the purchaseDate
+    const dateOnly = inv.purchaseDate.split('T')[0] || inv.purchaseDate;
     setFormData({
       name: inv.name,
       type: inv.type,
@@ -144,7 +146,7 @@ const InvestmentsPage: React.FC = () => {
       shares: inv.shares.toString(),
       purchasePrice: inv.purchasePrice.toString(),
       currentPrice: inv.currentPrice.toString(),
-      purchaseDate: inv.purchaseDate,
+      purchaseDate: dateOnly,
     });
     setShowForm(true);
   };
