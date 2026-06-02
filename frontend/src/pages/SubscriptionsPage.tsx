@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { useToast } from '../hooks/useToast';
+import { useTheme } from '../context/ThemeContext';
+import { useUserSettings } from '../hooks/useUserSettings';
 import { SkeletonCard } from '../components/ui/loaders';
 import { HelpIcon } from '../components/ui/tooltip';
+import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { formatCurrency } from '../utils/currencyFormatter';
 
 interface Subscription {
   id: number;
@@ -22,6 +26,8 @@ interface SubscriptionSummary {
 
 const SubscriptionsPage: React.FC = () => {
   const { success, error: showError } = useToast();
+  const { isDark } = useTheme();
+  const { currency } = useUserSettings();
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -113,43 +119,58 @@ const SubscriptionsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="min-h-screen bg-primary p-4 md:p-8">
         <SkeletonCard count={3} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subscriptions & Memberships</h1>
-          <HelpIcon text="Track all your recurring subscriptions and memberships in one place" position="right" />
+    <div className="min-h-screen bg-primary p-4 md:p-8">
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <h1 className="text-4xl font-bold text-slate-50">Subscriptions & Memberships</h1>
+            <HelpIcon text="Track all your recurring subscriptions and memberships in one place" position="right" />
+          </div>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              showForm
+                ? 'bg-slate-700 hover:bg-slate-600 text-slate-50'
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            <Plus className="w-5 h-5" />
+            {showForm ? 'Cancel' : 'Add Subscription'}
+          </button>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          {showForm ? 'Cancel' : 'Add Subscription'}
-        </button>
-      </div>
 
-      {error && <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 rounded">{error}</div>}
+        {error && (
+          <div className={`mt-6 p-4 rounded-lg border flex items-center gap-3 ${
+            isDark
+              ? 'bg-red-900/20 border-red-700/50 text-red-300'
+              : 'bg-red-100 border-red-300 text-red-700'
+          }`}>
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
       {/* Add Subscription Form */}
       {showForm && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add New Subscription</h2>
+        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+          <h2 className="text-xl font-bold mb-4 text-slate-50">Add New Subscription</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 type="text"
                 name="name"
-                placeholder="Service Name"
+                placeholder="Service Name (e.g., Netflix)"
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-700/50 text-slate-50 placeholder-slate-400 focus:outline-none focus:border-blue-500"
               />
               <input
                 type="number"
@@ -159,9 +180,14 @@ const SubscriptionsPage: React.FC = () => {
                 onChange={handleInputChange}
                 step="0.01"
                 required
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-700/50 text-slate-50 placeholder-slate-400 focus:outline-none focus:border-blue-500"
               />
-              <select name="billingCycle" value={formData.billingCycle} onChange={handleInputChange} className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+              <select
+                name="billingCycle"
+                value={formData.billingCycle}
+                onChange={handleInputChange}
+                className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-700/50 text-slate-50 focus:outline-none focus:border-blue-500"
+              >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -173,7 +199,7 @@ const SubscriptionsPage: React.FC = () => {
                 name="nextBillingDate"
                 value={formData.nextBillingDate}
                 onChange={handleInputChange}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="px-4 py-2 border border-slate-600 rounded-lg bg-slate-700/50 text-slate-50 focus:outline-none focus:border-blue-500"
               />
             </div>
             <textarea
@@ -181,53 +207,77 @@ const SubscriptionsPage: React.FC = () => {
               placeholder="Notes (optional)"
               value={formData.notes}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              className="w-full px-4 py-2 border border-slate-600 rounded-lg bg-slate-700/50 text-slate-50 placeholder-slate-400 focus:outline-none focus:border-blue-500"
               rows={3}
             ></textarea>
-            <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-              Add Subscription
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Add Subscription
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-50 rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         </div>
       )}
 
+      </div>
+
       {summary && (
-        <>
+        <div className="space-y-8">
           {/* Monthly & Yearly Commitment */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-blue-50 dark:bg-blue-900 p-6 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">Monthly Commitment</div>
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">${Number(summary.monthlyCommitment).toFixed(2)}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">{summary.activeCount} active subscriptions</div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+              <div className="text-sm text-slate-400 mb-2">Monthly Commitment</div>
+              <div className="text-3xl font-bold text-blue-400 mb-3">
+                {formatCurrency(Number(summary.monthlyCommitment), currency)}
+              </div>
+              <div className="text-sm text-slate-400">{summary.activeCount} active subscriptions</div>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-900 p-6 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">Yearly Commitment</div>
-              <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">${Number(summary.yearlyCommitment).toFixed(2)}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">Per year total</div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+              <div className="text-sm text-slate-400 mb-2">Yearly Commitment</div>
+              <div className="text-3xl font-bold text-purple-400 mb-3">
+                {formatCurrency(Number(summary.yearlyCommitment), currency)}
+              </div>
+              <div className="text-sm text-slate-400">Per year total</div>
             </div>
-            <div className="bg-orange-50 dark:bg-orange-900 p-6 rounded-lg">
-              <div className="text-sm text-gray-600 dark:text-gray-400">Savings Opportunity</div>
-              <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">${(Number(summary.monthlyCommitment) * 12 * 0.1).toFixed(2)}</div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 mt-2">By eliminating unused</div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+              <div className="text-sm text-slate-400 mb-2">Savings Opportunity</div>
+              <div className="text-3xl font-bold text-amber-400 mb-3">
+                {formatCurrency(Number(summary.monthlyCommitment) * 12 * 0.1, currency)}
+              </div>
+              <div className="text-sm text-slate-400">By eliminating unused</div>
             </div>
           </div>
 
           {/* Cancellation Opportunities */}
           {summary.cancellationOpportunities.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border-l-4 border-orange-400">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">💰 Potential Savings</h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <div className="bg-slate-800/50 border-l-4 border-amber-500 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+              <h2 className="text-2xl font-bold mb-2 text-slate-50">💰 Potential Savings</h2>
+              <p className="text-slate-400 mb-4">
                 These subscriptions might be forgotten or underutilized. Consider canceling to save money.
               </p>
               <div className="space-y-3">
                 {summary.cancellationOpportunities.map((opp) => (
-                  <div key={opp.name} className="flex justify-between items-center bg-orange-50 dark:bg-orange-900 p-3 rounded border border-orange-200 dark:border-orange-800">
+                  <div key={opp.name} className="flex justify-between items-center bg-amber-900/20 border border-amber-700/50 p-4 rounded-lg">
                     <div>
-                      <div className="font-bold text-gray-900 dark:text-white">{opp.name}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">${Number(opp.amount).toFixed(2)}/month</div>
+                      <div className="font-bold text-slate-50">{opp.name}</div>
+                      <div className="text-sm text-slate-400 mt-1">
+                        {formatCurrency(Number(opp.amount), currency)}/month
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-sm text-orange-600 dark:text-orange-400">Potential: ${(Number(opp.amount) * 12).toFixed(2)}/year</div>
+                      <div className="text-sm text-amber-400 font-medium">
+                        Potential: {formatCurrency(Number(opp.amount) * 12, currency)}/year
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -237,28 +287,34 @@ const SubscriptionsPage: React.FC = () => {
 
           {/* Active Subscriptions */}
           {summary.subscriptions.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Active Subscriptions</h2>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-6 backdrop-blur-sm">
+              <h2 className="text-2xl font-bold mb-4 text-slate-50">Active Subscriptions</h2>
               <div className="space-y-3">
                 {summary.subscriptions.map((sub) => {
                   const nextDate = new Date(sub.nextBillingDate);
                   const today = new Date();
                   const daysUntil = Math.ceil((nextDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                   return (
-                    <div key={sub.id} className="border border-gray-200 dark:border-gray-700 rounded p-4 flex justify-between items-center bg-white dark:bg-gray-800">
-                      <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white">{sub.name}</h3>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <div
+                      key={sub.id}
+                      className="border border-slate-700 rounded-lg p-4 flex justify-between items-center bg-slate-700/30 hover:bg-slate-700/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-bold text-slate-50">{sub.name}</h3>
+                        <div className="text-sm text-slate-400 mt-1">
                           <span className="capitalize mr-4">{sub.billingCycle}</span>
-                          <span>Next billing: {nextDate.toLocaleDateString()} ({daysUntil} days)</span>
+                          <span>Next: {nextDate.toLocaleDateString()} ({daysUntil} days)</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">${Number(sub.amount).toFixed(2)}</div>
+                      <div className="text-right ml-4">
+                        <div className="text-lg font-bold text-blue-400">
+                          {formatCurrency(Number(sub.amount), currency)}
+                        </div>
                         <button
-                          onClick={() => handleCancel(sub.id)}
-                          className="text-sm text-red-600 hover:text-red-700 mt-2"
+                          onClick={() => handleCancel(sub.id!)}
+                          className="inline-flex items-center gap-1 text-sm text-red-400 hover:text-red-300 mt-2 transition-colors"
                         >
+                          <Trash2 className="w-4 h-4" />
                           Cancel
                         </button>
                       </div>
@@ -268,12 +324,22 @@ const SubscriptionsPage: React.FC = () => {
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      {!summary || summary.subscriptions.length === 0 && (
-        <div className="text-center py-8 text-gray-600 dark:text-gray-400">No subscriptions tracked yet. Add your subscriptions to monitor costs.</div>
-      )}
+      {!summary || (summary.subscriptions.length === 0 && !showForm) ? (
+        <div className="text-center py-16">
+          <div className="text-slate-400 mb-4">No subscriptions tracked yet</div>
+          <p className="text-slate-500 mb-6">Add your subscriptions to monitor costs and find savings opportunities.</p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add Your First Subscription
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 };
