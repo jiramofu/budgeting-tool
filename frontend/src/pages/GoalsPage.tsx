@@ -121,6 +121,11 @@ const GoalsPage: React.FC = () => {
       summaryRes.data.goals.forEach((goal: any) => {
         console.log(`📊 [loadGoals] Goal: ${goal.name} | Progress: ${goal.progress_percentage}% | Current: ${goal.current_amount} | Target: ${goal.target_amount}`);
       });
+
+      // Clear celebrated goals so confetti can trigger again if progress changes
+      celebratedGoalsRef.current.clear();
+      console.log('🔄 [loadGoals] Cleared celebrated goals');
+
       setSummary(summaryRes.data);
       setGoals(summaryRes.data.goals);
     } catch (err: any) {
