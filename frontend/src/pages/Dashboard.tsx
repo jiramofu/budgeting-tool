@@ -124,7 +124,10 @@ const Dashboard: React.FC = () => {
       // Load income data for selected month
       try {
         const incomeRes = await apiClient.getIncomeByMonth(selectedMonth, selectedYear);
-        setIncomeData(incomeRes.data);
+        // incomeRes.data is an array, get the first (most recent) income record
+        const incomeArray = incomeRes.data || [];
+        const incomeRecord = incomeArray.length > 0 ? incomeArray[0] : null;
+        setIncomeData(incomeRecord);
       } catch (incomeErr: any) {
         if (incomeErr.response?.status === 404) {
           setIncomeData(null);
