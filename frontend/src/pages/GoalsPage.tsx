@@ -116,6 +116,11 @@ const GoalsPage: React.FC = () => {
       setError('');
 
       const summaryRes = await apiClient.getGoalSummary();
+      console.log('📊 [loadGoals] Summary received:', summaryRes.data);
+      console.log('📊 [loadGoals] Goals data:', summaryRes.data.goals);
+      summaryRes.data.goals.forEach((goal: any) => {
+        console.log(`📊 [loadGoals] Goal: ${goal.name} | Progress: ${goal.progress_percentage}% | Current: ${goal.current_amount} | Target: ${goal.target_amount}`);
+      });
       setSummary(summaryRes.data);
       setGoals(summaryRes.data.goals);
     } catch (err: any) {
