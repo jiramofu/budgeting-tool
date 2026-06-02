@@ -322,6 +322,19 @@ class ApiClient {
     });
   }
 
+  // Analytics endpoints
+  getAnalyticsForMonth(year: number, month: number) {
+    return this.client.get(`/phase4/analytics/month/${year}/${month}`);
+  }
+
+  getAnalyticsForYear(year: number) {
+    return this.client.get(`/phase4/analytics/year/${year}`);
+  }
+
+  getAnalyticsSummary() {
+    return this.client.get('/phase4/analytics/summary');
+  }
+
   // Generic methods
   get(url: string, config?: any) {
     return this.client.get(url, config);

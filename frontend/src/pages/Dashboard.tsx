@@ -11,6 +11,9 @@ import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { Tooltip, HelpIcon } from '../components/ui/tooltip';
 import { useTheme } from '../context/ThemeContext';
+import SavingsRateTrendChart from '../components/Charts/SavingsRateTrendChart';
+import IncomeVsSpendingChart from '../components/Charts/IncomeVsSpendingChart';
+import BudgetVsActualChart from '../components/Charts/BudgetVsActualChart';
 
 interface Budget {
   id: number;
@@ -426,6 +429,22 @@ const Dashboard: React.FC = () => {
             variant="success"
           />
         </Tooltip>
+      </div>
+
+      {/* Financial Insights Section */}
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold text-slate-50 mb-6">Financial Insights</h2>
+
+        {/* Insight Charts Grid - 2 columns on large screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <SavingsRateTrendChart />
+          <IncomeVsSpendingChart />
+        </div>
+
+        {/* Budget vs Actual Chart - Full width */}
+        <div className="mb-8">
+          <BudgetVsActualChart />
+        </div>
       </div>
 
       {/* Charts and details grid */}
