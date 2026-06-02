@@ -295,8 +295,6 @@ CREATE TABLE IF NOT EXISTS user_income (
 CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 CREATE INDEX idx_investments_user_id ON investments(user_id);
 CREATE INDEX idx_investments_type ON investments(type);
-CREATE INDEX idx_investments_user_org ON investments(user_id, organization_id);
-CREATE INDEX idx_investments_org_id ON investments(organization_id);
 CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX idx_subscriptions_next_billing ON subscriptions(next_billing_date);
 CREATE INDEX idx_subscriptions_is_active ON subscriptions(is_active);
