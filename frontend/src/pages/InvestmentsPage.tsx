@@ -194,7 +194,9 @@ const InvestmentsPage: React.FC = () => {
       {/* Add Investment Form */}
       {showForm && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add New Investment</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+            {editingId ? 'Edit Investment' : 'Add New Investment'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
@@ -262,7 +264,7 @@ const InvestmentsPage: React.FC = () => {
               />
             </div>
             <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-              Add Investment
+              {editingId ? 'Update Investment' : 'Add Investment'}
             </button>
           </form>
         </div>
