@@ -181,19 +181,18 @@ const InvestmentsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 w-full">
-      <div className="flex items-center justify-between gap-4 w-full">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white truncate">Investment Portfolio</h1>
-          <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-sm whitespace-nowrap flex-shrink-0"
-        >
-          {showForm ? '✕ Close' : '+ Add Investment'}
-        </button>
+    <div className="space-y-8">
+      <div className="flex items-center justify-start gap-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
+        <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
       </div>
+
+      <button
+        onClick={() => setShowForm(!showForm)}
+        className="fixed top-20 right-8 px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-sm z-40"
+      >
+        {showForm ? '✕ Close' : '+ Add Investment'}
+      </button>
 
       {error && <div className="p-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 rounded">{error}</div>}
 
