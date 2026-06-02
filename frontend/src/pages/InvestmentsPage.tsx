@@ -189,7 +189,7 @@ const InvestmentsPage: React.FC = () => {
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold"
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold text-sm"
         >
           {showForm ? '✕ Close' : '+ Add Investment'}
         </button>
