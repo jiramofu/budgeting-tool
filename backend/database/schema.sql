@@ -275,6 +275,21 @@ CREATE TABLE IF NOT EXISTS financial_snapshots (
   UNIQUE(user_id, snapshot_date)
 );
 
+-- User income table (gross pay, net pay, deductions per user per month)
+CREATE TABLE IF NOT EXISTS user_income (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  gross_pay DECIMAL(12, 2) NOT NULL,
+  net_pay DECIMAL(12, 2) NOT NULL,
+  deductions DECIMAL(12, 2) NOT NULL,
+  month INTEGER NOT NULL CHECK (month >= 1 AND month <= 12),
+  year INTEGER NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, month, year)
+);
+
 -- Create indexes for new tables
 CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 CREATE INDEX idx_investments_user_id ON investments(user_id);
@@ -286,6 +301,8 @@ CREATE INDEX idx_budget_rules_budget_id ON budget_rules(budget_id);
 CREATE INDEX idx_budget_rules_category_id ON budget_rules(category_id);
 CREATE INDEX idx_financial_snapshots_user_id ON financial_snapshots(user_id);
 CREATE INDEX idx_financial_snapshots_date ON financial_snapshots(snapshot_date);
+CREATE INDEX idx_user_income_user_id ON user_income(user_id);
+CREATE INDEX idx_user_income_month_year ON user_income(user_id, month, year);
 
 -- Notifications table
 CREATE TABLE IF NOT EXISTS notifications (

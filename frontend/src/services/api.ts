@@ -191,6 +191,35 @@ class ApiClient {
     return this.client.delete(`/goals/${goalId}`);
   }
 
+  // Income endpoints
+  getIncome() {
+    return this.client.get('/income');
+  }
+
+  getIncomeByMonth(month: number, year: number) {
+    return this.client.get(`/income/${month}/${year}`);
+  }
+
+  getIncomeForYear(year: number) {
+    return this.client.get(`/income/year/${year}`);
+  }
+
+  getCurrentMonthIncome() {
+    return this.client.get('/income/current/month');
+  }
+
+  createIncome(gross_pay: number, net_pay: number, deductions: number, month: number, year: number, notes?: string) {
+    return this.client.post('/income', { gross_pay, net_pay, deductions, month, year, notes });
+  }
+
+  updateIncome(incomeId: number, updates: any) {
+    return this.client.put(`/income/${incomeId}`, updates);
+  }
+
+  deleteIncome(incomeId: number) {
+    return this.client.delete(`/income/${incomeId}`);
+  }
+
   // Household endpoints
   getHouseholds() {
     return this.client.get('/households');

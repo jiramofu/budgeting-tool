@@ -5,10 +5,12 @@ import { formatCurrency } from '../utils/currencyFormatter';
 import { useUserSettings } from '../hooks/useUserSettings';
 import { useBudgetContext } from '../context/BudgetContext';
 import { MetricCard, SpendingByCategory, RecentTransactions, UpcomingBills } from '../components/dashboard';
-import { DollarSign, Wallet, TrendingUp, AlertCircle } from 'lucide-react';
+import { MonthSelector } from '../components/dashboard/MonthSelector';
+import { DollarSign, Wallet, TrendingUp, AlertCircle, Target, TrendingDown } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { SkeletonCard } from '../components/ui/loaders';
 import { Tooltip, HelpIcon } from '../components/ui/tooltip';
+import { useTheme } from '../context/ThemeContext';
 
 interface Budget {
   id: number;
@@ -37,13 +39,38 @@ interface DashboardMetrics {
   spendingTrend: number; // percentage change from last month
 }
 
+interface BillsSummary {
+  totalUpcoming: number;
+  billsDueThisMonth: number;
+  overdueBills: number;
+}
+
+interface GoalsSummary {
+  totalGoals: number;
+  activeGoals: number;
+  completedGoals: number;
+  overallProgress: number;
+}
+
+interface UserIncomeData {
+  gross_pay: number;
+  net_pay: number;
+  deductions: number;
+}
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { error: showError } = useToast();
   const { currency } = useUserSettings();
+  const { isDark } = useTheme();
   const budgetContext = useBudgetContext();
   const [budget, setBudget] = useState<Budget | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [incomeData, setIncomeData] = useState<UserIncomeData | null>(null);
+  const [billsSummary, setBillsSummary] = useState<BillsSummary | null>(null);
+  const [goalsSummary, setGoalsSummary] = useState<GoalsSummary | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalSpending: 0,
     budgetRemaining: 0,
@@ -57,7 +84,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   const loadDashboardData = async () => {
     try {
@@ -91,6 +118,34 @@ const Dashboard: React.FC = () => {
       const allTransactions = txnRes.data || [];
       setTransactions(allTransactions);
 
+      // Load income data for selected month
+      try {
+        const incomeRes = await apiClient.getIncomeByMonth(selectedMonth, selectedYear);
+        setIncomeData(incomeRes.data);
+      } catch (incomeErr: any) {
+        if (incomeErr.response?.status === 404) {
+          setIncomeData(null);
+        } else {
+          console.error('Error loading income:', incomeErr);
+        }
+      }
+
+      // Load bills summary
+      try {
+        const billsRes = await apiClient.getBillSummary();
+        setBillsSummary(billsRes.data);
+      } catch (billsErr) {
+        console.error('Error loading bills:', billsErr);
+      }
+
+      // Load goals summary
+      try {
+        const goalsRes = await apiClient.getGoalSummary();
+        setGoalsSummary(goalsRes.data);
+      } catch (goalsErr) {
+        console.error('Error loading goals:', goalsErr);
+      }
+
       // Calculate metrics
       calculateMetrics(allTransactions, currentBudget);
     } catch (err: any) {
@@ -104,47 +159,47 @@ const Dashboard: React.FC = () => {
   };
 
   const calculateMetrics = (txns: Transaction[], currentBudget: Budget | null) => {
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-
-    // Filter transactions for current month
-    const currentMonthTxns = txns.filter(tx => {
+    // Filter transactions for selected month
+    const selectedMonthTxns = txns.filter(tx => {
       const txDate = new Date(tx.transaction_date);
-      return txDate.getMonth() + 1 === currentMonth && txDate.getFullYear() === currentYear;
+      return txDate.getMonth() + 1 === selectedMonth && txDate.getFullYear() === selectedYear;
     });
 
     // Calculate spending and income
-    const totalSpending = currentMonthTxns
+    const totalSpending = selectedMonthTxns
       .filter(tx => tx.amount < 0)
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
-    const totalIncome = currentMonthTxns
+    const totalIncome = selectedMonthTxns
       .filter(tx => tx.amount > 0)
       .reduce((sum, tx) => sum + tx.amount, 0);
 
     // Calculate average daily spending
-    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-    const daysElapsed = Math.max(1, now.getDate());
-    const avgDailySpending = totalSpending / daysElapsed;
+    const now = new Date();
+    const isCurrentMonth = selectedMonth === now.getMonth() + 1 && selectedYear === now.getFullYear();
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const daysElapsed = isCurrentMonth ? Math.max(1, now.getDate()) : daysInMonth;
+    const avgDailySpending = daysElapsed > 0 ? totalSpending / daysElapsed : 0;
 
-    // Budget limit: Use context income if available, otherwise default to 5000
-    const budgetLimit = budgetContext.incomeData?.availableForBudget || 5000;
+    // Budget limit: Use income data if available, otherwise use context income, else default to 5000
+    const budgetLimit = incomeData?.net_pay || budgetContext.incomeData?.availableForBudget || 5000;
     const budgetRemaining = Math.max(0, budgetLimit - totalSpending);
 
-    // Calculate spending trend (compare to last month)
-    const lastMonthStart = new Date(currentYear, currentMonth - 2, 1);
-    const lastMonthEnd = new Date(currentYear, currentMonth - 1, 0);
-    const lastMonthTxns = txns.filter(tx => {
+    // Calculate spending trend (compare to previous month)
+    const prevMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
+    const prevYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
+    const prevMonthStart = new Date(prevYear, prevMonth - 1, 1);
+    const prevMonthEnd = new Date(prevYear, prevMonth, 0);
+    const prevMonthTxns = txns.filter(tx => {
       const txDate = new Date(tx.transaction_date);
-      return txDate >= lastMonthStart && txDate <= lastMonthEnd;
+      return txDate >= prevMonthStart && txDate <= prevMonthEnd;
     });
-    const lastMonthSpending = lastMonthTxns
+    const prevMonthSpending = prevMonthTxns
       .filter(tx => tx.amount < 0)
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
-    const spendingTrend = lastMonthSpending > 0
-      ? Math.round(((totalSpending - lastMonthSpending) / lastMonthSpending) * 100)
+    const spendingTrend = prevMonthSpending > 0
+      ? Math.round(((totalSpending - prevMonthSpending) / prevMonthSpending) * 100)
       : 0;
 
     setMetrics({
@@ -193,14 +248,20 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-primary p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
           <div>
-            <h1 className="text-4xl font-bold text-slate-50 mb-1">Dashboard</h1>
-            <p className="text-slate-400">
-              {budget && formatMonth(budget.month, budget.year)}
-            </p>
+            <h1 className="text-4xl font-bold text-slate-50 mb-3">Dashboard</h1>
+            <MonthSelector
+              month={selectedMonth}
+              year={selectedYear}
+              onMonthChange={(month, year) => {
+                setSelectedMonth(month);
+                setSelectedYear(year);
+              }}
+              isDark={isDark}
+            />
           </div>
-          <div className="flex flex-col items-start md:items-end gap-2">
+          <div className="flex flex-col items-start lg:items-end gap-2">
             <div className="text-2xl font-bold text-slate-50">
               {formatCurrency(metrics.totalSpending, currency)}
             </div>
@@ -233,9 +294,29 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Metrics Grid - Row 1: Income & Spending */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Tooltip content="Total expenses for the current month" position="bottom">
+        <Tooltip content="Total gross income for the selected month" position="bottom">
+          <MetricCard
+            title="Gross Income"
+            value={incomeData ? formatCurrency(incomeData.gross_pay, currency) : '—'}
+            subtitle={incomeData ? `Net: ${formatCurrency(incomeData.net_pay, currency)}` : 'No data'}
+            icon={<DollarSign className="w-5 h-5" />}
+            variant="success"
+          />
+        </Tooltip>
+
+        <Tooltip content="Deductions from gross income (taxes, etc.)" position="bottom">
+          <MetricCard
+            title="Deductions"
+            value={incomeData ? formatCurrency(incomeData.deductions, currency) : '—'}
+            subtitle={incomeData ? `${((incomeData.deductions / incomeData.gross_pay) * 100).toFixed(1)}% of gross` : 'No data'}
+            icon={<TrendingDown className="w-5 h-5" />}
+            variant="default"
+          />
+        </Tooltip>
+
+        <Tooltip content="Total expenses for the selected month" position="bottom">
           <MetricCard
             title="Total Spending"
             value={formatCurrency(metrics.totalSpending, currency)}
@@ -244,37 +325,103 @@ const Dashboard: React.FC = () => {
             trend={{
               direction: metrics.spendingTrend > 0 ? 'up' : 'down',
               percent: Math.abs(metrics.spendingTrend),
-              label: 'vs last month',
+              label: 'vs prev month',
             }}
             variant={budgetPercentage >= 100 ? 'danger' : budgetPercentage >= 80 ? 'warning' : 'default'}
           />
         </Tooltip>
 
-        <Tooltip content="How much budget you have left this month" position="bottom">
+        <Tooltip content="How much budget you have left" position="bottom">
           <MetricCard
             title="Budget Remaining"
             value={formatCurrency(metrics.budgetRemaining, currency)}
-            subtitle={metrics.budgetRemaining > 0 ? 'You\'re on track' : 'Over budget'}
+            subtitle={metrics.budgetRemaining > 0 ? 'On track' : 'Over budget'}
             icon={<Wallet className="w-5 h-5" />}
             variant={metrics.budgetRemaining > 0 ? 'success' : 'danger'}
           />
         </Tooltip>
+      </div>
 
-        <Tooltip content="Average spending per day based on days elapsed" position="bottom">
+      {/* Metrics Grid - Row 2: Financial Health & Goals */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Tooltip content="Percentage of income spent this month" position="bottom">
+          <MetricCard
+            title="Budget Status"
+            value={`${budgetPercentage}%`}
+            subtitle={budgetPercentage > 100 ? 'Over budget' : 'Within budget'}
+            icon={<Wallet className="w-5 h-5" />}
+            variant={budgetPercentage > 100 ? 'danger' : budgetPercentage > 80 ? 'warning' : 'success'}
+          />
+        </Tooltip>
+
+        <Tooltip content="(Income - Spending) / Income * 100" position="bottom">
+          <MetricCard
+            title="Savings Rate"
+            value={incomeData ? `${Math.max(0, ((incomeData.net_pay - metrics.totalSpending) / incomeData.net_pay) * 100).toFixed(1)}%` : '—'}
+            subtitle={incomeData && incomeData.net_pay > metrics.totalSpending ? 'Good savings' : 'Review spending'}
+            icon={<TrendingUp className="w-5 h-5" />}
+            variant={incomeData && incomeData.net_pay > metrics.totalSpending ? 'success' : 'warning'}
+          />
+        </Tooltip>
+
+        <Tooltip content="Active financial goals in progress" position="bottom">
+          <MetricCard
+            title="Active Goals"
+            value={goalsSummary?.activeGoals ?? '0'}
+            subtitle={goalsSummary ? `${goalsSummary.completedGoals} completed` : 'Loading...'}
+            icon={<Target className="w-5 h-5" />}
+            variant="default"
+          />
+        </Tooltip>
+
+        <Tooltip content="Overall progress toward all financial goals" position="bottom">
+          <MetricCard
+            title="Goals Progress"
+            value={goalsSummary ? `${goalsSummary.overallProgress.toFixed(1)}%` : '—'}
+            subtitle={goalsSummary ? `of ${goalsSummary.totalGoals} goals` : 'No data'}
+            icon={<Target className="w-5 h-5" />}
+            variant="success"
+          />
+        </Tooltip>
+      </div>
+
+      {/* Metrics Grid - Row 3: Bills & Daily Average */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Tooltip content="Bills due this month" position="bottom">
+          <MetricCard
+            title="Bills Due This Month"
+            value={formatCurrency(billsSummary?.billsDueThisMonth ?? 0, currency)}
+            subtitle={`${billsSummary?.overdueBills ?? 0} overdue`}
+            icon={<DollarSign className="w-5 h-5" />}
+            variant={billsSummary && billsSummary.overdueBills > 0 ? 'danger' : 'default'}
+          />
+        </Tooltip>
+
+        <Tooltip content="Total upcoming bills in next 30 days" position="bottom">
+          <MetricCard
+            title="Total Upcoming"
+            value={formatCurrency(billsSummary?.totalUpcoming ?? 0, currency)}
+            subtitle="Next 30 days"
+            icon={<AlertCircle className="w-5 h-5" />}
+            variant="default"
+          />
+        </Tooltip>
+
+        <Tooltip content="Average spending per day this month" position="bottom">
           <MetricCard
             title="Average Daily"
             value={formatCurrency(metrics.avgDailySpending, currency)}
-            subtitle="This month"
+            subtitle="Per day (selected month)"
             icon={<TrendingUp className="w-5 h-5" />}
             variant="default"
           />
         </Tooltip>
 
-        <Tooltip content="Total income received this month" position="bottom">
+        <Tooltip content="Cumulative income for selected month" position="bottom">
           <MetricCard
-            title="Income"
-            value={formatCurrency(metrics.income, currency)}
-            subtitle="This month"
+            title="Net Income"
+            value={incomeData ? formatCurrency(incomeData.net_pay, currency) : formatCurrency(metrics.income, currency)}
+            subtitle="Selected month"
             icon={<DollarSign className="w-5 h-5" />}
             variant="success"
           />
