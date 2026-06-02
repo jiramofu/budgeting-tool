@@ -114,14 +114,14 @@ const InvestmentsPage: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-2">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Investment Portfolio</h1>
           <HelpIcon text="Track your investments and monitor their performance over time" position="right" />
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
         >
           {showForm ? 'Cancel' : 'Add Investment'}
         </button>
