@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS subscriptions (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+  organization_id INTEGER,
   name VARCHAR(255) NOT NULL,
   amount DECIMAL(12, 2) NOT NULL,
   billing_cycle VARCHAR(20) NOT NULL CHECK (billing_cycle IN ('daily', 'weekly', 'monthly', 'quarterly', 'yearly')),
