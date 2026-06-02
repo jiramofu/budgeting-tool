@@ -164,6 +164,80 @@ export class InvestmentService {
     }
   }
 
+  static async updateInvestment(investmentId: number, investment: Partial<Investment>): Promise<Investment> {
+    try {
+      const updates: string[] = [];
+      const values: any[] = [];
+      let paramCount = 1;
+
+      if (investment.name !== undefined) {
+        updates.push(`name = $${paramCount}`);
+        values.push(investment.name);
+        paramCount++;
+      }
+      if (investment.type !== undefined) {
+        updates.push(`type = $${paramCount}`);
+        values.push(investment.type);
+        paramCount++;
+      }
+      if (investment.ticker !== undefined) {
+        updates.push(`ticker = $${paramCount}`);
+        values.push(investment.ticker);
+        paramCount++;
+      }
+      if (investment.shares !== undefined) {
+        updates.push(`shares = $${paramCount}`);
+        values.push(investment.shares);
+        paramCount++;
+      }
+      if (investment.purchasePrice !== undefined) {
+        updates.push(`purchase_price = $${paramCount}`);
+        values.push(investment.purchasePrice);
+        paramCount++;
+      }
+      if (investment.currentPrice !== undefined) {
+        updates.push(`current_price = $${paramCount}`);
+        values.push(investment.currentPrice);
+        paramCount++;
+      }
+      if (investment.purchaseDate !== undefined) {
+        updates.push(`purchase_date = $${paramCount}`);
+        values.push(investment.purchaseDate);
+        paramCount++;
+      }
+
+      if (updates.length === 0) {
+        throw new Error('No fields to update');
+      }
+
+      values.push(investmentId);
+      const updateQuery = `UPDATE investments SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at`;
+
+      const result = await query(updateQuery, values);
+
+      if (result.rows.length === 0) {
+        throw new Error('Investment not found');
+      }
+
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        name: row.name,
+        type: row.type,
+        ticker: row.ticker,
+        shares: Number(row.shares),
+        purchasePrice: Number(row.purchase_price),
+        currentPrice: Number(row.current_price),
+        purchaseDate: row.purchase_date,
+        createdAt: row.created_at,
+      };
+    } catch (error) {
+      console.error('[Investment] Error updating investment:', error);
+      throw error;
+    }
+  }
+
   static async deleteInvestment(investmentId: number): Promise<void> {
     try {
       await query(

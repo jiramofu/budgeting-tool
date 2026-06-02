@@ -42,6 +42,22 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Update investment (all fields)
+router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  console.log('[Investment] PUT investment');
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const investment = await InvestmentService.updateInvestment(parseInt(req.params.id), req.body);
+    res.json(investment);
+  } catch (error: any) {
+    console.error('[Investment] Error updating investment:', error);
+    res.status(500).json({ error: 'Failed to update investment: ' + error.message });
+  }
+});
+
 // Update investment price
 router.put('/:id/price', authenticate, async (req: AuthRequest, res: Response) => {
   console.log('[Investment] PUT investment price');

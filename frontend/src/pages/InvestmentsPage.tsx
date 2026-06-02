@@ -33,6 +33,7 @@ const InvestmentsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     type: 'stocks',
@@ -94,7 +95,7 @@ const InvestmentsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.post('/investments', {
+      const investmentData = {
         name: formData.name,
         type: formData.type,
         ticker: formData.ticker || undefined,
@@ -102,9 +103,18 @@ const InvestmentsPage: React.FC = () => {
         purchasePrice: parseFloat(formData.purchasePrice),
         currentPrice: parseFloat(formData.currentPrice),
         purchaseDate: formData.purchaseDate,
-      });
+      };
 
-      success('Investment added successfully');
+      if (editingId) {
+        // Update existing investment
+        await apiClient.put(`/investments/${editingId}`, investmentData);
+        success('Investment updated successfully');
+      } else {
+        // Add new investment
+        await apiClient.post('/investments', investmentData);
+        success('Investment added successfully');
+      }
+
       setFormData({
         name: '',
         type: 'stocks',
@@ -115,10 +125,42 @@ const InvestmentsPage: React.FC = () => {
         purchaseDate: new Date().toISOString().split('T')[0],
       });
       setShowForm(false);
+      setEditingId(null);
       await loadPortfolio();
     } catch (err: any) {
-      console.error('Failed to add investment:', err);
-      const errorMsg = 'Failed to add investment';
+      console.error('Failed to save investment:', err);
+      const errorMsg = editingId ? 'Failed to update investment' : 'Failed to add investment';
+      setError(errorMsg);
+      showError(errorMsg);
+    }
+  };
+
+  const handleEdit = (inv: Investment) => {
+    setEditingId(inv.id);
+    setFormData({
+      name: inv.name,
+      type: inv.type,
+      ticker: inv.ticker || '',
+      shares: inv.shares.toString(),
+      purchasePrice: inv.purchasePrice.toString(),
+      currentPrice: inv.currentPrice.toString(),
+      purchaseDate: inv.purchaseDate,
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (investmentId: number) => {
+    if (!window.confirm('Are you sure you want to delete this investment?')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/investments/${investmentId}`);
+      success('Investment deleted successfully');
+      await loadPortfolio();
+    } catch (err: any) {
+      console.error('Failed to delete investment:', err);
+      const errorMsg = 'Failed to delete investment';
       setError(errorMsg);
       showError(errorMsg);
     }
@@ -301,6 +343,7 @@ const InvestmentsPage: React.FC = () => {
                       <th className="text-right py-2 text-gray-900 dark:text-white">Current Price</th>
                       <th className="text-right py-2 text-gray-900 dark:text-white">Value</th>
                       <th className="text-right py-2 text-gray-900 dark:text-white">Gain/Loss</th>
+                      <th className="text-center py-2 text-gray-900 dark:text-white">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -320,6 +363,20 @@ const InvestmentsPage: React.FC = () => {
                           <td className={`text-right font-bold ${gain >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                             {gain >= 0 ? '+' : ''}${Number(gain).toFixed(2)} ({gainPercent > 0 ? '+' : ''}
                             {gainPercent.toFixed(1)}%)
+                          </td>
+                          <td className="text-center py-3 space-x-2">
+                            <button
+                              onClick={() => handleEdit(inv)}
+                              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(inv.id)}
+                              className="px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       );
