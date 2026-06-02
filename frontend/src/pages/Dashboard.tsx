@@ -124,11 +124,22 @@ const Dashboard: React.FC = () => {
       // Load income data for selected month
       try {
         const incomeRes = await apiClient.getIncomeByMonth(selectedMonth, selectedYear);
-        // incomeRes.data is an array, get the first (most recent) income record
-        const incomeArray = incomeRes.data || [];
-        const incomeRecord = incomeArray.length > 0 ? incomeArray[0] : null;
+        console.log('[Dashboard] Income API response:', { data: incomeRes.data, fullRes: incomeRes });
+
+        // incomeRes.data could be an array or a single object
+        let incomeRecord = null;
+        if (Array.isArray(incomeRes.data)) {
+          // If it's an array, get the first record
+          incomeRecord = incomeRes.data.length > 0 ? incomeRes.data[0] : null;
+        } else if (incomeRes.data && typeof incomeRes.data === 'object') {
+          // If it's a single object, use it directly
+          incomeRecord = incomeRes.data;
+        }
+
+        console.log('[Dashboard] Extracted income record:', incomeRecord);
         setIncomeData(incomeRecord);
       } catch (incomeErr: any) {
+        console.error('[Dashboard] Income fetch error:', incomeErr);
         if (incomeErr.response?.status === 404) {
           setIncomeData(null);
         } else {
