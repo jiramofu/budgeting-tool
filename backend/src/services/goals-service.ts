@@ -200,8 +200,10 @@ export class GoalsService {
         throw new Error('Goal not found');
       }
 
-      const newAmount = Math.min(goal.current_amount + amount, goal.target_amount);
-      const progressPercentage = (newAmount / goal.target_amount) * 100;
+      const currentAmountNum = parseFloat(String(goal.current_amount));
+      const targetAmountNum = parseFloat(String(goal.target_amount));
+      const newAmount = Math.min(currentAmountNum + amount, targetAmountNum);
+      const progressPercentage = (newAmount / targetAmountNum) * 100;
       console.log('🔵 [GoalsService.addProgress] Calculated values:', { newAmount, progressPercentage });
 
       console.log('🔵 [GoalsService.addProgress] EXECUTING UPDATE QUERY...');
