@@ -69,6 +69,26 @@ const InvestmentsPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
+
+    // Fetch stock price if ticker is entered and at least 1 character
+    if (name === 'ticker' && value && value.trim().length > 0) {
+      fetchStockPrice(value.trim());
+    }
+  };
+
+  const fetchStockPrice = async (ticker: string) => {
+    try {
+      const response = await apiClient.get(`/investments/stock-price/${ticker}`);
+      if (response.data && response.data.currentPrice) {
+        setFormData((prev) => ({
+          ...prev,
+          currentPrice: response.data.currentPrice.toString(),
+        }));
+      }
+    } catch (err: any) {
+      console.warn(`Could not fetch price for ${ticker}:`, err.message);
+      // Fail silently - user can enter price manually
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
