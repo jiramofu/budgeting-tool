@@ -136,8 +136,8 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleSaveIncome = async () => {
-    if (!grossPay || !netPay || !deductions) {
-      setErrorMessage('Please fill in all required income fields');
+    if (!grossPay || !netPay) {
+      setErrorMessage('Please fill in Gross Pay and Net Pay');
       return;
     }
 
@@ -146,12 +146,15 @@ const SettingsPage: React.FC = () => {
     setSuccessMessage('');
 
     try {
+      // Calculate deductions: Gross Pay - Net Pay
+      const calculatedDeductions = Math.max(0, parseFloat(grossPay) - parseFloat(netPay));
+
       if (editingIncomeId) {
         // Update existing income
         await apiClient.updateIncome(editingIncomeId, {
           gross_pay: parseFloat(grossPay),
           net_pay: parseFloat(netPay),
-          deductions: parseFloat(deductions),
+          deductions: calculatedDeductions,
           notes,
         });
         setSuccessMessage(`Income updated for ${getMonthName(incomeMonth)} ${incomeYear}!`);
@@ -161,7 +164,7 @@ const SettingsPage: React.FC = () => {
         await apiClient.createIncome(
           parseFloat(grossPay),
           parseFloat(netPay),
-          parseFloat(deductions),
+          calculatedDeductions,
           incomeMonth,
           incomeYear,
           notes
@@ -185,6 +188,28 @@ const SettingsPage: React.FC = () => {
     } finally {
       setSavingIncome(false);
     }
+  };
+
+  // Auto-calculate deductions when gross or net pay changes
+  const calculateDeductions = (gross: string, net: string) => {
+    if (gross && net) {
+      const grossNum = parseFloat(gross);
+      const netNum = parseFloat(net);
+      if (!isNaN(grossNum) && !isNaN(netNum)) {
+        const calc = Math.max(0, grossNum - netNum);
+        setDeductions(calc.toFixed(2));
+      }
+    }
+  };
+
+  const handleGrossPayChange = (value: string) => {
+    setGrossPay(value);
+    calculateDeductions(value, netPay);
+  };
+
+  const handleNetPayChange = (value: string) => {
+    setNetPay(value);
+    calculateDeductions(grossPay, value);
   };
 
   const handleEditIncome = (entry: any) => {
@@ -421,42 +446,45 @@ const SettingsPage: React.FC = () => {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Gross Pay
+                      Gross Pay *
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={grossPay}
-                      onChange={(e) => setGrossPay(e.target.value)}
+                      onChange={(e) => handleGrossPayChange(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="5000.00"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Net Pay
+                      Net Pay *
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={netPay}
-                      onChange={(e) => setNetPay(e.target.value)}
+                      onChange={(e) => handleNetPayChange(e.target.value)}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="4000.00"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Deductions
+                      Deductions (Auto-calculated)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={deductions}
-                      onChange={(e) => setDeductions(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                      placeholder="1000.00"
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 focus:outline-none cursor-not-allowed"
+                      placeholder="0.00"
                     />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Calculated as: Gross Pay - Net Pay
+                    </p>
                   </div>
                 </div>
 
