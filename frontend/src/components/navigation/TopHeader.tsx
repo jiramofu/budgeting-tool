@@ -192,7 +192,9 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onToggleSidebar }) => {
                   ${isDark ? 'border-slate-700' : 'border-slate-200'}
                 `}>
                   <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                    {user?.email}
+                    {user?.firstName && user?.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.email}
                   </p>
                 </div>
 
