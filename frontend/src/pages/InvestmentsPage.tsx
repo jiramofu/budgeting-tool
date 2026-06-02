@@ -184,7 +184,7 @@ const InvestmentsPage: React.FC = () => {
       {/* Floating Action Button */}
       <button
         onClick={() => setShowForm(!showForm)}
-        className="fixed bottom-8 right-8 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-lg font-semibold z-50"
+        className="fixed bottom-32 right-8 px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow-lg font-semibold z-50"
       >
         {showForm ? '✕ Close' : '+ Add Investment'}
       </button>
