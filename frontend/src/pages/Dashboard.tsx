@@ -282,6 +282,13 @@ const Dashboard: React.FC = () => {
           </div>
         )}
 
+        {!incomeData && (
+          <div className="bg-blue-900/20 border border-blue-700/50 text-blue-300 px-4 py-3 rounded-lg flex items-center gap-2 mb-6">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>Budget is using default limit ($5,000). <a href="/settings" className="underline hover:text-blue-200">Enter your income in Settings</a> to set budget based on your net pay.</span>
+          </div>
+        )}
+
         {/* Budget progress bar */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
