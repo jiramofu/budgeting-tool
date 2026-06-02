@@ -70,25 +70,24 @@ const InvestmentsPage: React.FC = () => {
       ...prev,
       [name]: value,
     }));
-
-    // Fetch stock price if ticker is entered and at least 1 character
-    if (name === 'ticker' && value && value.trim().length > 0) {
-      fetchStockPrice(value.trim());
-    }
   };
 
   const fetchStockPrice = async (ticker: string) => {
     try {
+      console.log(`[Stock Price] Fetching price for ${ticker}`);
       const response = await apiClient.get(`/investments/stock-price/${ticker}`);
+      console.log(`[Stock Price] Response:`, response.data);
       if (response.data && response.data.currentPrice) {
+        console.log(`[Stock Price] Setting price to ${response.data.currentPrice}`);
         setFormData((prev) => ({
           ...prev,
           currentPrice: response.data.currentPrice.toString(),
         }));
+        success(`Stock price fetched: $${response.data.currentPrice.toFixed(2)}`);
       }
     } catch (err: any) {
-      console.warn(`Could not fetch price for ${ticker}:`, err.message);
-      // Fail silently - user can enter price manually
+      console.error(`[Stock Price] Error fetching price for ${ticker}:`, err);
+      showError(`Could not fetch price for ${ticker}`);
     }
   };
 
@@ -222,9 +221,14 @@ const InvestmentsPage: React.FC = () => {
               <input
                 type="text"
                 name="ticker"
-                placeholder="Ticker (optional)"
+                placeholder="Ticker (e.g., AAPL, MSFT)"
                 value={formData.ticker}
                 onChange={handleInputChange}
+                onBlur={(e) => {
+                  if (e.target.value && e.target.value.trim().length > 0) {
+                    fetchStockPrice(e.target.value.trim());
+                  }
+                }}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
               <input
@@ -247,16 +251,22 @@ const InvestmentsPage: React.FC = () => {
                 required
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              <input
-                type="number"
-                name="currentPrice"
-                placeholder="Current Price"
-                value={formData.currentPrice}
-                onChange={handleInputChange}
-                step="0.01"
-                required
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              />
+              {editingId ? (
+                <input
+                  type="number"
+                  name="currentPrice"
+                  placeholder="Current Price"
+                  value={formData.currentPrice}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  required
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+              ) : (
+                <div className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm">
+                  Current Price: {formData.currentPrice ? `$${Number(formData.currentPrice).toFixed(2)}` : 'Enter ticker to fetch price'}
+                </div>
+              )}
               <input
                 type="date"
                 name="purchaseDate"
