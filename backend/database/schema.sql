@@ -217,6 +217,7 @@ CREATE TABLE IF NOT EXISTS user_settings (
 CREATE TABLE IF NOT EXISTS investments (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   ticker VARCHAR(20),
   type VARCHAR(30) NOT NULL CHECK (type IN ('stocks', 'bonds', 'mutual_funds', 'etf', 'crypto', 'real_estate', 'other')),
@@ -294,6 +295,8 @@ CREATE TABLE IF NOT EXISTS user_income (
 CREATE INDEX idx_user_settings_user_id ON user_settings(user_id);
 CREATE INDEX idx_investments_user_id ON investments(user_id);
 CREATE INDEX idx_investments_type ON investments(type);
+CREATE INDEX idx_investments_user_org ON investments(user_id, organization_id);
+CREATE INDEX idx_investments_org_id ON investments(organization_id);
 CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX idx_subscriptions_next_billing ON subscriptions(next_billing_date);
 CREATE INDEX idx_subscriptions_is_active ON subscriptions(is_active);

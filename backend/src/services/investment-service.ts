@@ -94,7 +94,7 @@ export class InvestmentService {
     }
   }
 
-  static async addInvestment(userId: number, investment: Investment, organizationId?: number): Promise<Investment> {
+  static async addInvestment(userId: number, investment: Partial<Investment> & { organizationId?: number }): Promise<Investment> {
     try {
       const result = await query(
         `INSERT INTO investments (user_id, organization_id, name, type, ticker, shares, purchase_price, current_price, purchase_date)
@@ -102,7 +102,7 @@ export class InvestmentService {
          RETURNING id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at`,
         [
           userId,
-          organizationId || null,
+          investment.organizationId || null,
           investment.name,
           investment.type,
           investment.ticker,
@@ -132,14 +132,14 @@ export class InvestmentService {
     }
   }
 
-  static async updateInvestmentPrice(investmentId: number, userId: number, currentPrice: number, organizationId?: number): Promise<Investment> {
+  static async updateInvestmentPrice(investmentId: number, currentPrice: number, organizationId?: number): Promise<Investment> {
     try {
       const result = await query(
         `UPDATE investments
          SET current_price = $1
-         WHERE id = $2 AND user_id = $3 ${organizationId ? 'AND organization_id = $4' : ''}
+         WHERE id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
          RETURNING id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at`,
-        organizationId ? [currentPrice, investmentId, userId, organizationId] : [currentPrice, investmentId, userId]
+        organizationId ? [currentPrice, investmentId, organizationId] : [currentPrice, investmentId]
       );
 
       if (result.rows.length === 0) {
@@ -165,11 +165,11 @@ export class InvestmentService {
     }
   }
 
-  static async deleteInvestment(investmentId: number, userId: number, organizationId?: number): Promise<void> {
+  static async deleteInvestment(investmentId: number, organizationId?: number): Promise<void> {
     try {
       await query(
-        `DELETE FROM investments WHERE id = $1 AND user_id = $2 ${organizationId ? 'AND organization_id = $3' : ''}`,
-        organizationId ? [investmentId, userId, organizationId] : [investmentId, userId]
+        `DELETE FROM investments WHERE id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
+        organizationId ? [investmentId, organizationId] : [investmentId]
       );
     } catch (error) {
       console.error('[Investment] Error deleting investment:', error);
