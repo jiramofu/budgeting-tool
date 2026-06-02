@@ -9,14 +9,14 @@ const router = Router();
 console.log('[Investment Routes] Loading investment routes...');
 
 // Get portfolio summary
-router.get('/portfolio', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.get('/portfolio', authenticate, async (req: AuthRequest, res: Response) => {
   console.log('[Investment] GET portfolio');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const summary = await InvestmentService.getPortfolioSummary(req.userId, req.organizationId!);
+    const summary = await InvestmentService.getPortfolioSummary(req.userId);
     res.json(summary);
   } catch (error: any) {
     console.error('[Investment] Error getting portfolio:', error);
@@ -25,18 +25,14 @@ router.get('/portfolio', authenticate, loadUserOrganizations, requireOrganizatio
 });
 
 // Add investment
-router.post('/', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   console.log('[Investment] POST investment');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const investment = await InvestmentService.addInvestment(req.userId, {
-      userId: req.userId,
-      organizationId: req.organizationId!,
-      ...req.body,
-    });
+    const investment = await InvestmentService.addInvestment(req.userId, req.body);
 
     res.json(investment);
   } catch (error: any) {
@@ -46,7 +42,7 @@ router.post('/', authenticate, loadUserOrganizations, requireOrganization, async
 });
 
 // Update investment price
-router.put('/:id/price', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.put('/:id/price', authenticate, async (req: AuthRequest, res: Response) => {
   console.log('[Investment] PUT investment price');
   try {
     if (!req.userId) {
@@ -58,7 +54,7 @@ router.put('/:id/price', authenticate, loadUserOrganizations, requireOrganizatio
       return res.status(400).json({ error: 'Missing currentPrice' });
     }
 
-    const investment = await InvestmentService.updateInvestmentPrice(parseInt(req.params.id), currentPrice, req.organizationId!);
+    const investment = await InvestmentService.updateInvestmentPrice(parseInt(req.params.id), currentPrice);
     res.json(investment);
   } catch (error: any) {
     console.error('[Investment] Error updating investment:', error);
@@ -67,14 +63,14 @@ router.put('/:id/price', authenticate, loadUserOrganizations, requireOrganizatio
 });
 
 // Delete investment
-router.delete('/:id', authenticate, loadUserOrganizations, requireOrganization, async (req: PermissionRequest, res: Response) => {
+router.delete('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   console.log('[Investment] DELETE investment');
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    await InvestmentService.deleteInvestment(parseInt(req.params.id), req.organizationId!);
+    await InvestmentService.deleteInvestment(parseInt(req.params.id));
     res.json({ success: true });
   } catch (error: any) {
     console.error('[Investment] Error deleting investment:', error);

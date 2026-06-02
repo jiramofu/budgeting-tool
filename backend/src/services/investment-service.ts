@@ -23,16 +23,16 @@ interface PortfolioSummary {
 }
 
 export class InvestmentService {
-  static async getPortfolioSummary(userId: number, organizationId?: number): Promise<PortfolioSummary> {
+  static async getPortfolioSummary(userId: number): Promise<PortfolioSummary> {
     try {
       const result = await query(
         `SELECT type,
                 SUM(CAST(shares AS NUMERIC) * CAST(current_price AS NUMERIC)) as total_value,
                 SUM(CAST(shares AS NUMERIC) * CAST(purchase_price AS NUMERIC)) as total_cost
          FROM investments
-         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
+         WHERE user_id = $1
          GROUP BY type`,
-        organizationId ? [userId, organizationId] : [userId]
+        [userId]
       );
 
       let totalValue = 0;
@@ -62,9 +62,9 @@ export class InvestmentService {
       const investmentsResult = await query(
         `SELECT id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at
          FROM investments
-         WHERE user_id = $1 ${organizationId ? 'AND organization_id = $2' : ''}
+         WHERE user_id = $1
          ORDER BY created_at DESC`,
-        organizationId ? [userId, organizationId] : [userId]
+        [userId]
       );
 
       const investments: Investment[] = investmentsResult.rows.map((row: any) => ({
@@ -94,15 +94,14 @@ export class InvestmentService {
     }
   }
 
-  static async addInvestment(userId: number, investment: Partial<Investment> & { organizationId?: number }): Promise<Investment> {
+  static async addInvestment(userId: number, investment: Partial<Investment>): Promise<Investment> {
     try {
       const result = await query(
-        `INSERT INTO investments (user_id, organization_id, name, type, ticker, shares, purchase_price, current_price, purchase_date)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO investments (user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at`,
         [
           userId,
-          investment.organizationId || null,
           investment.name,
           investment.type,
           investment.ticker,
@@ -132,14 +131,14 @@ export class InvestmentService {
     }
   }
 
-  static async updateInvestmentPrice(investmentId: number, currentPrice: number, organizationId?: number): Promise<Investment> {
+  static async updateInvestmentPrice(investmentId: number, currentPrice: number): Promise<Investment> {
     try {
       const result = await query(
         `UPDATE investments
          SET current_price = $1
-         WHERE id = $2 ${organizationId ? 'AND organization_id = $3' : ''}
+         WHERE id = $2
          RETURNING id, user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date, created_at`,
-        organizationId ? [currentPrice, investmentId, organizationId] : [currentPrice, investmentId]
+        [currentPrice, investmentId]
       );
 
       if (result.rows.length === 0) {
@@ -165,11 +164,11 @@ export class InvestmentService {
     }
   }
 
-  static async deleteInvestment(investmentId: number, organizationId?: number): Promise<void> {
+  static async deleteInvestment(investmentId: number): Promise<void> {
     try {
       await query(
-        `DELETE FROM investments WHERE id = $1 ${organizationId ? 'AND organization_id = $2' : ''}`,
-        organizationId ? [investmentId, organizationId] : [investmentId]
+        `DELETE FROM investments WHERE id = $1`,
+        [investmentId]
       );
     } catch (error) {
       console.error('[Investment] Error deleting investment:', error);
