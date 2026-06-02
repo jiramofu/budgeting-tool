@@ -231,18 +231,18 @@ ${categoryData.map((cat) => `- ${cat.name}: ${formatCurrency(cat.value, currency
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+    <div className="min-h-screen bg-white dark:bg-gradient-to-br dark:from-slate-950 dark:via-slate-900 dark:to-slate-850 p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-50 mb-1">Reports</h1>
-        <p className="text-slate-400">Financial analysis and insights</p>
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-900 dark:text-slate-50 mb-1">Reports</h1>
+        <p className="text-gray-600 dark:text-gray-600 dark:text-slate-400">Financial analysis and insights</p>
       </div>
 
       {/* Export button */}
       <div className="mb-6 flex justify-end">
         <button
           onClick={handleExportPDF}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-50 font-medium transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-gray-900 dark:text-slate-50 font-medium transition-colors"
         >
           <Download className="w-4 h-4" />
           Export Report
@@ -267,44 +267,44 @@ ${categoryData.map((cat) => `- ${cat.name}: ${formatCurrency(cat.value, currency
       {/* Summary stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Tooltip content="All expenses in the selected period" position="bottom">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-            <p className="text-slate-400 text-sm font-medium mb-2">Total Spending</p>
+          <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-gray-600 dark:text-gray-600 dark:text-slate-400 text-sm font-medium mb-2">Total Spending</p>
             <p className="text-3xl font-bold text-red-400 mb-1">
               {formatCurrency(totalSpending, currency)}
             </p>
-            <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
+            <p className="text-xs text-gray-900 dark:text-slate-500">{filteredTransactions.filter(t => t.type === 'expense').length} transactions</p>
           </div>
         </Tooltip>
 
         <Tooltip content="All income received in the selected period" position="bottom">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-            <p className="text-slate-400 text-sm font-medium mb-2">Total Income</p>
+          <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-2">Total Income</p>
             <p className="text-3xl font-bold text-green-400 mb-1">
               {formatCurrency(totalIncome, currency)}
             </p>
-            <p className="text-xs text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
+            <p className="text-xs text-gray-900 dark:text-slate-500">{filteredTransactions.filter(t => t.type === 'income').length} transactions</p>
           </div>
         </Tooltip>
 
         <Tooltip content="Total income minus total expenses for the period" position="bottom">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-            <p className="text-slate-400 text-sm font-medium mb-2">Net Change</p>
+          <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-2">Net Change</p>
             <p className={`text-3xl font-bold mb-1 ${
               totalIncome - totalSpending >= 0 ? 'text-green-400' : 'text-red-400'
             }`}>
               {formatCurrency(totalIncome - totalSpending, currency)}
             </p>
-            <p className="text-xs text-slate-500">Income - Expenses</p>
+            <p className="text-xs text-gray-900 dark:text-slate-500">Income - Expenses</p>
           </div>
         </Tooltip>
 
         <Tooltip content="Average daily spending across the selected period" position="bottom">
-          <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-            <p className="text-slate-400 text-sm font-medium mb-2">Daily Average</p>
-            <p className="text-3xl font-bold text-slate-50 mb-1">
+          <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-6 backdrop-blur-sm">
+            <p className="text-gray-600 dark:text-slate-400 text-sm font-medium mb-2">Daily Average</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-slate-50 mb-1">
               {formatCurrency(averageDailySpending, currency)}
             </p>
-            <p className="text-xs text-slate-500">Per day</p>
+            <p className="text-xs text-gray-900 dark:text-slate-500">Per day</p>
           </div>
         </Tooltip>
       </div>
@@ -350,37 +350,37 @@ ${categoryData.map((cat) => `- ${cat.name}: ${formatCurrency(cat.value, currency
               subtitle="Your biggest spending areas"
             />
 
-            <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-              <h3 className="text-lg font-semibold text-slate-50 mb-4">Key Insights</h3>
+            <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-6 backdrop-blur-sm">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-50 mb-4">Key Insights</h3>
               <div className="space-y-4">
-                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
-                  <p className="text-sm font-medium text-slate-50 mb-1">Highest Category</p>
-                  <p className="text-sm text-slate-400">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-slate-700/30 border border-blue-200 dark:border-slate-600/50">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-50 mb-1">Highest Category</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
                     {categoryData.length > 0
                       ? `${categoryData[0].name} at ${formatCurrency(categoryData[0].value, currency)}`
                       : 'No data'}
                   </p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
-                  <p className="text-sm font-medium text-slate-50 mb-1">Average Transaction</p>
-                  <p className="text-sm text-slate-400">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-slate-700/30 border border-blue-200 dark:border-slate-600/50">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-50 mb-1">Average Transaction</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
                     {filteredTransactions.filter(t => t.type === 'expense').length > 0
                       ? formatCurrency(totalSpending / filteredTransactions.filter(t => t.type === 'expense').length, currency)
                       : formatCurrency(0, currency)}
                   </p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
-                  <p className="text-sm font-medium text-slate-50 mb-1">Categories</p>
-                  <p className="text-sm text-slate-400">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-slate-700/30 border border-blue-200 dark:border-slate-600/50">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-50 mb-1">Categories</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
                     {categoryData.length} spending categor{categoryData.length === 1 ? 'y' : 'ies'}
                   </p>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
-                  <p className="text-sm font-medium text-slate-50 mb-1">Savings Rate</p>
-                  <p className="text-sm text-slate-400">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-slate-700/30 border border-blue-200 dark:border-slate-600/50">
+                  <p className="text-sm font-medium text-gray-900 dark:text-slate-50 mb-1">Savings Rate</p>
+                  <p className="text-sm text-gray-600 dark:text-slate-400">
                     {totalIncome > 0
                       ? (((totalIncome - totalSpending) / totalIncome) * 100).toFixed(1)
                       : '0'}
