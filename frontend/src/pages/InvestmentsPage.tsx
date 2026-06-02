@@ -94,13 +94,18 @@ const InvestmentsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // For new investments, if no current price, use purchase price as fallback
+      const currentPriceValue = formData.currentPrice
+        ? parseFloat(formData.currentPrice)
+        : parseFloat(formData.purchasePrice);
+
       const investmentData = {
         name: formData.name,
         type: formData.type,
         ticker: formData.ticker || undefined,
         shares: parseFloat(formData.shares),
         purchasePrice: parseFloat(formData.purchasePrice),
-        currentPrice: parseFloat(formData.currentPrice),
+        currentPrice: currentPriceValue,
         purchaseDate: formData.purchaseDate,
       };
 
@@ -251,20 +256,28 @@ const InvestmentsPage: React.FC = () => {
                 required
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               />
-              {editingId ? (
+              {editingId || formData.currentPrice === '' ? (
                 <input
                   type="number"
                   name="currentPrice"
-                  placeholder="Current Price"
+                  placeholder="Current Price (optional, auto-fetches from ticker)"
                   value={formData.currentPrice}
                   onChange={handleInputChange}
                   step="0.01"
-                  required
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               ) : (
-                <div className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-sm">
-                  Current Price: {formData.currentPrice ? `$${Number(formData.currentPrice).toFixed(2)}` : 'Enter ticker to fetch price'}
+                <div className="space-y-2">
+                  <div className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-semibold">
+                    ✓ Current Price: ${Number(formData.currentPrice).toFixed(2)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData((prev) => ({ ...prev, currentPrice: '' }))}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    Enter manually instead
+                  </button>
                 </div>
               )}
               <input

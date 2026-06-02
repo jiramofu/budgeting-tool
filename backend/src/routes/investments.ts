@@ -27,18 +27,21 @@ router.get('/portfolio', authenticate, async (req: AuthRequest, res: Response) =
 
 // Add investment
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
-  console.log('[Investment] POST investment');
+  console.log('[Investment] POST investment with body:', req.body);
   try {
     if (!req.userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const investment = await InvestmentService.addInvestment(req.userId, req.body);
-
+    console.log('[Investment] Investment added successfully:', investment.id);
     res.json(investment);
   } catch (error: any) {
-    console.error('[Investment] Error adding investment:', error);
-    res.status(500).json({ error: 'Failed to add investment: ' + error.message });
+    console.error('[Investment] Error adding investment:', error.message || error);
+    res.status(500).json({
+      error: error.message || 'Failed to add investment',
+      details: error.detail || error.stack || null
+    });
   }
 });
 
@@ -104,15 +107,20 @@ router.get('/stock-price/:ticker', authenticate, async (req: AuthRequest, res: R
     }
 
     const { ticker } = req.params;
-    if (!ticker) {
+    if (!ticker || ticker.trim().length === 0) {
       return res.status(400).json({ error: 'Ticker symbol required' });
     }
 
-    const stockData = await InvestmentStockService.getStockPrice(ticker);
+    console.log('[Investment] Fetching stock price for:', ticker.trim());
+    const stockData = await InvestmentStockService.getStockPrice(ticker.trim());
+    console.log('[Investment] Stock price fetched successfully:', stockData);
     res.json(stockData);
   } catch (error: any) {
-    console.error('[Investment] Error getting stock price:', error);
-    res.status(500).json({ error: 'Failed to get stock price: ' + error.message });
+    console.error('[Investment] Error getting stock price:', error.message || error);
+    res.status(500).json({
+      error: error.message || 'Failed to get stock price',
+      details: error.detail || null
+    });
   }
 });
 

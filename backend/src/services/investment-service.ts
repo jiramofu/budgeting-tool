@@ -96,6 +96,30 @@ export class InvestmentService {
 
   static async addInvestment(userId: number, investment: Partial<Investment>): Promise<Investment> {
     try {
+      // Validate required fields
+      if (!userId) throw new Error('userId is required');
+      if (!investment.name) throw new Error('Investment name is required');
+      if (!investment.type) throw new Error('Investment type is required');
+      if (!investment.shares) throw new Error('Shares is required');
+      if (investment.purchasePrice === undefined || investment.purchasePrice === null) {
+        throw new Error('Purchase price is required');
+      }
+      if (!investment.purchaseDate) throw new Error('Purchase date is required');
+
+      // Current price is optional - use purchase price as fallback
+      const currentPrice = investment.currentPrice ?? investment.purchasePrice;
+
+      console.log('[Investment] Adding investment:', {
+        userId,
+        name: investment.name,
+        type: investment.type,
+        ticker: investment.ticker || 'N/A',
+        shares: investment.shares,
+        purchasePrice: investment.purchasePrice,
+        currentPrice,
+        purchaseDate: investment.purchaseDate,
+      });
+
       const result = await query(
         `INSERT INTO investments (user_id, name, type, ticker, shares, purchase_price, current_price, purchase_date)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -104,13 +128,17 @@ export class InvestmentService {
           userId,
           investment.name,
           investment.type,
-          investment.ticker,
+          investment.ticker || null,
           investment.shares,
           investment.purchasePrice,
-          investment.currentPrice,
+          currentPrice,
           investment.purchaseDate,
         ]
       );
+
+      if (!result.rows[0]) {
+        throw new Error('Failed to create investment - no row returned');
+      }
 
       const row = result.rows[0];
       return {
@@ -125,9 +153,9 @@ export class InvestmentService {
         purchaseDate: row.purchase_date,
         createdAt: row.created_at,
       };
-    } catch (error) {
-      console.error('[Investment] Error adding investment:', error);
-      throw error;
+    } catch (error: any) {
+      console.error('[Investment] Error adding investment:', error.message || error);
+      throw new Error(`Failed to add investment: ${error.message}`);
     }
   }
 
