@@ -60,25 +60,28 @@ const BudgetManagementPage: React.FC = () => {
       budgetContext.setIsLoading(true);
       budgetContext.setError('');
 
-      // Fetch categories and budget data
+      // Fetch categories and budget data with targets and spending
       const categoriesRes = await apiClient.get('/categories');
-      const budgetsRes = await apiClient.get('/budgets');
+      const budgetTargetsRes = await apiClient.get('/budgets/with-targets');
 
-      // Create a map of budget data by category ID
-      const budgetMap: { [key: number]: any } = {};
-      budgetsRes.data?.forEach((budget: any) => {
-        budgetMap[budget.category_id] = budget;
+      // Create a map of budget targets by category ID
+      const targetMap: { [key: number]: any } = {};
+      budgetTargetsRes.data?.forEach((target: any) => {
+        targetMap[target.category_id] = {
+          budget: parseFloat(target.target_amount) || 0,
+          spent: parseFloat(target.spent) || 0,
+        };
       });
 
-      // Use real API data and combine with budget data
+      // Use real API data and combine with budget target data
       const realCategories: Category[] = categoriesRes.data.map((cat: any) => {
-        const budgetData = budgetMap[cat.id];
+        const targetData = targetMap[cat.id] || { budget: 0, spent: 0 };
         return {
           id: cat.id,
           name: cat.name,
           icon: cat.icon || '📁',
-          budget: budgetData?.target_amount || 0,
-          spent: budgetData?.spent || 0,
+          budget: targetData.budget,
+          spent: targetData.spent,
         };
       });
 

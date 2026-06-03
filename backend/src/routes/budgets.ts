@@ -33,6 +33,49 @@ router.get(
   getBudgetsHandler
 );
 
+// Get budgets with targets and spent amounts (for frontend)
+router.get(
+  '/with-targets',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Budget] GET with targets for user:', req.userId, 'org:', req.organizationId!);
+    try {
+      const result = await query(
+        `SELECT
+          bt.id,
+          bt.budget_id,
+          bt.category_id,
+          bt.target_amount,
+          c.name as category_name,
+          c.icon as category_icon,
+          COALESCE(SUM(CASE WHEN t.transaction_type = 'expense' THEN ABS(t.amount) ELSE 0 END), 0) as spent
+         FROM budget_targets bt
+         JOIN categories c ON bt.category_id = c.id
+         LEFT JOIN transactions t ON bt.category_id = t.category_id
+           AND t.user_id = $1
+           AND EXTRACT(MONTH FROM t.transaction_date) = (SELECT month FROM budgets WHERE id = bt.budget_id)
+           AND EXTRACT(YEAR FROM t.transaction_date) = (SELECT year FROM budgets WHERE id = bt.budget_id)
+         WHERE EXISTS (
+           SELECT 1 FROM budgets b
+           WHERE b.id = bt.budget_id
+           AND b.user_id = $1
+           AND b.organization_id = $2
+         )
+         GROUP BY bt.id, bt.budget_id, bt.category_id, bt.target_amount, c.name, c.icon
+         ORDER BY c.name`,
+        [req.userId, req.organizationId]
+      );
+
+      res.json(result.rows);
+    } catch (error: any) {
+      console.error('[Budget] Error fetching with targets:', error);
+      res.status(500).json({ error: 'Failed to fetch budget targets: ' + error.message });
+    }
+  }
+);
+
 // Root path handler - MUST come after named routes
 router.get(
   '/',
