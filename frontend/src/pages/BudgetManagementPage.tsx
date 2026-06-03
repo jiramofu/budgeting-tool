@@ -64,64 +64,19 @@ const BudgetManagementPage: React.FC = () => {
       const categoriesRes = await apiClient.get('/categories');
       const budgetsRes = await apiClient.get('/budgets');
 
-      // Mock data - in production this would come from the API
-      const mockCategories: Category[] = [
-        {
-          id: 1,
-          name: 'Housing',
-          icon: '🏠',
-          budget: 1500,
-          spent: 1500,
-          children: [
-            { id: 11, name: 'Rent', icon: '🔑', budget: 1200, spent: 1200 },
-            { id: 12, name: 'Utilities', icon: '💡', budget: 300, spent: 280 },
-          ],
-        },
-        {
-          id: 2,
-          name: 'Groceries',
-          icon: '🛒',
-          budget: 400,
-          spent: 385,
-        },
-        {
-          id: 3,
-          name: 'Transportation',
-          icon: '🚗',
-          budget: 300,
-          spent: 320,
-          children: [
-            { id: 31, name: 'Gas', icon: '⛽', budget: 200, spent: 220 },
-            { id: 32, name: 'Parking', icon: '🅿️', budget: 100, spent: 100 },
-          ],
-        },
-        {
-          id: 4,
-          name: 'Entertainment',
-          icon: '🎬',
-          budget: 250,
-          spent: 180,
-        },
-        {
-          id: 5,
-          name: 'Dining',
-          icon: '🍽️',
-          budget: 300,
-          spent: 445,
-        },
-        {
-          id: 6,
-          name: 'Personal',
-          icon: '💄',
-          budget: 150,
-          spent: 92,
-        },
-      ];
+      // Use real API data instead of mock data
+      const realCategories: Category[] = categoriesRes.data.map((cat: any) => ({
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon || '📁',
+        budget: 0,  // Will be populated from budgets
+        spent: 0,   // Will be calculated from transactions
+      }));
 
-      setCategories(mockCategories);
+      setCategories(realCategories);
       // Dispatch to context as well
-      budgetContext.setCategories(mockCategories as ContextCategory[]);
-      calculateMetrics(mockCategories);
+      budgetContext.setCategories(realCategories as ContextCategory[]);
+      calculateMetrics(realCategories);
     } catch (err: any) {
       console.error('Failed to load budget data:', err);
       const errorMsg = 'Failed to load budget data. Please try again.';
