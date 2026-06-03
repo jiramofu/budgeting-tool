@@ -87,7 +87,7 @@ export async function runAnalyticsCalculationJob() {
       await query(
         `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
          VALUES ($1, $2, NOW(), $3, $4)`,
-        [1, 'analytics', errorCount === 0 ? 'completed' : 'failed', successCount]
+        [null, 'analytics', errorCount === 0 ? 'completed' : 'failed', successCount]
       );
     } catch (logError) {
       console.warn('[Phase4 Jobs] Could not log analytics job status (system user may not exist):', logError.message);
@@ -134,7 +134,7 @@ export async function runTrendsCalculationJob() {
       await query(
         `INSERT INTO scheduler_logs (user_id, job_type, last_run_at, status, records_processed)
          VALUES ($1, $2, NOW(), $3, $4)`,
-        [1, 'trends', errorCount === 0 ? 'completed' : 'failed', successCount]
+        [null, 'trends', errorCount === 0 ? 'completed' : 'failed', successCount]
       );
     } catch (logError) {
       console.warn('[Phase4 Jobs] Could not log trends job status (system user may not exist):', logError.message);
