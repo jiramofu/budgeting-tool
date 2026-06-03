@@ -137,11 +137,14 @@ const BudgetManagementPage: React.FC = () => {
 
   const handleBudgetUpdate = async (categoryId: number, amount: number) => {
     try {
-      // In production: await apiClient.patch(`/categories/${categoryId}`, { budget: amount });
-      console.log(`Updated category ${categoryId} budget to ${amount}`);
+      // Update budget target for the current month
+      await apiClient.put(`/budgets/targets/${categoryId}`, { targetAmount: amount });
+      success(`Budget updated to $${amount.toFixed(2)}`);
       loadBudgetData();
-    } catch (err) {
-      throw new Error('Failed to update budget');
+    } catch (err: any) {
+      console.error('Failed to update budget:', err);
+      const errorMessage = err.response?.data?.error || 'Failed to update budget. Please try again.';
+      showError(errorMessage);
     }
   };
 
