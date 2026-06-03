@@ -14,6 +14,11 @@ Sentry.init({
 })
 console.log('✅ Sentry error tracking initialized')
 
+// Test Sentry logging
+Sentry.captureMessage('Compass app initialized - Sentry monitoring active')
+Sentry.setTag('source', 'app_init')
+Sentry.setTag('version', '1.0.1')
+
 // Initialize Google Analytics
 GA4React.initialize([{ trackingId: 'G-KX2GGSYPGM' }])
 console.log('✅ Google Analytics initialized')
