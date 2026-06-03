@@ -222,6 +222,18 @@ const BudgetManagementPage: React.FC = () => {
 
       // Refresh budget data
       await loadBudgetData();
+
+      // Notify other pages (Dashboard) to refresh their data
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('budget-update');
+        channel.postMessage({
+          type: 'spending-added',
+          categoryId,
+          amount: -amount,
+          categoryName
+        });
+        channel.close();
+      }
     } catch (err: any) {
       console.error('Failed to add spending:', err);
       showError('Failed to add spending. Please try again.');

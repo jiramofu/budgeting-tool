@@ -85,10 +85,6 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [selectedMonth, selectedYear]);
-
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -228,6 +224,35 @@ const Dashboard: React.FC = () => {
       spendingTrend: Number(spendingTrend) || 0,
     });
   };
+
+  // Load dashboard data on month/year change
+  useEffect(() => {
+    loadDashboardData();
+  }, [selectedMonth, selectedYear]);
+
+  // Listen for spending updates from Budget page
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      const channel = new BroadcastChannel('budget-update');
+
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data.type === 'spending-added') {
+          console.log('[Dashboard] Spending update received, refreshing data...');
+          // Refresh dashboard data immediately
+          loadDashboardData();
+        }
+      };
+
+      channel.addEventListener('message', handleMessage);
+
+      return () => {
+        channel.removeEventListener('message', handleMessage);
+        channel.close();
+      };
+    }
+
+    return undefined;
+  }, []);
 
   const handleViewAllTransactions = () => {
     navigate('/search');
