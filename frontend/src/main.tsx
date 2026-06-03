@@ -6,17 +6,13 @@ import App from './App'
 import './styles/index.css'
 
 // Initialize Sentry for error tracking
-const sentryDsn = import.meta.env.VITE_SENTRY_DSN
-if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
-    environment: import.meta.env.MODE,
-    tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
-  })
-  console.log('✅ Sentry error tracking initialized')
-} else {
-  console.log('⚠️  Sentry DSN not configured - error tracking disabled')
-}
+Sentry.init({
+  dsn: 'https://846250ed469381684fe3b7efee90e492@o4511503161950208.ingest.us.sentry.io/4511503172632576',
+  environment: import.meta.env.MODE,
+  tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
+  sendDefaultPii: true,
+})
+console.log('✅ Sentry error tracking initialized')
 
 // Initialize Google Analytics
 const gaId = import.meta.env.VITE_GOOGLE_ANALYTICS_ID
