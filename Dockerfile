@@ -8,7 +8,7 @@ COPY backend/package*.json ./
 RUN npm ci
 COPY backend/src ./src
 COPY backend/tsconfig.json .
-RUN npm run build
+RUN npm cache clean --force && npm run build
 
 # Stage 2: Build Frontend
 FROM node:20-alpine AS frontend-builder
