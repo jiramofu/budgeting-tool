@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import * as Sentry from '@sentry/node';
 import { config } from './config/env';
 import { pool } from './config/database';
 import { initializeDatabase } from './config/initDatabase';
@@ -47,6 +48,25 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 
 const app = express();
+
+// Initialize Sentry for error tracking
+if (config.sentryDsn) {
+  Sentry.init({
+    dsn: config.sentryDsn,
+    environment: config.nodeEnv,
+    tracesSampleRate: config.nodeEnv === 'production' ? 0.1 : 1.0,
+    integrations: [
+      new Sentry.Integrations.Http({ tracing: true }),
+      new Sentry.Integrations.OnUncaughtException(),
+      new Sentry.Integrations.OnUnhandledRejection(),
+    ],
+  });
+  app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
+  console.log('✅ Sentry error tracking initialized');
+} else {
+  console.log('⚠️  Sentry DSN not configured - error tracking disabled');
+}
 
 // Middleware
 app.use(helmet({
@@ -219,6 +239,11 @@ app.get('*', (req, res) => {
 // Phase 8: Error handler for audit logging
 if (config.enableOrganizations) {
   app.use(auditErrorLogger);
+}
+
+// Sentry error handler
+if (config.sentryDsn) {
+  app.use(Sentry.Handlers.errorHandler());
 }
 
 // Error handler

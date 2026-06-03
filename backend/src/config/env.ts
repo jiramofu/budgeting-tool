@@ -12,6 +12,9 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN || ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'],
   // Phase 8: Enterprise Features feature flag
   enableOrganizations: process.env.ENABLE_ORGANIZATIONS === 'true' || false,
+  // Monitoring & Observability
+  sentryDsn: process.env.SENTRY_DSN || '',
+  googleAnalyticsId: process.env.GOOGLE_ANALYTICS_ID || '',
 };
 
 if (!process.env.JWT_SECRET && config.nodeEnv === 'production') {
