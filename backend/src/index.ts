@@ -65,6 +65,12 @@ app.use(Sentry.Handlers.requestHandler());
 app.use(Sentry.Handlers.tracingHandler());
 console.log('✅ Sentry error tracking initialized');
 
+// Test Sentry logging
+Sentry.captureMessage('Compass backend initialized - Sentry monitoring active', 'info');
+Sentry.setTag('action', 'backend_init');
+Sentry.setTag('version', '1.0.1');
+Sentry.setTag('environment', config.nodeEnv);
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {
