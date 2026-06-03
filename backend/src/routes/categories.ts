@@ -66,6 +66,59 @@ router.post(
   }
 );
 
+// Delete category by ID
+router.delete(
+  '/:categoryId',
+  authenticate,
+  loadUserOrganizations,
+  requireOrganization,
+  async (req: PermissionRequest, res: Response) => {
+    console.log('[Category] DELETE:', req.params.categoryId);
+    try {
+      const { categoryId } = req.params;
+
+      if (!categoryId || isNaN(parseInt(categoryId))) {
+        return res.status(400).json({ error: 'Valid category ID is required' });
+      }
+
+      // Verify category belongs to user and organization
+      const categoryCheck = await query(
+        'SELECT * FROM categories WHERE id = $1 AND user_id = $2 AND organization_id = $3',
+        [parseInt(categoryId), req.userId, req.organizationId]
+      );
+
+      if (categoryCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      // Prevent deletion if category has transactions
+      const transactionCheck = await query(
+        'SELECT COUNT(*) as count FROM transactions WHERE category_id = $1',
+        [parseInt(categoryId)]
+      );
+
+      if (parseInt(transactionCheck.rows[0].count) > 0) {
+        return res.status(400).json({ error: 'Cannot delete category with existing transactions' });
+      }
+
+      // Delete the category
+      const result = await query(
+        'DELETE FROM categories WHERE id = $1 AND user_id = $2 AND organization_id = $3 RETURNING *',
+        [parseInt(categoryId), req.userId, req.organizationId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      res.json({ message: 'Category deleted successfully', category: result.rows[0] });
+    } catch (error: any) {
+      console.error('[Category] Error deleting:', error);
+      res.status(500).json({ error: 'Failed to delete category: ' + error.message });
+    }
+  }
+);
+
 // Suggest category for a transaction
 router.post(
   '/suggest',
