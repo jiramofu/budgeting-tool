@@ -25,6 +25,7 @@ import { HouseholdPage } from './pages/HouseholdPage';
 import WellnessPage from './pages/WellnessPage';
 import InsightsPage from './pages/InsightsPage';
 import AdvancedBudgetingPage from './pages/AdvancedBudgetingPage';
+import BudgetManagementPage from './pages/BudgetManagementPage';
 import InvestmentsPage from './pages/InvestmentsPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -169,6 +170,14 @@ function AppContent() {
         element={
           <ProtectedRoute>
             <AdvancedBudgetingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/budget-management"
+        element={
+          <ProtectedRoute>
+            <BudgetManagementPage />
           </ProtectedRoute>
         }
       />

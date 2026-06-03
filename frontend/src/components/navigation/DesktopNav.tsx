@@ -99,6 +99,7 @@ export const DesktopNav: React.FC<DesktopNavProps> = ({
   ];
 
   const planningItems: SectionItem[] = [
+    { label: 'Budget Management', path: '/budget-management', icon: <Wallet size={18} /> },
     { label: 'Goals', path: '/goals', icon: <Target size={18} /> },
     { label: 'Projections', path: '/projections', icon: <Clock size={18} /> },
     { label: 'Investments', path: '/investments', icon: <DollarSign size={18} /> },
