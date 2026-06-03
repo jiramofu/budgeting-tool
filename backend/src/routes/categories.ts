@@ -91,66 +91,7 @@ router.delete(
         return res.status(404).json({ error: 'Category not found' });
       }
 
-      // Check if category has transactions
-      const transactionCheck = await query(
-        'SELECT COUNT(*) as count FROM transactions WHERE category_id = $1',
-        [parseInt(categoryId)]
-      );
-
-      const transactionCount = parseInt(transactionCheck.rows[0].count);
-      console.log(`[Category] Category ${categoryId} has ${transactionCount} transactions`);
-
-      if (transactionCount > 0) {
-        try {
-          // Find or create "Uncategorized" category to reassign transactions
-          let uncategorizedId = null;
-          const uncategorizedCheck = await query(
-            'SELECT id FROM categories WHERE user_id = $1 AND organization_id = $2 AND name = $3',
-            [req.userId, req.organizationId, 'Uncategorized']
-          );
-
-          if (uncategorizedCheck.rows.length > 0) {
-            uncategorizedId = uncategorizedCheck.rows[0].id;
-            console.log(`[Category] Using existing Uncategorized category (ID: ${uncategorizedId})`);
-          } else {
-            // Create Uncategorized category
-            try {
-              const createUncategorized = await query(
-                'INSERT INTO categories (user_id, name, type, icon, organization_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-                [req.userId, 'Uncategorized', 'variable', '📁', req.organizationId]
-              );
-              uncategorizedId = createUncategorized.rows[0].id;
-              console.log(`[Category] Created new Uncategorized category (ID: ${uncategorizedId})`);
-            } catch (createError: any) {
-              console.error(`[Category] Error creating Uncategorized category:`, createError.message);
-              // If it fails due to unique constraint, try finding it again
-              const retryCheck = await query(
-                'SELECT id FROM categories WHERE user_id = $1 AND organization_id = $2 AND name = $3',
-                [req.userId, req.organizationId, 'Uncategorized']
-              );
-              if (retryCheck.rows.length > 0) {
-                uncategorizedId = retryCheck.rows[0].id;
-                console.log(`[Category] Found Uncategorized category on retry (ID: ${uncategorizedId})`);
-              } else {
-                throw new Error('Could not create or find Uncategorized category');
-              }
-            }
-          }
-
-          // Reassign all transactions to Uncategorized
-          const updateResult = await query(
-            'UPDATE transactions SET category_id = $1 WHERE category_id = $2',
-            [uncategorizedId, parseInt(categoryId)]
-          );
-
-          console.log(`[Category] Reassigned ${transactionCount} transactions to Uncategorized (ID: ${uncategorizedId})`);
-        } catch (reassignError: any) {
-          console.error(`[Category] Error reassigning transactions:`, reassignError.message);
-          return res.status(400).json({ error: `Failed to reassign transactions: ${reassignError.message}` });
-        }
-      }
-
-      // Delete the category
+      // Delete the category (cascade deletes all associated transactions)
       const result = await query(
         'DELETE FROM categories WHERE id = $1 AND user_id = $2 AND organization_id = $3 RETURNING *',
         [parseInt(categoryId), req.userId, req.organizationId]
@@ -163,8 +104,7 @@ router.delete(
       console.log('[Category] Successfully deleted category:', categoryId);
       res.json({
         message: 'Category deleted successfully',
-        category: result.rows[0],
-        transactionsReassigned: transactionCount
+        category: result.rows[0]
       });
     } catch (error: any) {
       console.error('[Category] Error deleting:', error);
