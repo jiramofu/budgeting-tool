@@ -91,14 +91,17 @@ router.delete(
         return res.status(404).json({ error: 'Category not found' });
       }
 
-      // Prevent deletion if category has transactions
+      // Check if category has transactions
       const transactionCheck = await query(
         'SELECT COUNT(*) as count FROM transactions WHERE category_id = $1',
         [parseInt(categoryId)]
       );
 
-      if (parseInt(transactionCheck.rows[0].count) > 0) {
-        return res.status(400).json({ error: 'Cannot delete category with existing transactions' });
+      const transactionCount = parseInt(transactionCheck.rows[0].count);
+      if (transactionCount > 0) {
+        return res.status(400).json({
+          error: `Cannot delete category with ${transactionCount} transaction(s). Please reassign or delete transactions first.`
+        });
       }
 
       // Delete the category
@@ -111,9 +114,13 @@ router.delete(
         return res.status(404).json({ error: 'Category not found' });
       }
 
+      console.log('[Category] Successfully deleted category:', categoryId);
       res.json({ message: 'Category deleted successfully', category: result.rows[0] });
     } catch (error: any) {
       console.error('[Category] Error deleting:', error);
+      if (error.code === '23503') {
+        return res.status(400).json({ error: 'Cannot delete category: it has associated data' });
+      }
       res.status(500).json({ error: 'Failed to delete category: ' + error.message });
     }
   }
