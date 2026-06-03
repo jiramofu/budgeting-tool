@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, Edit2 } from 'lucide-react';
+import { ChevronDown, Edit2, Trash2 } from 'lucide-react';
 import BudgetBar from './BudgetBar';
 import BudgetInput from './BudgetInput';
 
@@ -121,6 +121,21 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
                 title="Edit budget amount"
               >
                 <Edit2 className="w-4 h-4" />
+              </button>
+
+              {/* Delete button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Delete ${category.name}? This cannot be undone.`)) {
+                    // Placeholder - actual deletion will be handled by parent component
+                    console.log('Delete category:', category.id);
+                  }
+                }}
+                className="flex items-center justify-center p-2 text-slate-500 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-colors"
+                title="Delete category"
+              >
+                <Trash2 className="w-4 h-4" />
               </button>
             </div>
 
