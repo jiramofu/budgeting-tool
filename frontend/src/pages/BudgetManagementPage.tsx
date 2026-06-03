@@ -127,6 +127,7 @@ const BudgetManagementPage: React.FC = () => {
       const errorMsg = 'Failed to load budget data. Please try again.';
       budgetContext.setError(errorMsg);
     } finally {
+      setIsLoading(false);
       budgetContext.setIsLoading(false);
     }
   };
