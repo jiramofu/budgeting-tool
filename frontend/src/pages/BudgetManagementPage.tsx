@@ -47,6 +47,7 @@ const BudgetManagementPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(budgetContext.currentBudgetYear);
   const [categorySpending, setCategorySpending] = useState<{[key: number]: string}>({});
   const [submittingCategories, setSubmittingCategories] = useState<Set<number>>(new Set());
+  const [incomeData, setIncomeData] = useState<{ grossPay: number; netPay: number; deductions: number } | null>(null);
 
   useEffect(() => {
     // Update context with selected month/year
@@ -59,6 +60,26 @@ const BudgetManagementPage: React.FC = () => {
     try {
       budgetContext.setIsLoading(true);
       budgetContext.setError('');
+
+      // Fetch income data for the current month
+      try {
+        const incomeRes = await apiClient.get(`/income/${selectedMonth}/${selectedYear}`);
+        if (incomeRes.data && incomeRes.data.length > 0) {
+          const income = incomeRes.data[0];
+          setIncomeData({
+            grossPay: parseFloat(income.gross_pay) || 0,
+            netPay: parseFloat(income.net_pay) || 0,
+            deductions: parseFloat(income.deductions) || 0,
+          });
+
+          // Auto-set Tithe budget to 10% of gross pay
+          const titheAmount = (parseFloat(income.gross_pay) || 0) * 0.1;
+          // We'll apply this after categories are loaded
+        }
+      } catch (incomeErr) {
+        console.log('No income data for this month');
+        setIncomeData(null);
+      }
 
       // Fetch categories and budget data with targets and spending
       const categoriesRes = await apiClient.get('/categories');
@@ -74,7 +95,7 @@ const BudgetManagementPage: React.FC = () => {
       });
 
       // Use real API data and combine with budget target data
-      const realCategories: Category[] = categoriesRes.data.map((cat: any) => {
+      let realCategories: Category[] = categoriesRes.data.map((cat: any) => {
         const targetData = targetMap[cat.id] || { budget: 0, spent: 0 };
         return {
           id: cat.id,
@@ -85,10 +106,32 @@ const BudgetManagementPage: React.FC = () => {
         };
       });
 
+      // Auto-set Tithe budget to 10% of gross pay if income data exists
+      if (incomeData && incomeData.grossPay > 0) {
+        const titheCategory = realCategories.find(cat => cat.name.toLowerCase() === 'tithe');
+        if (titheCategory && titheCategory.budget === 0) {
+          titheCategory.budget = incomeData.grossPay * 0.1;
+          // Update the budget in the backend
+          try {
+            await apiClient.put(`/budgets/targets/${titheCategory.id}`, {
+              targetAmount: titheCategory.budget,
+            });
+          } catch (err) {
+            console.error('Failed to auto-set Tithe budget:', err);
+          }
+        }
+      }
+
       setCategories(realCategories);
       // Dispatch to context as well
       budgetContext.setCategories(realCategories as ContextCategory[]);
-      calculateMetrics(realCategories);
+
+      // Pass income data when calculating metrics
+      if (incomeData && incomeData.netPay > 0) {
+        calculateMetricsWithIncome(realCategories, incomeData);
+      } else {
+        calculateMetrics(realCategories);
+      }
     } catch (err: any) {
       console.error('Failed to load budget data:', err);
       const errorMsg = 'Failed to load budget data. Please try again.';
@@ -97,6 +140,41 @@ const BudgetManagementPage: React.FC = () => {
       setIsLoading(false);
       budgetContext.setIsLoading(false);
     }
+  };
+
+  const calculateMetricsWithIncome = (cats: Category[], income: { grossPay: number; netPay: number; deductions: number }) => {
+    let totalBudget = income.netPay; // Use net pay as total budget
+    let totalSpent = 0;
+    let categoriesOverBudget = 0;
+
+    const calculateCategory = (category: Category) => {
+      totalSpent += category.spent;
+
+      if (category.spent > category.budget) {
+        categoriesOverBudget += 1;
+      }
+
+      if (category.children) {
+        category.children.forEach(calculateCategory);
+      }
+    };
+
+    cats.forEach(calculateCategory);
+
+    const totalRemaining = Math.max(0, totalBudget - totalSpent);
+    const percentageUsed = totalBudget > 0 ? (totalSpent / totalBudget) * 100 : 0;
+
+    const newMetrics = {
+      totalBudget,
+      totalSpent,
+      totalRemaining,
+      percentageUsed: Math.round(percentageUsed),
+      categoriesOverBudget,
+    };
+
+    setMetrics(newMetrics);
+    // Update context metrics as well
+    budgetContext.setMetrics(newMetrics);
   };
 
   const calculateMetrics = (cats: Category[]) => {
