@@ -44,7 +44,7 @@ export const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children }) 
         {/* Main Content */}
         <main
           className={`
-            flex-1 overflow-y-auto pb-24 md:pb-0
+            flex-1 overflow-y-auto pb-24 md:pb-0 pt-16
             ${isDesktop && !isSidebarCollapsed ? 'ml-64' : ''}
             ${isDesktop && isSidebarCollapsed ? 'ml-20' : ''}
             transition-all duration-300
