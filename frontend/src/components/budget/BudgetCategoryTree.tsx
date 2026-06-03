@@ -96,6 +96,11 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
               )}
               {!hasChildren && <div className="w-4" />}
 
+              {/* Debug: Show category ID on hover */}
+              <div className="text-xs text-slate-600 group-hover:text-slate-400 hidden group-hover:inline">
+                (ID: {category.id})
+              </div>
+
               <div className="flex-1">
                 <BudgetBar
                   categoryName={category.name}

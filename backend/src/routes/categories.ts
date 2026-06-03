@@ -98,10 +98,34 @@ router.delete(
       );
 
       const transactionCount = parseInt(transactionCheck.rows[0].count);
+      console.log(`[Category] Category ${categoryId} has ${transactionCount} transactions`);
+
       if (transactionCount > 0) {
-        return res.status(400).json({
-          error: `Cannot delete category with ${transactionCount} transaction(s). Please reassign or delete transactions first.`
-        });
+        // Find or create "Uncategorized" category to reassign transactions
+        let uncategorizedId = null;
+        const uncategorizedCheck = await query(
+          'SELECT id FROM categories WHERE user_id = $1 AND organization_id = $2 AND name = $3',
+          [req.userId, req.organizationId, 'Uncategorized']
+        );
+
+        if (uncategorizedCheck.rows.length > 0) {
+          uncategorizedId = uncategorizedCheck.rows[0].id;
+        } else {
+          // Create Uncategorized category
+          const createUncategorized = await query(
+            'INSERT INTO categories (user_id, name, type, icon, organization_id) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [req.userId, 'Uncategorized', 'variable', '📁', req.organizationId]
+          );
+          uncategorizedId = createUncategorized.rows[0].id;
+        }
+
+        // Reassign all transactions to Uncategorized
+        await query(
+          'UPDATE transactions SET category_id = $1 WHERE category_id = $2',
+          [uncategorizedId, parseInt(categoryId)]
+        );
+
+        console.log(`[Category] Reassigned ${transactionCount} transactions to Uncategorized (ID: ${uncategorizedId})`);
       }
 
       // Delete the category
@@ -115,7 +139,11 @@ router.delete(
       }
 
       console.log('[Category] Successfully deleted category:', categoryId);
-      res.json({ message: 'Category deleted successfully', category: result.rows[0] });
+      res.json({
+        message: 'Category deleted successfully',
+        category: result.rows[0],
+        transactionsReassigned: transactionCount
+      });
     } catch (error: any) {
       console.error('[Category] Error deleting:', error);
       if (error.code === '23503') {
