@@ -281,7 +281,7 @@ const BudgetManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8 pt-20 md:pt-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-slate-50 mb-1">Budget Management</h1>

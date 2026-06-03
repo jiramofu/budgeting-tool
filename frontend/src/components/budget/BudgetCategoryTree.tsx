@@ -117,8 +117,8 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
                   e.stopPropagation();
                   setEditingCategoryId(category.id);
                 }}
-                className="hidden group-hover:flex items-center justify-center p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-700/30 rounded-lg transition-colors"
-                title="Edit budget"
+                className="flex items-center justify-center p-2 text-slate-500 hover:text-blue-400 hover:bg-slate-700/50 rounded-lg transition-colors"
+                title="Edit budget amount"
               >
                 <Edit2 className="w-4 h-4" />
               </button>
