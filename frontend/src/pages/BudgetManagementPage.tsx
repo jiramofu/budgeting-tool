@@ -62,19 +62,17 @@ const BudgetManagementPage: React.FC = () => {
       budgetContext.setError('');
 
       // Fetch income data for the current month
+      let fetchedIncomeData: { grossPay: number; netPay: number; deductions: number } | null = null;
       try {
         const incomeRes = await apiClient.get(`/income/${selectedMonth}/${selectedYear}`);
         if (incomeRes.data && incomeRes.data.length > 0) {
           const income = incomeRes.data[0];
-          setIncomeData({
+          fetchedIncomeData = {
             grossPay: parseFloat(income.gross_pay) || 0,
             netPay: parseFloat(income.net_pay) || 0,
             deductions: parseFloat(income.deductions) || 0,
-          });
-
-          // Auto-set Tithe budget to 10% of gross pay
-          const titheAmount = (parseFloat(income.gross_pay) || 0) * 0.1;
-          // We'll apply this after categories are loaded
+          };
+          setIncomeData(fetchedIncomeData);
         }
       } catch (incomeErr) {
         console.log('No income data for this month');
@@ -107,10 +105,10 @@ const BudgetManagementPage: React.FC = () => {
       });
 
       // Auto-set Tithe budget to 10% of gross pay if income data exists
-      if (incomeData && incomeData.grossPay > 0) {
+      if (fetchedIncomeData && fetchedIncomeData.grossPay > 0) {
         const titheCategory = realCategories.find(cat => cat.name.toLowerCase() === 'tithe');
         if (titheCategory && titheCategory.budget === 0) {
-          titheCategory.budget = incomeData.grossPay * 0.1;
+          titheCategory.budget = fetchedIncomeData.grossPay * 0.1;
           // Update the budget in the backend
           try {
             await apiClient.put(`/budgets/targets/${titheCategory.id}`, {
@@ -127,8 +125,8 @@ const BudgetManagementPage: React.FC = () => {
       budgetContext.setCategories(realCategories as ContextCategory[]);
 
       // Pass income data when calculating metrics
-      if (incomeData && incomeData.netPay > 0) {
-        calculateMetricsWithIncome(realCategories, incomeData);
+      if (fetchedIncomeData && fetchedIncomeData.netPay > 0) {
+        calculateMetricsWithIncome(realCategories, fetchedIncomeData);
       } else {
         calculateMetrics(realCategories);
       }
@@ -341,15 +339,15 @@ const BudgetManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-850 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 p-4 md:p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-slate-50 mb-1">Budget Management</h1>
-        <p className="text-slate-400">{formatMonth(selectedMonth, selectedYear)}</p>
+        <h1 className="text-4xl font-bold text-slate-900 mb-1">Budget Management</h1>
+        <p className="text-slate-600">{formatMonth(selectedMonth, selectedYear)}</p>
       </div>
 
       {error && (
-        <div className="bg-red-900/20 border border-red-700/50 text-red-400 px-4 py-3 rounded-lg flex items-center gap-2 mb-6">
+        <div className="bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded-lg flex items-center gap-2 mb-6">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -358,36 +356,36 @@ const BudgetManagementPage: React.FC = () => {
       {/* Overall Budget Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Total Budget */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Total Budget</p>
-          <p className="text-3xl font-bold text-slate-50 mb-1">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-slate-600 text-sm font-medium mb-2">Total Budget</p>
+          <p className="text-3xl font-bold text-slate-900 mb-1">
             {formatCurrency(metrics.totalBudget, currency)}
           </p>
-          <p className="text-xs text-slate-500">All categories</p>
+          <p className="text-xs text-slate-500">All categories based on net pay</p>
         </div>
 
         {/* Total Spent */}
-        <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-6 backdrop-blur-sm">
-          <p className="text-slate-400 text-sm font-medium mb-2">Total Spent</p>
-          <p className="text-3xl font-bold text-slate-50 mb-1">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-slate-600 text-sm font-medium mb-2">Total Spent</p>
+          <p className="text-3xl font-bold text-slate-900 mb-1">
             {formatCurrency(metrics.totalSpent, currency)}
           </p>
           <p className="text-xs text-slate-500">{metrics.percentageUsed}% used</p>
         </div>
 
         {/* Remaining */}
-        <div className={`rounded-lg border p-6 backdrop-blur-sm ${
+        <div className={`rounded-lg border p-6 shadow-sm ${
           metrics.totalRemaining > 0
-            ? 'bg-emerald-900/20 border-emerald-700/50'
-            : 'bg-red-900/20 border-red-700/50'
+            ? 'bg-emerald-50 border-emerald-200'
+            : 'bg-red-50 border-red-200'
         }`}>
           <p className={`text-sm font-medium mb-2 ${
-            metrics.totalRemaining > 0 ? 'text-emerald-400' : 'text-red-400'
+            metrics.totalRemaining > 0 ? 'text-emerald-700' : 'text-red-700'
           }`}>
             Remaining
           </p>
           <p className={`text-3xl font-bold mb-1 ${
-            metrics.totalRemaining > 0 ? 'text-emerald-300' : 'text-red-300'
+            metrics.totalRemaining > 0 ? 'text-emerald-600' : 'text-red-600'
           }`}>
             {formatCurrency(metrics.totalRemaining, currency)}
           </p>
@@ -398,7 +396,7 @@ const BudgetManagementPage: React.FC = () => {
 
         {/* Categories Over Budget */}
         {metrics.categoriesOverBudget > 0 && (
-          <div className="rounded-lg border border-red-700/50 bg-red-900/20 p-6 backdrop-blur-sm">
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
             <p className="text-red-400 text-sm font-medium mb-2">Over Budget</p>
             <p className="text-3xl font-bold text-red-300 mb-1">
               {metrics.categoriesOverBudget}
@@ -411,12 +409,12 @@ const BudgetManagementPage: React.FC = () => {
       </div>
 
       {/* Budget Progress Bar */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 backdrop-blur-sm mb-8">
+      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm mb-8">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-300">Overall Budget Progress</span>
-          <span className="text-sm font-semibold text-slate-50">{metrics.percentageUsed}%</span>
+          <span className="text-sm font-medium text-slate-700">Overall Budget Progress</span>
+          <span className="text-sm font-semibold text-slate-900">{metrics.percentageUsed}%</span>
         </div>
-        <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
           <div
             className={`h-full ${getProgressColor()} transition-all duration-300`}
             style={{ width: `${Math.min(metrics.percentageUsed, 100)}%` }}
@@ -429,8 +427,8 @@ const BudgetManagementPage: React.FC = () => {
         {/* Budget Categories */}
         <div className="lg:col-span-2">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-50 mb-2">Categories</h2>
-            <p className="text-slate-400 text-sm">Manage budgets by category</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Categories</h2>
+            <p className="text-slate-600 text-sm">Manage budgets by category</p>
           </div>
           <BudgetCategoryTree
             categories={categories}
@@ -447,8 +445,8 @@ const BudgetManagementPage: React.FC = () => {
         {/* Monthly History */}
         <div>
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-50 mb-2">History</h2>
-            <p className="text-slate-400 text-sm">6-month trend</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">History</h2>
+            <p className="text-slate-600 text-sm">6-month trend</p>
           </div>
           <MonthlyHistory categoryName="Overall" months={6} />
         </div>
@@ -456,15 +454,15 @@ const BudgetManagementPage: React.FC = () => {
 
       {/* Tips and Recommendations */}
       {metrics.categoriesOverBudget > 0 && (
-        <div className="bg-amber-900/20 border border-amber-700/50 rounded-lg p-6 backdrop-blur-sm">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 shadow-sm">
           <div className="flex items-start gap-3">
-            <TrendingDown className="w-5 h-5 text-amber-400 flex-shrink-0 mt-1" />
+            <TrendingDown className="w-5 h-5 text-amber-700 flex-shrink-0 mt-1" />
             <div>
-              <h3 className="text-lg font-semibold text-amber-300 mb-2">Budget Alert</h3>
-              <p className="text-amber-200 text-sm mb-3">
+              <h3 className="text-lg font-semibold text-amber-900 mb-2">Budget Alert</h3>
+              <p className="text-amber-800 text-sm mb-3">
                 You have {metrics.categoriesOverBudget} {metrics.categoriesOverBudget === 1 ? 'category' : 'categories'} over budget this month. Consider adjusting your spending or increasing the budget limits.
               </p>
-              <ul className="text-sm text-amber-200 space-y-1 ml-4">
+              <ul className="text-sm text-amber-800 space-y-1 ml-4">
                 <li>• Review spending in over-budget categories</li>
                 <li>• Adjust budget limits if needed</li>
                 <li>• Set spending alerts in app settings</li>
