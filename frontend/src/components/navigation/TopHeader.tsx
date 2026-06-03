@@ -9,6 +9,7 @@ import {
   Sun,
   LogOut,
   Settings as SettingsIcon,
+  Compass,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import SearchModal from '../ui/search/SearchModal';
@@ -104,13 +105,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({ onToggleSidebar }) => {
               w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white
               bg-gradient-to-br from-blue-500 to-blue-600
             `}>
-              💰
+              <Compass size={20} />
             </div>
             <span className={`
               text-base font-semibold
               ${isDark ? 'text-white' : 'text-slate-900'}
             `}>
-              Budget
+              Compass
             </span>
           </div>
 
