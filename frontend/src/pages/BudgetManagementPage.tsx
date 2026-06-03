@@ -64,14 +64,23 @@ const BudgetManagementPage: React.FC = () => {
       const categoriesRes = await apiClient.get('/categories');
       const budgetsRes = await apiClient.get('/budgets');
 
-      // Use real API data instead of mock data
-      const realCategories: Category[] = categoriesRes.data.map((cat: any) => ({
-        id: cat.id,
-        name: cat.name,
-        icon: cat.icon || '📁',
-        budget: 0,  // Will be populated from budgets
-        spent: 0,   // Will be calculated from transactions
-      }));
+      // Create a map of budget data by category ID
+      const budgetMap: { [key: number]: any } = {};
+      budgetsRes.data?.forEach((budget: any) => {
+        budgetMap[budget.category_id] = budget;
+      });
+
+      // Use real API data and combine with budget data
+      const realCategories: Category[] = categoriesRes.data.map((cat: any) => {
+        const budgetData = budgetMap[cat.id];
+        return {
+          id: cat.id,
+          name: cat.name,
+          icon: cat.icon || '📁',
+          budget: budgetData?.target_amount || 0,
+          spent: budgetData?.spent || 0,
+        };
+      });
 
       setCategories(realCategories);
       // Dispatch to context as well
@@ -130,6 +139,17 @@ const BudgetManagementPage: React.FC = () => {
       loadBudgetData();
     } catch (err) {
       throw new Error('Failed to update budget');
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    try {
+      await apiClient.delete(`/categories/${categoryId}`);
+      success('Category deleted successfully');
+      loadBudgetData();
+    } catch (err: any) {
+      console.error('Failed to delete category:', err);
+      showError('Failed to delete category. Please try again.');
     }
   };
 
@@ -330,6 +350,7 @@ const BudgetManagementPage: React.FC = () => {
           <BudgetCategoryTree
             categories={categories}
             onBudgetUpdate={handleBudgetUpdate}
+            onDeleteCategory={handleDeleteCategory}
             isLoading={isLoading}
             onQuickAddSpending={handleQuickAddSpending}
             categorySpending={categorySpending}

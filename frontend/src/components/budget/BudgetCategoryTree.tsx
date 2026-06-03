@@ -15,6 +15,7 @@ interface CategoryItem {
 interface BudgetCategoryTreeProps {
   categories: CategoryItem[];
   onBudgetUpdate?: (categoryId: number, amount: number) => Promise<void>;
+  onDeleteCategory?: (categoryId: number) => Promise<void>;
   isLoading?: boolean;
   currency?: string;
   onQuickAddSpending?: (categoryId: number, amount: string) => Promise<void>;
@@ -26,6 +27,7 @@ interface BudgetCategoryTreeProps {
 const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
   categories,
   onBudgetUpdate,
+  onDeleteCategory,
   isLoading = false,
   currency = 'USD',
   onQuickAddSpending,
@@ -125,11 +127,16 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
 
               {/* Delete button */}
               <button
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
                   if (window.confirm(`Delete ${category.name}? This cannot be undone.`)) {
-                    // Placeholder - actual deletion will be handled by parent component
-                    console.log('Delete category:', category.id);
+                    try {
+                      if (onDeleteCategory) {
+                        await onDeleteCategory(category.id);
+                      }
+                    } catch (err) {
+                      console.error('Failed to delete category:', err);
+                    }
                   }
                 }}
                 className="flex items-center justify-center p-2 text-slate-500 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-colors"
