@@ -215,7 +215,7 @@ const BudgetManagementPage: React.FC = () => {
         amount: -amount, // Negative for expense
         transactionDate: new Date().toISOString().split('T')[0],
         description: `Quick add from Budget page - ${categoryName}`,
-        source: 'budget_page',
+        transactionType: 'expense',
       });
 
       success(`$${amount.toFixed(2)} added to ${categoryName}`);
