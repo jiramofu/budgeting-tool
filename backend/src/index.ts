@@ -76,8 +76,21 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "https://accounts.google.com", "https://appleid.cdn-apple.com"],
-      connectSrc: ["'self'", "https://accounts.google.com", "https://appleid.cdn-apple.com"],
+      scriptSrc: [
+        "'self'",
+        "https://accounts.google.com",
+        "https://appleid.cdn-apple.com",
+        "https://www.googletagmanager.com",
+        "https://cdn.ravenjs.com",
+      ],
+      connectSrc: [
+        "'self'",
+        "https://accounts.google.com",
+        "https://appleid.cdn-apple.com",
+        "https://o4511503161950208.ingest.us.sentry.io",
+        "https://www.google-analytics.com",
+        "https://www.googletagmanager.com",
+      ],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       frameSrc: ["https://accounts.google.com", "https://appleid.cdn-apple.com"],
