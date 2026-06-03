@@ -152,7 +152,8 @@ const BudgetManagementPage: React.FC = () => {
       loadBudgetData();
     } catch (err: any) {
       console.error('Failed to delete category:', err);
-      showError('Failed to delete category. Please try again.');
+      const errorMessage = err.response?.data?.error || 'Failed to delete category. Please try again.';
+      showError(errorMessage);
     }
   };
 
