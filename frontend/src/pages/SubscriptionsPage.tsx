@@ -49,7 +49,7 @@ const SubscriptionsPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError('');
-      const response = await apiClient.get('/subscriptions/summary');
+      const response = await apiClient.get('/subscriptions');
       setSummary(response.data);
     } catch (err: any) {
       console.error('Failed to load subscriptions:', err);

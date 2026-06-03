@@ -6,6 +6,22 @@ const router = Router();
 
 console.log('[Subscription Routes] Loading subscription routes...');
 
+// Get all subscriptions
+router.get('/', authenticate, async (req: any, res: Response) => {
+  console.log('[Subscription] GET all subscriptions');
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const summary = await SubscriptionService.getSubscriptionSummary(req.userId);
+    res.json(summary);
+  } catch (error: any) {
+    console.error('[Subscription] Error getting subscriptions:', error);
+    res.status(500).json({ error: 'Failed to get subscriptions: ' + error.message });
+  }
+});
+
 // Get subscription summary
 router.get('/summary', authenticate, async (req: any, res: Response) => {
   console.log('[Subscription] GET summary');
