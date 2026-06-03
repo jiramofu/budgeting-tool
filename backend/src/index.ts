@@ -50,23 +50,20 @@ import { swaggerSpec } from './swagger';
 const app = express();
 
 // Initialize Sentry for error tracking
-if (config.sentryDsn) {
-  Sentry.init({
-    dsn: config.sentryDsn,
-    environment: config.nodeEnv,
-    tracesSampleRate: config.nodeEnv === 'production' ? 0.1 : 1.0,
-    integrations: [
-      new Sentry.Integrations.Http({ tracing: true }),
-      new Sentry.Integrations.OnUncaughtException(),
-      new Sentry.Integrations.OnUnhandledRejection(),
-    ],
-  });
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
-  console.log('✅ Sentry error tracking initialized');
-} else {
-  console.log('⚠️  Sentry DSN not configured - error tracking disabled');
-}
+Sentry.init({
+  dsn: 'https://a7d6b0a42e33ab98f74490ea75840000@o4511503161950208.ingest.us.sentry.io/4511503177613312',
+  environment: config.nodeEnv,
+  tracesSampleRate: config.nodeEnv === 'production' ? 0.1 : 1.0,
+  sendDefaultPii: true,
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+    new Sentry.Integrations.OnUncaughtException(),
+    new Sentry.Integrations.OnUnhandledRejection(),
+  ],
+});
+app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.Handlers.tracingHandler());
+console.log('✅ Sentry error tracking initialized');
 
 // Middleware
 app.use(helmet({
