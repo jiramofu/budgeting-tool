@@ -50,20 +50,19 @@ router.get(
           bt.target_amount,
           c.name as category_name,
           c.icon as category_icon,
-          COALESCE(SUM(CASE WHEN t.transaction_type = 'expense' THEN ABS(t.amount) ELSE 0 END), 0) as spent
+          COALESCE(SUM(CASE WHEN t.transaction_type = 'expense' THEN ABS(t.amount) ELSE 0 END), 0) as spent,
+          b.month,
+          b.year
          FROM budget_targets bt
+         JOIN budgets b ON bt.budget_id = b.id
          JOIN categories c ON bt.category_id = c.id
-         LEFT JOIN transactions t ON bt.category_id = t.category_id
+         LEFT JOIN transactions t ON t.category_id = bt.category_id
            AND t.user_id = $1
-           AND EXTRACT(MONTH FROM t.transaction_date) = (SELECT month FROM budgets WHERE id = bt.budget_id)
-           AND EXTRACT(YEAR FROM t.transaction_date) = (SELECT year FROM budgets WHERE id = bt.budget_id)
-         WHERE EXISTS (
-           SELECT 1 FROM budgets b
-           WHERE b.id = bt.budget_id
-           AND b.user_id = $1
+           AND EXTRACT(MONTH FROM t.transaction_date) = b.month
+           AND EXTRACT(YEAR FROM t.transaction_date) = b.year
+         WHERE b.user_id = $1
            AND b.organization_id = $2
-         )
-         GROUP BY bt.id, bt.budget_id, bt.category_id, bt.target_amount, c.name, c.icon
+         GROUP BY bt.id, bt.budget_id, bt.category_id, bt.target_amount, c.name, c.icon, b.month, b.year
          ORDER BY c.name`,
         [req.userId, req.organizationId]
       );
