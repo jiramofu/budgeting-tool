@@ -22,8 +22,13 @@ router.get('/anomalies/:year/:month', async (req: PermissionRequest, res: Respon
       return res.status(400).json({ error: 'Invalid year or month' });
     }
 
-    const anomalies = await AIInsightsService.detectAnomalies(req.userId, month, year, req.organizationId!);
-    res.json(anomalies);
+    try {
+      const anomalies = await AIInsightsService.detectAnomalies(req.userId, month, year, req.organizationId!);
+      res.json(anomalies);
+    } catch (serviceError: any) {
+      console.warn('[Insights] Service error detecting anomalies, returning empty result:', serviceError.message);
+      res.json({ anomalies: [], message: 'Not enough data to detect anomalies' });
+    }
   } catch (error: any) {
     console.error('[Insights] Error detecting anomalies:', error);
     res.status(500).json({ error: 'Failed to detect anomalies: ' + error.message });
@@ -46,8 +51,13 @@ router.get('/generate', async (req: PermissionRequest, res: Response) => {
 router.get('/predict-next-month', async (req: PermissionRequest, res: Response) => {
   console.log('[Insights] GET next month prediction');
   try {
-    const predictions = await AIInsightsService.predictNextMonth(req.userId, req.organizationId!);
-    res.json(predictions);
+    try {
+      const predictions = await AIInsightsService.predictNextMonth(req.userId, req.organizationId!);
+      res.json(predictions);
+    } catch (serviceError: any) {
+      console.warn('[Insights] Service error predicting next month, returning empty result:', serviceError.message);
+      res.json({ prediction: null, message: 'Not enough data to make predictions' });
+    }
   } catch (error: any) {
     console.error('[Insights] Error predicting next month:', error);
     res.status(500).json({ error: 'Failed to predict next month: ' + error.message });

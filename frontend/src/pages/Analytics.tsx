@@ -77,11 +77,11 @@ const Analytics: React.FC = () => {
       if (viewType === 'monthly') {
         const month = selectedDate.getMonth() + 1;
         const year = selectedDate.getFullYear();
-        const res = await apiClient.get(`/api/analytics/monthly/${year}/${month}`);
+        const res = await apiClient.get(`/analytics/monthly/${year}/${month}`);
         analysisData = res.data;
       } else {
         const year = selectedDate.getFullYear();
-        const res = await apiClient.get(`/api/analytics/yearly/${year}`);
+        const res = await apiClient.get(`/analytics/yearly/${year}`);
         analysisData = res.data;
       }
 
