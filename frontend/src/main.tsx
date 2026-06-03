@@ -15,13 +15,8 @@ Sentry.init({
 console.log('✅ Sentry error tracking initialized')
 
 // Initialize Google Analytics
-const gaId = import.meta.env.VITE_GOOGLE_ANALYTICS_ID
-if (gaId) {
-  GA4React.initialize([{ trackingId: gaId }])
-  console.log('✅ Google Analytics initialized')
-} else {
-  console.log('⚠️  Google Analytics ID not configured - analytics disabled')
-}
+GA4React.initialize([{ trackingId: 'G-KX2GGSYPGM' }])
+console.log('✅ Google Analytics initialized')
 
 const SentryApp = Sentry.withProfiler(App)
 
