@@ -10,6 +10,11 @@ interface BudgetBarProps {
   onClick?: () => void;
   isExpanded?: boolean;
   currency?: string;
+  categoryId?: number;
+  onQuickAddSpending?: (categoryId: number, amount: string) => Promise<void>;
+  quickAddValue?: string;
+  onQuickAddChange?: (value: string) => void;
+  isSubmitting?: boolean;
 }
 
 const BudgetBar: React.FC<BudgetBarProps> = ({
@@ -20,6 +25,11 @@ const BudgetBar: React.FC<BudgetBarProps> = ({
   onClick,
   isExpanded = false,
   currency = 'USD',
+  categoryId,
+  onQuickAddSpending,
+  quickAddValue = '',
+  onQuickAddChange,
+  isSubmitting = false,
 }) => {
   const percentage = budget > 0 ? Math.round((spent / budget) * 100) : 0;
   const isOverBudget = spent > budget;
@@ -101,6 +111,28 @@ const BudgetBar: React.FC<BudgetBarProps> = ({
       {isOverBudget && (
         <div className="mt-2 pt-2 border-t border-slate-700">
           <p className="text-xs text-red-400 font-medium">Budget exceeded</p>
+        </div>
+      )}
+
+      {/* Quick add spending input */}
+      {onQuickAddSpending && categoryId !== undefined && (
+        <div className="mt-4 pt-4 border-t border-slate-700 flex gap-2">
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Add amount"
+            value={quickAddValue}
+            onChange={(e) => onQuickAddChange?.(e.target.value)}
+            disabled={isSubmitting}
+            className="flex-1 px-3 py-2 rounded bg-slate-700/50 border border-slate-600 text-sm text-slate-50 placeholder-slate-400 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+          />
+          <button
+            onClick={() => onQuickAddSpending(categoryId, quickAddValue)}
+            disabled={isSubmitting || !quickAddValue}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded font-medium transition-colors text-sm whitespace-nowrap"
+          >
+            {isSubmitting ? 'Adding...' : 'Add'}
+          </button>
         </div>
       )}
     </div>

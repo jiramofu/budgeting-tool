@@ -17,6 +17,10 @@ interface BudgetCategoryTreeProps {
   onBudgetUpdate?: (categoryId: number, amount: number) => Promise<void>;
   isLoading?: boolean;
   currency?: string;
+  onQuickAddSpending?: (categoryId: number, amount: string) => Promise<void>;
+  categorySpending?: { [key: number]: string };
+  onCategorySpendingChange?: (categoryId: number, value: string) => void;
+  submittingCategories?: Set<number>;
 }
 
 const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
@@ -24,6 +28,10 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
   onBudgetUpdate,
   isLoading = false,
   currency = 'USD',
+  onQuickAddSpending,
+  categorySpending = {},
+  onCategorySpendingChange,
+  submittingCategories = new Set(),
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
     new Set()
@@ -95,6 +103,11 @@ const BudgetCategoryTree: React.FC<BudgetCategoryTreeProps> = ({
                   isExpanded={isExpanded}
                   onClick={hasChildren ? () => toggleExpanded(category.id) : undefined}
                   currency={currency}
+                  categoryId={category.id}
+                  onQuickAddSpending={onQuickAddSpending}
+                  quickAddValue={categorySpending[category.id] || ''}
+                  onQuickAddChange={(value) => onCategorySpendingChange?.(category.id, value)}
+                  isSubmitting={submittingCategories.has(category.id)}
                 />
               </div>
 

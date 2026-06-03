@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '../services/api';
 import { formatCurrency } from '../utils/currencyFormatter';
 import { useUserSettings } from '../hooks/useUserSettings';
+import { useToast } from '../hooks/useToast';
 import { useBudgetContext, Category as ContextCategory } from '../context/BudgetContext';
 import {
   BudgetBar,
@@ -30,6 +31,7 @@ interface BudgetMetrics {
 
 const BudgetManagementPage: React.FC = () => {
   const { currency } = useUserSettings();
+  const { success, error: showError } = useToast();
   const budgetContext = useBudgetContext();
   const [categories, setCategories] = useState<Category[]>([]);
   const [metrics, setMetrics] = useState<BudgetMetrics>({
@@ -43,6 +45,8 @@ const BudgetManagementPage: React.FC = () => {
   const [error, setError] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(budgetContext.currentBudgetMonth);
   const [selectedYear, setSelectedYear] = useState(budgetContext.currentBudgetYear);
+  const [categorySpending, setCategorySpending] = useState<{[key: number]: string}>({});
+  const [submittingCategories, setSubmittingCategories] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     // Update context with selected month/year
@@ -173,11 +177,72 @@ const BudgetManagementPage: React.FC = () => {
     }
   };
 
+  const handleQuickAddSpending = async (categoryId: number, amountStr: string) => {
+    const amount = parseFloat(amountStr);
+
+    // Validation
+    if (!amount || amount <= 0) {
+      showError('Amount must be greater than 0');
+      return;
+    }
+
+    if (!isFinite(amount)) {
+      showError('Please enter a valid amount');
+      return;
+    }
+
+    try {
+      setSubmittingCategories(prev => new Set(prev).add(categoryId));
+
+      // Find category name for description
+      const findCategoryName = (cats: Category[], id: number): string => {
+        for (const cat of cats) {
+          if (cat.id === id) return cat.name;
+          if (cat.children) {
+            const found = findCategoryName(cat.children, id);
+            if (found) return found;
+          }
+        }
+        return 'Unknown';
+      };
+
+      const categoryName = findCategoryName(categories, categoryId);
+
+      // Create transaction via existing API
+      await apiClient.post('/transactions', {
+        categoryId,
+        amount: -amount, // Negative for expense
+        transactionDate: new Date().toISOString().split('T')[0],
+        description: `Quick add from Budget page - ${categoryName}`,
+        source: 'budget_page',
+      });
+
+      success(`$${amount.toFixed(2)} added to ${categoryName}`);
+      setCategorySpending(prev => ({...prev, [categoryId]: ''}));
+
+      // Refresh budget data
+      await loadBudgetData();
+    } catch (err: any) {
+      console.error('Failed to add spending:', err);
+      showError('Failed to add spending. Please try again.');
+    } finally {
+      setSubmittingCategories(prev => {
+        const next = new Set(prev);
+        next.delete(categoryId);
+        return next;
+      });
+    }
+  };
+
   const formatMonth = (month: number, year: number) => {
     return new Date(year, month - 1).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
     });
+  };
+
+  const handleCategorySpendingChange = (categoryId: number, value: string) => {
+    setCategorySpending(prev => ({...prev, [categoryId]: value}));
   };
 
   const getProgressColor = () => {
@@ -298,6 +363,10 @@ const BudgetManagementPage: React.FC = () => {
             categories={categories}
             onBudgetUpdate={handleBudgetUpdate}
             isLoading={isLoading}
+            onQuickAddSpending={handleQuickAddSpending}
+            categorySpending={categorySpending}
+            onCategorySpendingChange={handleCategorySpendingChange}
+            submittingCategories={submittingCategories}
           />
         </div>
 
